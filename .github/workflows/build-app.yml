@@ -4,7 +4,6 @@ on:
   workflow_dispatch:
   push:
     tags: ["v*"]
-    branches: ["arena/3a3ecc90-stardew-tracker"]
 
 permissions:
   contents: read

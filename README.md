@@ -61,7 +61,7 @@ python3 packaging/build_app.py
 - macOS — `~/Library/Application Support/StardewTracker`
 - Linux — `${XDG_DATA_HOME:-~/.local/share}/StardewTracker`
 
-Расположение переопределяется переменной `STARDEW_TRACKER_HOME`. Сейвы по-прежнему ищутся автоматически в стандартных папках Stardew Valley.
+Расположение переопределяется переменной `STARDEW_TRACKER_HOME`. Если `goals.json` уже есть в версии для исходников, скопируйте его в этот каталог. Сейвы по-прежнему ищутся автоматически в стандартных папках Stardew Valley.
 
 Файл не подписан: Windows SmartScreen и macOS Gatekeeper могут показать предупреждение. В Windows нажмите «Подробнее → Выполнить всё равно», в macOS — «Открыть» в контекстном меню либо `xattr -d com.apple.quarantine StardewTracker`. Сборка консольная: окно с логами остаётся открытым, пока работает сервер.
 
