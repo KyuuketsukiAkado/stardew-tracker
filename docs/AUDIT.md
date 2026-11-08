@@ -21,7 +21,7 @@ XML-парсер, сборка состояния, живой HTTP-дашбор�
 - не было гейтов по линтерам, типам, безопасности и покрытию.
 
 После рефакторинга: 20 модулей пакета `stardew_tracker`, тонкая совместимая обёртка
-`tracker.py`, 116 тестов, 90% покрытия, 0 замечаний ruff/bandit, чистый mypy с проверкой тел
+`tracker.py`, 127 тестов, 90% покрытия, 0 замечаний ruff/bandit, чистый mypy с проверкой тел
 неаннотированных функций, CI с матрицей Python 3.9/3.11/3.13 и отдельным quality-job.
 
 Поведение проверено побайтово: состояние и автономный HTML для синтетического сейва совпадают
@@ -44,7 +44,7 @@ XML-парсер, сборка состояния, живой HTTP-дашбор�
 
 | Метрика | До | После |
 |---|---:|---:|
-| Тесты (`unittest`) | 45 | **116** |
+| Тесты (`unittest`) | 45 | **127** |
 | Покрытие `tracker.py` / пакета | 68% | **90%** |
 | Максимальный размер файла Python | 2114 строк | **459** (`saveparser.py`)* |
 | Ruff (default) | 1 замечание | **0** |
@@ -107,7 +107,7 @@ stardew_tracker/
   __init__.py               публичный API и версия
   __main__.py               python -m stardew_tracker
   version.py                единый источник версии
-  paths.py                  пути проекта
+  paths.py                  пути проекта и standalone-сборки (sys._MEIPASS, каталог данных ОС)
   constants.py              сезоны, навыки, звёздные капли, обелиски, спрайты
   errors.py                 SaveError / DataError
   xmlutil.py                namespace-хелперы + безопасный разбор XML
@@ -125,8 +125,9 @@ stardew_tracker/
   server.py                 TrackerApp, HTTP API, watcher, serve
   cli.py                    info/build/open/serve, --host/--out/--version
 build_data.py               офлайн-сборщик data/ и PNG-атласов (без изменений по смыслу)
+packaging/                  spec PyInstaller и build_app.py (standalone-сборка)
 assets/dashboard.html       интерфейс (inline CSS/JS)
-tests/                      116 тестов: интеграция, юниты, безопасность, PNG, JS, lifecycle
+tests/                      127 тестов: интеграция, юниты, безопасность, PNG, JS, lifecycle, сборка
 ```
 
 Поток данных: `find_saves → parse_save (кэш) → collections/perfection/today → state (кэш) →
@@ -142,6 +143,7 @@ render/HTTP`. Пакет не тянет внешних зависимостей
 | `tests/test_frontend_js.py` | синтаксис inline-JS через `node --check`, отсутствие inline-обработчиков и внешних URL |
 | `tests/test_server_lifecycle.py` | `serve`, режим ожидания, watcher, коды выхода CLI |
 | `tests/test_responsive_styles.py` | адаптивность/доступность шаблона (расширен, исправлено неиспользуемое значение) |
+| `tests/test_packaging.py` | frozen-пути `sys._MEIPASS`, каталоги данных Windows/macOS/Linux, состав PyInstaller-спеки |
 
 Особое внимание — регрессиям найденных багов:
 
@@ -186,7 +188,7 @@ python3 -m unittest discover -s tests -v
 # quality-гейты
 python3 -m pip install -r requirements-dev.txt
 ruff check .
-ruff format --check stardew_tracker tracker.py tests
+ruff format --check stardew_tracker tracker.py tests packaging/build_app.py
 mypy
 bandit -q -r stardew_tracker tracker.py build_data.py
 coverage run -m unittest discover -s tests
@@ -197,6 +199,11 @@ python3 tests/make_test_save.py /tmp/saves
 python3 tracker.py info --saves-dir /tmp/saves
 python3 tracker.py build --saves-dir /tmp/saves --out /tmp/report.html
 python3 tracker.py serve --saves-dir /tmp/saves --no-open
+
+# standalone-сборка (артефакт dist/StardewTracker или .exe)
+python3 -m pip install -r requirements-build.txt
+python3 packaging/build_app.py
+dist/StardewTracker --version
 ```
 
 Дифференциальная проверка поведения:

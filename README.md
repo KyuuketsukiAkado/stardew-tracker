@@ -37,6 +37,34 @@ python3 -m stardew_tracker --version   # то же CLI через пакет
 
 Без сервера создайте автономный `report.html` командой `python3 tracker.py build`; `report.bat` делает то же в Windows. Цели и задачи можно редактировать только в живом режиме. Синтетическое сохранение для демонстрации: `python3 tests/make_test_save.py /tmp/saves`.
 
+## Сборка приложения (.exe / .app / Linux)
+
+Готовые standalone-файлы собирает workflow **Build app** в GitHub Actions: `Actions → Build app → Run workflow`. Он прогоняет PyInstaller на Windows, macOS и Linux и выкладывает `StardewTracker-windows`, `StardewTracker-macos` и `StardewTracker-linux` артефактами; при пуше тега `v*` те же архивы прикрепляются к релизу. В Windows это один `StardewTracker.exe`, Python на целевой машине не нужен.
+
+Локальная сборка в Windows:
+
+1. Установите Python 3.9+ и запустите `build_app.bat` — скрипт создаст окружение `.build-venv`, поставит PyInstaller и соберёт `dist\StardewTracker.exe`.
+2. Готовый файл можно переносить на другой компьютер без Python.
+
+Любая ОС:
+
+```bash
+python3 -m pip install -r requirements-build.txt
+python3 packaging/build_app.py
+```
+
+Запуск собранного файла без аргументов поднимает локальный сервер на `127.0.0.1:8777` и открывает браузер; закрытие консольного окна останавливает приложение. CLI сохраняется: `StardewTracker.exe info`, `build --out report.html`, `serve --port 9000 --no-open`.
+
+В standalone-сборке `goals.json` и `report.html` пишутся в каталог данных ОС, потому что папка приложения доступна только для чтения:
+
+- Windows — `%APPDATA%\StardewTracker`
+- macOS — `~/Library/Application Support/StardewTracker`
+- Linux — `${XDG_DATA_HOME:-~/.local/share}/StardewTracker`
+
+Расположение переопределяется переменной `STARDEW_TRACKER_HOME`. Сейвы по-прежнему ищутся автоматически в стандартных папках Stardew Valley.
+
+Файл не подписан: Windows SmartScreen и macOS Gatekeeper могут показать предупреждение. В Windows нажмите «Подробнее → Выполнить всё равно», в macOS — «Открыть» в контекстном меню либо `xattr -d com.apple.quarantine StardewTracker`. Сборка консольная: окно с логами остаётся открытым, пока работает сервер.
+
 ## Разделы
 
 - **Обзор и Сегодня** — дата, игровое время, текущая погода, ближайшие события и полезный план на день.
@@ -53,7 +81,7 @@ python3 -m stardew_tracker --version   # то же CLI через пакет
 
 ## Сохранения и конфиденциальность
 
-Обычно сейвы находятся в `%APPDATA%\StardewValley\Saves\<Ферма>_<ID>\<Ферма>_<ID>`. Приложение читает XML локально. `goals.json` сохраняется рядом со скриптом; перед его перезаписью создаётся `goals.json.bak`, а сама запись атомарна. Локальные сейвы, цели и отчёт исключены из git.
+Обычно сейвы находятся в `%APPDATA%\StardewValley\Saves\<Ферма>_<ID>\<Ферма>_<ID>`. Приложение читает XML локально. `goals.json` сохраняется рядом со скриптом (в standalone-сборке — в каталоге данных ОС); перед его перезаписью создаётся `goals.json.bak`, а сама запись атомарна. Локальные сейвы, цели и отчёт исключены из git.
 
 Сервер не делает исходящих запросов, не отдаёт CORS-разрешений и по умолчанию доступен только с этого компьютера. XML-документы с `DOCTYPE`/`ENTITY` отклоняются как небезопасные. Подробный аудит и список исправлений — в [`docs/AUDIT.md`](docs/AUDIT.md).
 
@@ -72,7 +100,7 @@ python3 tracker.py info --saves-dir /tmp/saves
 python3 tracker.py build --saves-dir /tmp/saves --out /tmp/report.html
 ```
 
-Тесты используют только `unittest` и синтетический XML-сейв: 116 тестов, покрытие 90%.
+Тесты используют только `unittest` и синтетический XML-сейв: 127 тестов, покрытие 90%.
 CI прогоняет их на Python 3.9, 3.11 и 3.13, а отдельный quality-job проверяет `ruff`, формат,
 `mypy`, `bandit` и покрытие не ниже 85%.
 
@@ -117,10 +145,12 @@ assets/dashboard.html      интерфейс (inline CSS/JS)
 assets/sprites/*.png       игровые пиксельные атласы
 saves/                     необязательная папка для сейвов (игнорируется git)
 goals.json                 локальные цели и задачи (игнорируется git)
-tests/                     116 тестов и генератор тестового сейва
+tests/                     127 тестов и генератор тестового сейва
 docs/index.html            автономная демонстрационная сборка
 docs/AUDIT.md              аудит, находки и AQA-отчёт
 pyproject.toml             настройки ruff/mypy/coverage и метаданные
 requirements-dev.txt       инструменты разработки и CI
+requirements-build.txt     PyInstaller для standalone-сборки
+packaging/                 spec PyInstaller и скрипт сборки приложения
 TZ.md                      подробное техническое задание и формат сейва
 ```

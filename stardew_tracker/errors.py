@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from . import paths
+
 
 class SaveError(SystemExit):
     """Понятная пользователю ошибка чтения сейва или данных.
@@ -35,12 +37,13 @@ class DataError(SaveError):
     """Справочники ``data/*.json`` отсутствуют или повреждены."""
 
     def __init__(self, title: str, detail: str):
+        where = "рядом с приложением StardewTracker" if paths.FROZEN else "рядом с tracker.py"
         super().__init__(
             "data_error",
             title,
             detail,
             [
-                "Убедитесь, что папка data/ распакована рядом с tracker.py.",
+                f"Убедитесь, что папка data/ распакована {where}.",
                 "Пересоберите справочники командой python build_data.py --content-dir <папка Content>.",
             ],
         )

@@ -1,0 +1,89 @@
+name: Build app
+
+on:
+  workflow_dispatch:
+  push:
+    tags: ["v*"]
+    branches: ["arena/3a3ecc90-stardew-tracker"]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: ${{ matrix.artifact }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            artifact: StardewTracker-windows
+            binary: dist/StardewTracker.exe
+          - os: macos-latest
+            artifact: StardewTracker-macos
+            binary: dist/StardewTracker
+          - os: ubuntu-22.04
+            artifact: StardewTracker-linux
+            binary: dist/StardewTracker
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Установка PyInstaller
+        run: python -m pip install -r requirements-build.txt
+
+      - name: Сборка
+        run: python packaging/build_app.py
+
+      - name: Smoke-тест собранного файла
+        shell: bash
+        run: |
+          python tests/make_test_save.py build-smoke/saves
+          "${{ matrix.binary }}" --version
+          "${{ matrix.binary }}" info --saves-dir build-smoke/saves
+          "${{ matrix.binary }}" build --saves-dir build-smoke/saves --out build-smoke/report.html
+          test -s build-smoke/report.html
+          grep -q "Тестовая" build-smoke/report.html
+          grep -q "data:image/png;base64," build-smoke/report.html
+
+      - name: Загрузить артефакт
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: ${{ matrix.binary }}
+          if-no-files-found: error
+
+  release:
+    name: Release
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: build
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Упаковать в zip
+        run: |
+          cd artifacts
+          for dir in */; do
+            name="${dir%/}"
+            if [ -f "$name/StardewTracker.exe" ]; then
+              (cd "$name" && zip "../$name.zip" StardewTracker.exe)
+            else
+              chmod +x "$name/StardewTracker"
+              (cd "$name" && zip "../$name.zip" StardewTracker)
+            fi
+          done
+          ls -lh ./*.zip
+
+      - name: Создать релиз
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release create "${GITHUB_REF_NAME}" artifacts/*.zip --generate-notes

@@ -16,7 +16,11 @@
   активный файл только после успешного разбора; кэш спрайтов ключуется по пути.
 - Добавлены `--host`, `--out`, `--version`, точка входа `python -m stardew_tracker` и
   `TrackerApp`/`TrackerHTTPServer` с фабрикой обработчика.
-- AQA: 116 тестов вместо 45, покрытие 90% (было 68%), новые тесты на XML-бомбы, окна времени,
+- Добавлена standalone-сборка: `packaging/build_app.py`, spec PyInstaller, `build_app.bat`
+  и workflow **Build app** для Windows/macOS/Linux; в сборке `data/` и `assets/` читаются из
+  бандла, а `goals.json`/`report.html` пишутся в каталог данных ОС (`STARDEW_TRACKER_HOME`
+  переопределяет его).
+- AQA: 127 тестов вместо 45, покрытие 90% (было 68%), новые тесты на XML-бомбы, окна времени,
   конкурентность, мультиплеер, PNG-кодек, CLI, жизненный цикл сервера и синтаксис inline-JS
   (`node --check`). CI получил жёсткие гейты ruff, format, mypy, bandit и coverage ≥85%.
 - Дифференциальная проверка: состояние и HTML для синтетического сейва совпадают с v0.1.0

@@ -6,7 +6,7 @@ import os
 
 from .constants import SEASON_RU  # noqa: F401  (реэкспорт для совместимости)
 from .errors import SaveError
-from .paths import SAVES_DIR
+from .paths import FROZEN, SAVES_DIR
 
 _SKIP_NAMES = frozenset({"SaveGameInfo", "startup_preferences"})
 _SKIP_SUFFIXES = ("_old", "_old.bak", ".bak", ".tmp")
@@ -15,6 +15,11 @@ _NO_SAVE_STEPS = [
     'Укажите путь вручную: python tracker.py serve --save "путь\\к\\сейву"',
     "В Windows сейвы обычно лежат в %APPDATA%\\StardewValley\\Saves\\<Ферма>_<id>\\<Ферма>_<id>",
     "Для демо-проверки можно создать тестовый сейв: python tests/make_test_save.py saves",
+]
+_NO_SAVE_STEPS_APP = [
+    'Укажите путь вручную: StardewTracker serve --save "путь\\к\\сейву"',
+    "В Windows сейвы обычно лежат в %APPDATA%\\StardewValley\\Saves\\<Ферма>_<id>\\<Ферма>_<id>",
+    "Запустите StardewTracker info, чтобы проверить автопоиск сохранений.",
 ]
 
 
@@ -176,5 +181,5 @@ def no_saves_error() -> SaveError:
         "no_saves",
         "Не нашёл ни одного файла сохранения",
         "В стандартных папках Stardew Valley и папке ./saves сохранения не обнаружены.",
-        list(_NO_SAVE_STEPS),
+        list(_NO_SAVE_STEPS_APP if FROZEN else _NO_SAVE_STEPS),
     )

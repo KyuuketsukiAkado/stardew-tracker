@@ -32,3 +32,8 @@ playwright-report/
 *.zip
 .DS_Store
 Thumbs.db
+
+# Сборка standalone-приложения
+build/
+dist/
+.build-venv/

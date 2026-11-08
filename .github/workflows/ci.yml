@@ -82,19 +82,19 @@ jobs:
         run: pip install -r requirements-dev.txt
 
       - name: py_compile
-        run: python -m py_compile tracker.py build_data.py stardew_tracker/*.py tests/*.py
+        run: python -m py_compile tracker.py build_data.py stardew_tracker/*.py tests/*.py packaging/build_app.py
 
       - name: Ruff (lint)
         run: ruff check .
 
       - name: Ruff (форматирование)
-        run: ruff format --check stardew_tracker tracker.py tests
+        run: ruff format --check stardew_tracker tracker.py tests packaging/build_app.py
 
       - name: mypy
         run: mypy
 
       - name: Минимальная версия Python 3.9
-        run: vermin --no-tips --violations -t=3.9- stardew_tracker tracker.py
+        run: vermin --no-tips --violations -t=3.9- stardew_tracker tracker.py packaging/build_app.py
 
       - name: Bandit
         run: bandit -q -r stardew_tracker tracker.py build_data.py
