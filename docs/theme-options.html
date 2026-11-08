@@ -1,0 +1,449 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Цветовые варианты — Stardew Tracker</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        font-family:
+          system-ui,
+          -apple-system,
+          "Segoe UI",
+          sans-serif;
+        background: #11150f;
+        color: #eee;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        padding: 24px;
+      }
+      .page {
+        max-width: 1440px;
+        margin: 0 auto;
+      }
+      h1 {
+        margin: 0;
+        font-size: clamp(22px, 3vw, 32px);
+      }
+      .intro {
+        max-width: 800px;
+        color: #aeb6aa;
+        margin: 6px 0 20px;
+      }
+      .options {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 14px;
+      }
+      .option {
+        --bg: #181b17;
+        --panel: #222720;
+        --panel2: #2b3129;
+        --line: #3a4338;
+        --text: #e6e7df;
+        --muted: #b6bbb1;
+        --faint: #858d81;
+        --green: #aac08f;
+        --gold: #d0b982;
+        --red: #d49288;
+        --blue: #91b6c7;
+        --done-bg: #2b382b;
+        --progress-bg: #3a3425;
+        --action-bg: #3b2927;
+        --idle-bg: #2a2e29;
+        --info-bg: #26343a;
+        min-width: 0;
+        padding: 14px;
+        color: var(--text);
+        background: var(--bg);
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        text-align: left;
+        cursor: pointer;
+        transition:
+          border-color 0.15s ease,
+          transform 0.15s ease,
+          box-shadow 0.15s ease;
+      }
+      .option[data-theme="slate"] {
+        --bg: #151a1d;
+        --panel: #20272b;
+        --panel2: #2a3438;
+        --line: #3c4a4e;
+        --text: #e5ecea;
+        --muted: #b4c2be;
+        --faint: #82938e;
+        --green: #a4c4b0;
+        --gold: #d0bb8c;
+        --red: #d3998e;
+        --blue: #89b8c7;
+        --done-bg: #273733;
+        --action-bg: #392a2b;
+      }
+      .option[data-theme="warm"] {
+        --bg: #1a1918;
+        --panel: #272320;
+        --panel2: #342e29;
+        --line: #4a4139;
+        --text: #f0e9df;
+        --muted: #c1b7a9;
+        --faint: #968a7c;
+        --green: #b3b58f;
+        --gold: #d2b57e;
+        --red: #d1988b;
+        --blue: #91b4c7;
+        --done-bg: #343522;
+        --action-bg: #3d2c29;
+      }
+      .option:hover {
+        transform: translateY(-2px);
+        border-color: var(--blue);
+      }
+      .option.selected {
+        border: 2px solid var(--blue);
+        padding: 13px;
+        box-shadow: 0 0 0 3px color-mix(in srgb, var(--blue) 17%, transparent);
+      }
+      .option-title {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        align-items: center;
+      }
+      .option-title b {
+        font-size: 15px;
+      }
+      .option-title small {
+        color: var(--muted);
+        font-size: 11px;
+      }
+      .swatches {
+        display: flex;
+        gap: 5px;
+        margin: 12px 0;
+      }
+      .swatch {
+        height: 18px;
+        flex: 1;
+        border: 1px solid #ffffff24;
+        border-radius: 5px;
+      }
+      .mini-panel {
+        display: block;
+        padding: 11px;
+        border-radius: 10px;
+        background: var(--panel);
+        border: 1px solid var(--line);
+      }
+      .mini-title {
+        display: block;
+        font-size: 12px;
+        font-weight: 750;
+        margin-bottom: 8px;
+      }
+      .mini-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        min-height: 38px;
+        margin-top: 6px;
+        padding: 6px 8px;
+        border-radius: 8px;
+        background: var(--panel2);
+        border: 1px solid var(--line);
+        font-size: 11px;
+      }
+      .mini-dot {
+        width: 10px;
+        height: 10px;
+        flex: none;
+        border-radius: 50%;
+        background: var(--green);
+      }
+      .mini-row .label {
+        flex: 1;
+        color: var(--text);
+      }
+      .mini-badge {
+        padding: 3px 7px;
+        border-radius: 999px;
+        border: 1px solid;
+        font-size: 10px;
+        white-space: nowrap;
+      }
+      .mini-badge.done {
+        color: var(--green);
+        border-color: var(--green);
+        background: var(--done-bg);
+      }
+      .mini-badge.action {
+        color: var(--red);
+        border-color: var(--red);
+        background: var(--action-bg);
+      }
+      .mini-tip {
+        display: block;
+        margin-top: 8px;
+        color: var(--blue);
+        font-size: 10px;
+      }
+      .preview-head {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        align-items: center;
+        margin: 22px 0 10px;
+      }
+      .preview-head h2 {
+        margin: 0;
+        font-size: 18px;
+      }
+      .current-label {
+        color: #aeb6aa;
+        font-size: 12px;
+      }
+      iframe {
+        display: block;
+        width: 100%;
+        height: min(76vh, 900px);
+        min-height: 620px;
+        border: 1px solid #364130;
+        border-radius: 12px;
+        background: #11150f;
+      }
+      .footnote {
+        color: #8d9689;
+        font-size: 11px;
+        margin-top: 10px;
+      }
+      @media (max-width: 760px) {
+        body {
+          padding: 15px;
+        }
+        .options {
+          grid-template-columns: 1fr;
+        }
+        iframe {
+          min-height: 68vh;
+          height: 75vh;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="page">
+      <h1>Цветовые варианты интерфейса</h1>
+      <p class="intro">
+        Это отдельные палитры для сравнения — основной интерфейс пока не
+        меняется. Выбери вариант A, B или C: ниже откроется полноценная
+        демо-страница с этой цветовой схемой.
+      </p>
+      <section class="options" aria-label="Выбор цветовой палитры">
+        <button
+          class="option selected"
+          data-theme="moss"
+          type="button"
+          aria-pressed="true"
+        >
+          <span class="option-title"
+            ><b>A · Мягкий мох</b
+            ><small>спокойная зелень, меньше контраста</small></span
+          >
+          <span class="swatches"
+            ><i class="swatch" style="background: #181b17"></i
+            ><i class="swatch" style="background: #222720"></i
+            ><i class="swatch" style="background: #aac08f"></i
+            ><i class="swatch" style="background: #91b6c7"></i
+          ></span>
+          <span class="mini-panel"
+            ><span class="mini-title">План на сегодня</span
+            ><span class="mini-row"
+              ><i class="mini-dot"></i><span class="label">Отнести в музей</span
+              ><span class="mini-badge action">4 предмета</span></span
+            ><span class="mini-row"
+              ><i class="mini-dot"></i><span class="label">Бандлы</span
+              ><span class="mini-badge done">2 / 4</span></span
+            ><span class="mini-tip">ⓘ Подсказки и условия</span></span
+          >
+        </button>
+        <button
+          class="option"
+          data-theme="slate"
+          type="button"
+          aria-pressed="false"
+        >
+          <span class="option-title"
+            ><b>B · Сланец и шалфей</b
+            ><small>нейтральный графит с холодной зеленью</small></span
+          >
+          <span class="swatches"
+            ><i class="swatch" style="background: #151a1d"></i
+            ><i class="swatch" style="background: #20272b"></i
+            ><i class="swatch" style="background: #a4c4b0"></i
+            ><i class="swatch" style="background: #89b8c7"></i
+          ></span>
+          <span class="mini-panel"
+            ><span class="mini-title">План на сегодня</span
+            ><span class="mini-row"
+              ><i class="mini-dot"></i><span class="label">Отнести в музей</span
+              ><span class="mini-badge action">4 предмета</span></span
+            ><span class="mini-row"
+              ><i class="mini-dot"></i><span class="label">Бандлы</span
+              ><span class="mini-badge done">2 / 4</span></span
+            ><span class="mini-tip">ⓘ Подсказки и условия</span></span
+          >
+        </button>
+        <button
+          class="option"
+          data-theme="warm"
+          type="button"
+          aria-pressed="false"
+        >
+          <span class="option-title"
+            ><b>C · Тёплый графит</b
+            ><small>мягкие тёплые поверхности и акценты</small></span
+          >
+          <span class="swatches"
+            ><i class="swatch" style="background: #1a1918"></i
+            ><i class="swatch" style="background: #272320"></i
+            ><i class="swatch" style="background: #b3b58f"></i
+            ><i class="swatch" style="background: #91b4c7"></i
+          ></span>
+          <span class="mini-panel"
+            ><span class="mini-title">План на сегодня</span
+            ><span class="mini-row"
+              ><i class="mini-dot"></i><span class="label">Отнести в музей</span
+              ><span class="mini-badge action">4 предмета</span></span
+            ><span class="mini-row"
+              ><i class="mini-dot"></i><span class="label">Бандлы</span
+              ><span class="mini-badge done">2 / 4</span></span
+            ><span class="mini-tip">ⓘ Подсказки и условия</span></span
+          >
+        </button>
+      </section>
+      <div class="preview-head">
+        <h2>Полная демо-страница</h2>
+        <span class="current-label" id="selectedLabel"
+          >Выбран вариант A · Мягкий мох</span
+        >
+      </div>
+      <iframe
+        id="preview"
+        title="Полная демо-страница в выбранной палитре"
+        src="index.html"
+      ></iframe>
+      <p class="footnote">
+        Варианты применяются только внутри этого предпросмотра. Выбор не меняет
+        рабочую тему трекера.
+      </p>
+    </main>
+    <script>
+      const palettes = {
+        moss: {
+          name: "вариант A · Мягкий мох",
+          vars: {
+            "--bg": "#181b17",
+            "--panel": "#222720",
+            "--panel2": "#2b3129",
+            "--line": "#3a4338",
+            "--text": "#e6e7df",
+            "--muted": "#b6bbb1",
+            "--faint": "#858d81",
+            "--green": "#aac08f",
+            "--gold": "#d0b982",
+            "--red": "#d49288",
+            "--blue": "#91b6c7",
+            "--purple": "#b8a4c7",
+            "--state-done": "#aac08f",
+            "--state-progress": "#d0b982",
+            "--state-action": "#d49288",
+            "--state-idle": "#92998f",
+            "--state-info": "#91b6c7",
+          },
+          css: `.sidebar,header,.mobile-nav{background:var(--panel)!important;border-color:var(--line)!important}.nav a:hover,.nav a.selected,.nav-icon,button.active{background:var(--panel2)!important}.badge.ok{color:#dce8cb;background:#2b382b;border-color:#596d4c}.badge.warn{color:#dfcca0;background:#3a3425;border-color:#74623f}.badge.alert{color:#e4a69d;background:#3b2927;border-color:#80554d}.badge.no{color:#b4b9ae;background:#2a2e29;border-color:#495046}.chip.blue{background:#26343a;border-color:#526c79;color:#b6d0dc}.bundle.complete,.bundle-item.have{background:#242e23;border-color:#53664a}.bar{background:#30372e}.bar i{background:linear-gradient(90deg,#707d67,#aab99b)}.bar.done i{background:linear-gradient(90deg,#7f956b,#aac08f)}.bar.progress i{background:linear-gradient(90deg,#9a8353,#d0b982)}.bar.action i{background:linear-gradient(90deg,#9d6259,#d49288)}.bar.info i{background:linear-gradient(90deg,#5f7f8d,#91b6c7)}body{background:radial-gradient(ellipse at 50% -30%,#30372e 0,var(--bg) 55%)!important}`,
+        },
+        slate: {
+          name: "вариант B · Сланец и шалфей",
+          vars: {
+            "--bg": "#151a1d",
+            "--panel": "#20272b",
+            "--panel2": "#2a3438",
+            "--line": "#3c4a4e",
+            "--text": "#e5ecea",
+            "--muted": "#b4c2be",
+            "--faint": "#82938e",
+            "--green": "#a4c4b0",
+            "--gold": "#d0bb8c",
+            "--red": "#d3998e",
+            "--blue": "#89b8c7",
+            "--purple": "#b09ebf",
+            "--state-done": "#a4c4b0",
+            "--state-progress": "#d0bb8c",
+            "--state-action": "#d3998e",
+            "--state-idle": "#94a29d",
+            "--state-info": "#89b8c7",
+          },
+          css: `.sidebar,header,.mobile-nav{background:var(--panel)!important;border-color:var(--line)!important}.nav a:hover,.nav a.selected,.nav-icon,button.active{background:var(--panel2)!important}.badge.ok{color:#d1e2d8;background:#273733;border-color:#557467}.badge.warn{color:#e0d2b0;background:#383426;border-color:#766c4d}.badge.alert{color:#e1aaa0;background:#392a2b;border-color:#7b5657}.badge.no{color:#b2beb9;background:#293034;border-color:#495658}.chip.blue{background:#24343a;border-color:#4c6973;color:#b3d2db}.bundle.complete,.bundle-item.have{background:#25332f;border-color:#526e62}.bar{background:#2b3437}.bar i{background:linear-gradient(90deg,#65787a,#9cadad)}.bar.done i{background:linear-gradient(90deg,#718f7f,#a4c4b0)}.bar.progress i{background:linear-gradient(90deg,#998761,#d0bb8c)}.bar.action i{background:linear-gradient(90deg,#9d6862,#d3998e)}.bar.info i{background:linear-gradient(90deg,#5c8794,#89b8c7)}body{background:radial-gradient(ellipse at 50% -30%,#2a3438 0,var(--bg) 55%)!important}`,
+        },
+        warm: {
+          name: "вариант C · Тёплый графит",
+          vars: {
+            "--bg": "#1a1918",
+            "--panel": "#272320",
+            "--panel2": "#342e29",
+            "--line": "#4a4139",
+            "--text": "#f0e9df",
+            "--muted": "#c1b7a9",
+            "--faint": "#968a7c",
+            "--green": "#b3b58f",
+            "--gold": "#d2b57e",
+            "--red": "#d1988b",
+            "--blue": "#91b4c7",
+            "--purple": "#baa4c5",
+            "--state-done": "#b3b58f",
+            "--state-progress": "#d2b57e",
+            "--state-action": "#d1988b",
+            "--state-idle": "#a59b8d",
+            "--state-info": "#91b4c7",
+          },
+          css: `.sidebar,header,.mobile-nav{background:var(--panel)!important;border-color:var(--line)!important}.nav a:hover,.nav a.selected,.nav-icon,button.active{background:var(--panel2)!important}.badge.ok{color:#dfe0c2;background:#343522;border-color:#6c6a46}.badge.warn{color:#e4d0a4;background:#403726;border-color:#806a47}.badge.alert{color:#e2a69c;background:#3d2c29;border-color:#80574e}.badge.no{color:#c1b7a9;background:#312d28;border-color:#595046}.chip.blue{background:#29363a;border-color:#5c7780;color:#c3d6dc}.bundle.complete,.bundle-item.have{background:#303025;border-color:#696847}.bar{background:#39342e}.bar i{background:linear-gradient(90deg,#82796a,#b4a796)}.bar.done i{background:linear-gradient(90deg,#8d966b,#b3b58f)}.bar.progress i{background:linear-gradient(90deg,#a18755,#d2b57e)}.bar.action i{background:linear-gradient(90deg,#a2655a,#d1988b)}.bar.info i{background:linear-gradient(90deg,#637f8a,#91b4c7)}body{background:radial-gradient(ellipse at 50% -30%,#38312a 0,var(--bg) 55%)!important}`,
+        },
+      };
+      const frame = document.getElementById("preview"),
+        buttons = [...document.querySelectorAll(".option")],
+        label = document.getElementById("selectedLabel");
+      let currentTheme = "moss";
+      function apply(name) {
+        currentTheme = name;
+        const theme = palettes[name],
+          doc = frame.contentDocument;
+        if (!doc || !theme) return;
+        Object.entries(theme.vars).forEach(([key, value]) =>
+          doc.documentElement.style.setProperty(key, value),
+        );
+        let style = doc.getElementById("theme-option-overrides");
+        if (!style) {
+          style = doc.createElement("style");
+          style.id = "theme-option-overrides";
+          doc.head.appendChild(style);
+        }
+        style.textContent = theme.css;
+        label.textContent = `Выбран ${theme.name}`;
+        buttons.forEach((button) => {
+          const selected = button.dataset.theme === name;
+          button.classList.toggle("selected", selected);
+          button.setAttribute("aria-pressed", String(selected));
+        });
+      }
+      frame.addEventListener("load", () => apply(currentTheme));
+      buttons.forEach((button) =>
+        button.addEventListener("click", () => apply(button.dataset.theme)),
+      );
+    </script>
+  </body>
+</html>

@@ -1,0 +1,3622 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width,initial-scale=1,viewport-fit=cover"
+    />
+    <title>Stardew Трекер — прогресс фермы</title>
+    <style>
+      :root {
+        --bg: #11150f;
+        --panel: #1b2118;
+        --panel2: #252d21;
+        --line: #364130;
+        --text: #f1efdf;
+        --muted: #a3ad98;
+        --faint: #76816e;
+        --green: #9bd276;
+        --gold: #f0c966;
+        --red: #e88779;
+        --blue: #83bde2;
+        --purple: #c3a5e5;
+        --state-done: #9bd276;
+        --state-progress: #f0c966;
+        --state-action: #e88779;
+        --state-idle: #a3ad98;
+        --state-info: #83bde2;
+        --shadow: 0 8px 28px #0004;
+        --spr-obj0: url("/assets/sprites/objects.png");
+        --spr-obj1: url("/assets/sprites/objects2.png");
+        --spr-bc: url("/assets/sprites/craftables.png");
+        --spr-bundles: url("/assets/sprites/bundles.png");
+        --spr-npcs: url("/assets/sprites/npcs.png");
+        --spr-monsters: url("/assets/sprites/monsters.png");
+        --spr-ui: url("/assets/sprites/ui.png");
+      }
+      /*__INLINE_SPRITES__*/
+      * {
+        box-sizing: border-box;
+      }
+      html {
+        scroll-behavior: smooth;
+      }
+      body {
+        margin: 0;
+        background: radial-gradient(
+          ellipse at 50% -30%,
+          #35412b 0,
+          #11150f 55%
+        );
+        color: var(--text);
+        font:
+          14px/1.45 system-ui,
+          -apple-system,
+          "Segoe UI",
+          sans-serif;
+      }
+      body.modal-open {
+        overflow: hidden;
+      }
+      .icon-sprite {
+        position: absolute;
+        width: 0;
+        height: 0;
+        overflow: hidden;
+      }
+      button,
+      input,
+      select {
+        font: inherit;
+        color: inherit;
+      }
+      button {
+        border: 1px solid var(--line);
+        border-radius: 9px;
+        background: var(--panel2);
+        padding: 8px 11px;
+        cursor: pointer;
+      }
+      button:hover:not(:disabled) {
+        border-color: var(--green);
+        filter: brightness(1.12);
+      }
+      button:disabled {
+        cursor: wait;
+        opacity: 0.6;
+      }
+      button.active {
+        background: #31432b;
+        border-color: #739859;
+        color: #e4f2d7;
+      }
+      input,
+      select {
+        background: #151a13;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 8px 10px;
+        min-width: 0;
+      }
+      input:focus-visible,
+      select:focus-visible,
+      textarea:focus-visible,
+      button:focus-visible,
+      a:focus-visible,
+      summary:focus-visible,
+      [tabindex]:focus-visible {
+        outline: 2px solid var(--green);
+        outline-offset: 2px;
+      }
+      :focus:not(:focus-visible) {
+        outline: none;
+      }
+      a {
+        color: var(--blue);
+        text-decoration: none;
+      }
+      .shell {
+        min-height: 100vh;
+      }
+      .sidebar {
+        position: fixed;
+        inset: 0 auto 0 0;
+        width: 226px;
+        padding: 18px 12px;
+        background: #171c15;
+        border-right: 1px solid var(--line);
+        z-index: 5;
+        display: flex;
+        flex-direction: column;
+      }
+      .brand {
+        font-size: 17px;
+        font-weight: 850;
+        letter-spacing: 0.2px;
+        padding: 4px 8px 16px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .brand-mark {
+        width: 36px;
+        height: 36px;
+        flex: none;
+        filter: drop-shadow(0 3px 8px #0005);
+      }
+      .nav {
+        display: grid;
+        flex: 1;
+        min-height: 0;
+        gap: 13px;
+        overflow: auto;
+      }
+      .nav-group {
+        display: grid;
+        gap: 3px;
+      }
+      .nav-group-title {
+        padding: 2px 10px 4px;
+        color: var(--faint);
+        font-size: 10px;
+        font-weight: 750;
+        letter-spacing: 0.8px;
+        text-transform: uppercase;
+      }
+      .nav a {
+        min-width: 0;
+        padding: 7px 9px;
+        border-radius: 10px;
+        color: var(--muted);
+        display: flex;
+        align-items: center;
+        gap: 9px;
+      }
+      .nav a:hover,
+      .nav a.selected {
+        background: #2b3626;
+        color: #f4f2e4;
+      }
+      .nav-icon {
+        width: 26px;
+        height: 26px;
+        flex: none;
+        display: grid;
+        place-items: center;
+        border: 1px solid #364130;
+        border-radius: 8px;
+        background: #222a1f;
+        color: var(--green);
+      }
+      .nav-icon svg {
+        width: 15px;
+        height: 15px;
+        stroke-width: 1.8;
+      }
+      .nav-label {
+        flex: 1;
+        min-width: 0;
+        overflow-wrap: anywhere;
+      }
+      .nav small {
+        margin-left: auto;
+        color: var(--faint);
+        font-size: 10px;
+        font-variant-numeric: tabular-nums;
+        white-space: nowrap;
+      }
+      .mobile-nav {
+        display: none;
+        width: 100%;
+      }
+      .sidefoot {
+        margin-top: auto;
+        color: var(--faint);
+        font-size: 11px;
+        padding: 10px 8px;
+        line-height: 1.65;
+      }
+      .main {
+        margin-left: 226px;
+        min-height: 100vh;
+      }
+      header {
+        position: sticky;
+        top: 0;
+        z-index: 4;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        flex-wrap: wrap;
+        padding: 12px 24px;
+        background: #11150fef;
+        backdrop-filter: blur(12px);
+        border-bottom: 1px solid var(--line);
+      }
+      .farm {
+        min-width: 0;
+        overflow-wrap: anywhere;
+      }
+      .farm b {
+        font-size: 16px;
+      }
+      .farm div {
+        color: var(--muted);
+        font-size: 12px;
+      }
+      .header-tools,
+      .toolbar,
+      .actions {
+        display: flex;
+        gap: 7px;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+      .pill,
+      .badge {
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        color: var(--muted);
+        padding: 4px 9px;
+        font-size: 11px;
+        white-space: nowrap;
+      }
+      .pill b {
+        color: var(--text);
+      }
+      .import-button {
+        background: transparent;
+      }
+      .content {
+        max-width: 1540px;
+        padding: 23px;
+        margin: auto;
+      }
+      .title-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: end;
+        gap: 12px;
+        flex-wrap: wrap;
+        margin-bottom: 16px;
+      }
+      .title-row h1 {
+        font-size: 25px;
+        margin: 0 0 2px;
+      }
+      .sub {
+        color: var(--muted);
+        font-size: 12px;
+      }
+      .grid {
+        display: grid;
+        gap: 12px;
+      }
+      .stats {
+        grid-template-columns: repeat(auto-fit, minmax(166px, 1fr));
+        margin: 15px 0;
+      }
+      .card {
+        background: linear-gradient(145deg, #20271d, #191f17);
+        border: 1px solid var(--line);
+        border-radius: 13px;
+        padding: 14px;
+        box-shadow: var(--shadow);
+      }
+      .stat {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        min-height: 100px;
+      }
+      .stat[data-go] {
+        cursor: pointer;
+        transition:
+          border-color 0.15s ease,
+          transform 0.15s ease;
+      }
+      .stat[data-go]:hover {
+        border-color: #739859;
+        transform: translateY(-1px);
+      }
+      .stat[data-go]:focus-visible {
+        outline: 2px solid var(--green);
+        outline-offset: 3px;
+      }
+      .stat-label {
+        font-size: 11px;
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 0.6px;
+      }
+      .stat-number {
+        font-size: 23px;
+        font-weight: 800;
+        font-variant-numeric: tabular-nums;
+      }
+      .stat-number small {
+        font-size: 13px;
+        color: var(--muted);
+        font-weight: 500;
+      }
+      .stat-sub {
+        font-size: 11px;
+        color: var(--faint);
+      }
+      .ring {
+        width: 47px;
+        height: 47px;
+        flex: none;
+      }
+      .ring text {
+        fill: var(--text);
+        font-weight: 750;
+        font-size: 11px;
+      }
+      .today-layout {
+        display: grid;
+        gap: 14px;
+        min-width: 0;
+      }
+      .today-pair {
+        align-items: start;
+      }
+      .today-card {
+        min-width: 0;
+      }
+      .today-card > .section-head:first-child {
+        margin-top: 0;
+      }
+      .today-list,
+      .today-list .rows {
+        min-width: 0;
+      }
+      .today-list .row {
+        grid-template-columns: 34px minmax(0, 1fr);
+      }
+      .today-list .row-main {
+        grid-column: 2;
+      }
+      .today-list .row > .right {
+        grid-column: 2;
+        min-width: 0;
+        max-width: 100%;
+        justify-content: flex-start;
+      }
+      .today-list .status-badge {
+        max-width: 100%;
+      }
+      .perfection-summary {
+        display: flex;
+        align-items: center;
+        gap: 17px;
+        margin-bottom: 14px;
+      }
+      .perfection-copy {
+        flex: 1;
+        min-width: 0;
+      }
+      .two {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+      .three {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+      .feature-nav {
+        margin: 8px 0 22px;
+      }
+      .feature-grid {
+        grid-template-columns: repeat(auto-fit, minmax(235px, 1fr));
+      }
+      .overview-panels {
+        gap: 18px;
+        margin: 16px 0 20px;
+        align-items: stretch;
+      }
+      .overview-items {
+        display: grid;
+        gap: 8px;
+        min-width: 0;
+      }
+      .feature-card {
+        display: grid;
+        grid-template-columns: 44px minmax(0, 1fr);
+        align-items: start;
+        gap: 12px;
+        min-width: 0;
+        background: linear-gradient(145deg, #20271d, #191f17);
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        padding: 15px;
+        box-shadow: var(--shadow);
+      }
+      .feature-icon {
+        width: 42px;
+        height: 42px;
+        display: grid;
+        place-items: center;
+        border: 1px solid #596c4c;
+        border-radius: 12px;
+        background: #293a25;
+        color: var(--green);
+      }
+      .feature-icon svg {
+        width: 22px;
+        height: 22px;
+        stroke-width: 1.7;
+      }
+      .feature-card h3 {
+        margin: 1px 0 5px;
+        font-size: 15px;
+      }
+      .feature-card p {
+        margin: 0 0 10px;
+        color: var(--muted);
+        font-size: 12px;
+      }
+      .feature-links {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+      }
+      .feature-links a {
+        padding: 4px 8px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: #151a13;
+        color: var(--text);
+        font-size: 11px;
+      }
+      .feature-links a:hover {
+        border-color: var(--green);
+        background: #2b3626;
+      }
+      .section-head {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        align-items: center;
+        flex-wrap: wrap;
+        margin: 20px 0 11px;
+      }
+      .section-head h2 {
+        font-size: 17px;
+        margin: 0;
+      }
+      .color-legend {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 7px 13px;
+        margin: 0 0 15px;
+        padding: 9px 11px;
+        border: 1px solid var(--line);
+        border-radius: 11px;
+        background: #171c15;
+      }
+      .color-legend-title {
+        color: var(--muted);
+        font-size: 11px;
+        font-weight: 750;
+      }
+      .color-key {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        color: var(--muted);
+        font-size: 11px;
+      }
+      .color-dot {
+        width: 19px;
+        height: 19px;
+        display: inline-grid;
+        place-items: center;
+        flex: none;
+        border: 1px solid currentColor;
+        border-radius: 50%;
+        font-size: 10px;
+        font-weight: 850;
+      }
+      .color-dot.done {
+        color: var(--state-done);
+        background: #273c24;
+      }
+      .color-dot.progress {
+        color: var(--state-progress);
+        background: #40351f;
+      }
+      .color-dot.action {
+        color: var(--state-action);
+        background: #492a25;
+      }
+      .color-dot.idle {
+        color: var(--state-idle);
+        background: #282e27;
+      }
+      .color-dot.info {
+        color: var(--state-info);
+        background: #243546;
+      }
+      .welcome-row {
+        align-items: center;
+        margin-bottom: 16px;
+        padding: 14px 17px;
+        border: 1px solid #526a43;
+        border-radius: 14px;
+        background: linear-gradient(115deg, #202b1d, #1b2118 62%, #26331f);
+        box-shadow: var(--shadow);
+      }
+      .welcome-row > div:first-child {
+        min-width: 0;
+      }
+      .welcome-eyebrow {
+        margin: 0 0 3px;
+        color: var(--state-done);
+        font-size: 10px;
+        font-weight: 800;
+        letter-spacing: 0.9px;
+        text-transform: uppercase;
+      }
+      .welcome-row h1 {
+        margin: 0;
+        font-size: clamp(21px, 2.4vw, 29px);
+        overflow-wrap: anywhere;
+      }
+      .welcome-ornament {
+        width: 44px;
+        height: 44px;
+        flex: none;
+        color: var(--state-progress);
+        opacity: 0.88;
+      }
+      .welcome-ornament svg {
+        display: block;
+        width: 100%;
+        height: 100%;
+      }
+      .panel-title {
+        font-size: 14px;
+        font-weight: 750;
+        margin: 0 0 9px;
+      }
+      .rows {
+        display: grid;
+        gap: 7px;
+      }
+      .row {
+        display: grid;
+        grid-template-columns: 34px minmax(0, 1fr) auto;
+        gap: 10px;
+        align-items: center;
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 8px 10px;
+        min-width: 0;
+      }
+      .right {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        flex-wrap: wrap;
+        gap: 5px;
+        min-width: 0;
+        max-width: 100%;
+      }
+      .status-badge {
+        max-width: 190px;
+        white-space: normal;
+        overflow-wrap: anywhere;
+        text-align: left;
+        line-height: 1.25;
+      }
+      .row.done {
+        background: #192019;
+        border-inline-start: 3px solid var(--state-done);
+      }
+      .row.alert,
+      .grid-item.alert {
+        border-color: #8b493c;
+        background: #30211f;
+      }
+      .row.alert {
+        border-inline-start: 3px solid var(--state-action);
+      }
+      .stat.complete {
+        border-top: 3px solid var(--state-done);
+      }
+      .stat.progressing {
+        border-top: 3px solid var(--state-progress);
+      }
+      .stat.not-started {
+        border-top: 3px solid var(--state-idle);
+      }
+      .row-main {
+        min-width: 0;
+      }
+      .name {
+        font-weight: 650;
+        overflow-wrap: anywhere;
+      }
+      .en {
+        color: var(--faint);
+        font-size: 11px;
+      }
+      .meta {
+        display: flex;
+        gap: 5px;
+        align-items: center;
+        flex-wrap: wrap;
+        margin-top: 4px;
+        color: var(--muted);
+        font-size: 11px;
+      }
+      .chip {
+        border: 1px solid #3a4534;
+        background: #252d21;
+        color: #bdc6b2;
+        border-radius: 6px;
+        padding: 1px 6px;
+        font-size: 10px;
+      }
+      .chip.good {
+        background: #263d26;
+        border-color: #476e40;
+        color: #d1edbd;
+      }
+      .chip.warn {
+        background: #443721;
+        border-color: #8a6636;
+        color: #f3d997;
+      }
+      .chip.bad {
+        background: #452b28;
+        border-color: #74433c;
+        color: #f2b0a6;
+      }
+      .chip.blue {
+        background: #243546;
+        border-color: #416581;
+        color: #bbdef5;
+      }
+      .item-icon,
+      .portrait,
+      .monster-icon,
+      .bundle-icon {
+        display: inline-block;
+        image-rendering: pixelated;
+        background-repeat: no-repeat;
+        vertical-align: middle;
+        flex: none;
+      }
+      .item-icon {
+        width: 32px;
+        height: 32px;
+        background-size: 768px 1248px;
+      }
+      .item-icon.sheet1 {
+        background-size: 256px 640px;
+      }
+      .item-icon.sheet2 {
+        width: 32px;
+        height: 64px;
+        background-size: 256px 2944px;
+      }
+      .item-icon.small {
+        width: 28px;
+        height: 28px;
+        background-size: 672px 1092px;
+      }
+      .item-icon.small.sheet1 {
+        background-size: 224px 560px;
+      }
+      .item-icon.small.sheet2 {
+        width: 28px;
+        height: 56px;
+        background-size: 224px 2576px;
+      }
+      .row > .item-icon,
+      .row > .portrait,
+      .row > .monster-icon,
+      .row > .bundle-icon,
+      .row > .ui-icon {
+        align-self: center;
+        justify-self: center;
+      }
+      .portrait.compact {
+        width: 32px;
+        height: 32px;
+        background-size: 192px 192px;
+      }
+      .portrait {
+        width: 48px;
+        height: 48px;
+        background-size: 288px 288px;
+      }
+      .monster-icon {
+        width: 32px;
+        height: 32px;
+        background-size: 192px 64px;
+      }
+      .bundle-icon {
+        width: 32px;
+        height: 32px;
+        background-size: 640px 96px;
+      }
+      .ui-icon {
+        display: inline-block;
+        width: 16px;
+        height: 16px;
+        background: var(--spr-ui) no-repeat;
+        image-rendering: pixelated;
+        background-size: 256px 32px;
+        vertical-align: middle;
+        flex: none;
+      }
+      .heart-icon {
+        width: 20px;
+        height: 20px;
+        background-size: 320px 40px;
+      }
+      .bar {
+        height: 6px;
+        border-radius: 10px;
+        background: #30392c;
+        overflow: hidden;
+        margin-top: 8px;
+      }
+      .bar i {
+        display: block;
+        height: 100%;
+        background: linear-gradient(90deg, #687364, #9aa48f);
+        border-radius: inherit;
+      }
+      .bar.done i {
+        background: linear-gradient(90deg, #72aa51, #b6df83);
+      }
+      .bar.progress i {
+        background: linear-gradient(90deg, #bc8b36, #f2d274);
+      }
+      .bar.action i {
+        background: linear-gradient(90deg, #b9554a, #eb8b77);
+      }
+      .bar.info i {
+        background: linear-gradient(90deg, #4c80a6, #83bde2);
+      }
+      .badge.ok {
+        color: #d5efbd;
+        background: #273c24;
+        border-color: #486b3c;
+      }
+      .badge.warn {
+        color: #f3d992;
+        background: #40351f;
+        border-color: #775d2c;
+      }
+      .badge.no {
+        color: #c1c6bb;
+        background: #292e28;
+        border-color: #4b5547;
+      }
+      .badge.alert {
+        color: #ffb3a5;
+        background: #492a25;
+        border-color: #8b493c;
+      }
+      .empty {
+        border: 1px dashed var(--line);
+        border-radius: 10px;
+        padding: 20px;
+        color: var(--faint);
+        text-align: center;
+      }
+      .bundles {
+        grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
+      }
+      .bundle {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 11px;
+        padding: 12px;
+      }
+      .bundle.complete {
+        border-color: #4c7141;
+        background: #1c281b;
+      }
+      .bundle-head {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        min-width: 0;
+      }
+      .bundle-title {
+        flex: 1;
+        min-width: 0;
+      }
+      .today-bundle-link {
+        display: flex;
+        flex: 1;
+        align-items: center;
+        gap: 8px;
+        min-width: 0;
+        color: inherit;
+      }
+      .today-bundle-link:hover b {
+        color: var(--green);
+      }
+      .today-bundle-name {
+        display: grid;
+        min-width: 0;
+      }
+      .today-bundle-name b {
+        overflow-wrap: anywhere;
+      }
+      .overview-bundle-head {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 8px;
+        margin-bottom: 5px;
+      }
+      .overview-bundle-head b {
+        min-width: 0;
+        flex: 1;
+        overflow-wrap: anywhere;
+      }
+      .overview-bundle-card {
+        position: relative;
+        min-width: 0;
+        transition: border-color 0.15s ease;
+      }
+      .overview-bundle-card:hover {
+        border-color: #739859;
+      }
+      .overview-bundle-link {
+        display: block;
+        min-width: 0;
+        padding-right: 27px;
+        color: inherit;
+      }
+      .overview-bundle-link:hover .overview-bundle-head b {
+        color: var(--green);
+      }
+      .overview-bundle-link:focus-visible {
+        outline-offset: 4px;
+      }
+      .overview-bundle-icon {
+        display: inline-flex;
+        flex: none;
+      }
+      .bundle-open-hint {
+        display: inline-block;
+        margin-top: 8px;
+        color: var(--blue);
+        font-size: 11px;
+      }
+      .overview-bundle-card > .bundle-tooltip {
+        position: absolute;
+        top: 14px;
+        right: 14px;
+        z-index: 3;
+      }
+      .bundle-room {
+        min-width: 0;
+        margin-bottom: 22px;
+        scroll-margin-top: 90px;
+      }
+      .bundle-room:focus-visible,
+      .bundle[id]:focus-visible {
+        outline: 2px solid var(--green);
+        outline-offset: 4px;
+      }
+      .bundle-tooltip .tip-pop {
+        width: min(300px, calc(100vw - 36px));
+        max-height: min(330px, 70vh);
+        overflow-y: auto;
+      }
+      .museum-source-tip .tip-pop {
+        width: min(340px, calc(100vw - 36px));
+        max-height: min(360px, 70vh);
+        overflow-y: auto;
+      }
+      .museum-source-preview {
+        min-width: 0;
+        margin: 3px 0 4px;
+        color: var(--muted);
+        font-size: 10px;
+        line-height: 1.35;
+        overflow-wrap: anywhere;
+      }
+      .museum-source-preview b {
+        display: inline;
+        margin: 0;
+        color: var(--blue);
+        font-weight: 700;
+      }
+      .museum-source-more {
+        white-space: nowrap;
+        color: var(--faint);
+        font-weight: 700;
+      }
+      .grid-item .museum-source-preview {
+        display: -webkit-box;
+        overflow: hidden;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 3;
+      }
+      .bundle-tip-link {
+        display: flex;
+        justify-content: space-between;
+        gap: 10px;
+        color: var(--blue);
+        text-decoration: none;
+      }
+      .bundle-tip-link:hover {
+        color: var(--green);
+      }
+      .bundle-tip-link b {
+        flex: none;
+      }
+      .bundle-items {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 5px;
+        margin-top: 10px;
+      }
+      .bundle-item {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        max-width: 100%;
+        gap: 3px;
+        border: 1px solid var(--line);
+        border-radius: 7px;
+        padding: 3px 5px;
+        font-size: 10px;
+        color: var(--muted);
+      }
+      .bundle-item .name {
+        flex: 1 1 88px;
+        min-width: 0;
+      }
+      .bundle-item.have {
+        background: #263b25;
+        border-color: #456d3d;
+        color: #d1e9bb;
+      }
+      .bundle-room .bundle-items {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+        align-items: stretch;
+        gap: 7px;
+      }
+      .bundle-room .bundle-item {
+        display: grid;
+        grid-template-columns: 28px minmax(0, 1fr);
+        grid-template-rows: minmax(30px, auto) 26px;
+        align-items: center;
+        align-content: stretch;
+        width: 100%;
+        min-height: 72px;
+        gap: 4px 5px;
+        padding: 5px 6px;
+      }
+      .bundle-room .bundle-item > .item-icon {
+        grid-row: 1;
+        grid-column: 1;
+        justify-self: center;
+      }
+      .bundle-room .bundle-item > .name {
+        grid-row: 1;
+        grid-column: 2;
+        align-self: center;
+        flex: none;
+        overflow-wrap: anywhere;
+      }
+      .bundle-room .bundle-item > .acq-tip {
+        grid-row: 2;
+        grid-column: 1;
+      }
+      .bundle-room .bundle-item > .annotation-actions {
+        grid-row: 2;
+        grid-column: 2;
+        justify-self: end;
+      }
+      .bundle-room .bundle-item > .note-preview {
+        grid-column: 1 / -1;
+      }
+      .reward-card {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        min-height: 48px;
+        margin-top: 12px;
+        padding: 7px 10px;
+        border: 1px solid #806b37;
+        border-left: 4px solid #e0b64f;
+        border-radius: 9px;
+        background: linear-gradient(105deg, #3b321f, #292d22);
+        color: var(--text);
+        font-size: 12px;
+      }
+      .reward-card-label {
+        flex: none;
+        padding: 3px 7px;
+        border-radius: 6px;
+        background: #58451f;
+        color: #f3d992;
+        font-size: 10px;
+        font-weight: 800;
+        letter-spacing: 0.35px;
+        text-transform: uppercase;
+      }
+      .reward-card-icon {
+        display: grid;
+        place-items: center;
+        width: 32px;
+        height: 32px;
+        flex: none;
+        overflow: hidden;
+      }
+      .reward-card-icon .item-icon {
+        filter: drop-shadow(0 2px 3px #0008);
+      }
+      .reward-card-icon .item-icon.sheet2 {
+        position: relative;
+        top: -5px;
+        transform: scale(0.56);
+      }
+      .reward-card-name {
+        min-width: 0;
+        color: #f5f0db;
+        font-weight: 700;
+        overflow-wrap: anywhere;
+      }
+      .quality {
+        color: var(--gold);
+      }
+      .tabs {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        flex-wrap: wrap;
+        margin: 0 0 17px;
+      }
+      .tabs button {
+        padding: 8px 13px;
+      }
+      button[data-filter="done"].active {
+        color: #e4f2d7;
+        background: #273c24;
+        border-color: #64894f;
+      }
+      button[data-filter="missing"].active {
+        color: #e0e4dc;
+        background: #303830;
+        border-color: #687362;
+      }
+      .actions input[type="search"] {
+        width: min(250px, 60vw);
+      }
+      .icon-grid {
+        grid-template-columns: repeat(auto-fill, minmax(132px, 1fr));
+      }
+      .grid-item {
+        min-width: 0;
+        min-height: 112px;
+        text-align: center;
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 11px;
+        padding: 10px 7px;
+        position: relative;
+      }
+      .grid-item .item-icon {
+        margin: 0 auto 4px;
+      }
+      .grid-item .name {
+        font-size: 11px;
+        display: block;
+      }
+      .grid-item .badge {
+        position: absolute;
+        top: 5px;
+        right: 5px;
+      }
+      .item-footer {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 5px;
+        margin-top: 5px;
+      }
+      .people {
+        grid-template-columns: repeat(auto-fill, minmax(245px, 1fr));
+      }
+      .person {
+        display: grid;
+        grid-template-columns: 48px minmax(0, 1fr);
+        gap: 8px 10px;
+        align-items: start;
+      }
+      .person-content {
+        min-width: 0;
+      }
+      .person-hearts {
+        grid-column: 1 / -1;
+        display: flex;
+        justify-content: center;
+        min-width: 0;
+      }
+      .hearts {
+        display: inline-flex;
+        align-items: center;
+        gap: 1px;
+        vertical-align: middle;
+        line-height: 1;
+      }
+      .goal {
+        margin: 8px 0;
+      }
+      .goal-head {
+        display: flex;
+        justify-content: space-between;
+        gap: 10px;
+      }
+      .goal-head b,
+      .person-content > b {
+        min-width: 0;
+        overflow-wrap: anywhere;
+      }
+      .goal-head .badge {
+        flex: none;
+      }
+      .form {
+        display: flex;
+        gap: 7px;
+        flex-wrap: wrap;
+        margin: 9px 0;
+      }
+      .form input[type="text"] {
+        flex: 1 1 180px;
+      }
+      .task {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        padding: 7px;
+        border-bottom: 1px solid #30382c;
+      }
+      .task.done {
+        background: #192019;
+        border-bottom-color: #3f5c37;
+      }
+      .task input {
+        accent-color: #8fbe6c;
+      }
+      .toast {
+        position: fixed;
+        bottom: max(20px, env(safe-area-inset-bottom));
+        left: 50%;
+        width: max-content;
+        max-width: calc(100vw - 32px);
+        transform: translateX(-50%);
+        overflow-wrap: anywhere;
+        text-align: center;
+        background: #293a25;
+        border: 1px solid var(--green);
+        padding: 9px 14px;
+        border-radius: 9px;
+        opacity: 0;
+        transition: 0.2s;
+        z-index: 10;
+      }
+      .toast.show {
+        opacity: 1;
+      }
+      .error {
+        border: 1px solid var(--red);
+        background: #38221f;
+        padding: 18px;
+        border-radius: 12px;
+      }
+      .error h2 {
+        color: #ffb3a5;
+      }
+      .footer-note {
+        font-size: 11px;
+        color: var(--faint);
+        margin-top: 16px;
+        overflow-wrap: anywhere;
+      }
+      .hidden {
+        display: none !important;
+      }
+      .annotation-actions {
+        display: flex;
+        gap: 4px;
+        align-items: center;
+      }
+      .annotation-actions button {
+        padding: 3px 7px;
+        min-width: 29px;
+        font-size: 12px;
+        color: var(--muted);
+      }
+      .annotation-actions button.marked {
+        color: var(--gold);
+        border-color: #806b37;
+        background: #382f1d;
+      }
+      .annotation-actions button.has-note {
+        color: var(--blue);
+        border-color: #416581;
+      }
+      .note-preview {
+        display: block;
+        color: #e5cc88;
+        font-size: 11px;
+        margin-top: 4px;
+        overflow-wrap: anywhere;
+      }
+      .right > .note-preview {
+        flex: 1 1 100%;
+      }
+      .acq-tip {
+        position: relative;
+        display: inline-block;
+      }
+      .acq-tip summary {
+        cursor: pointer;
+        list-style: none;
+        width: 26px;
+        height: 26px;
+        border: 1px solid #5689a7;
+        border-radius: 50%;
+        display: grid;
+        place-items: center;
+        background: #203442;
+        color: #b8def3;
+        font-size: 13px;
+        font-weight: 850;
+        box-shadow: 0 0 0 1px #83bde21c;
+        transition:
+          background 0.15s ease,
+          border-color 0.15s ease,
+          box-shadow 0.15s ease,
+          transform 0.15s ease;
+      }
+      .acq-tip summary:hover {
+        transform: translateY(-1px);
+        border-color: var(--blue);
+        background: #2d5061;
+        color: #fff;
+        box-shadow: 0 0 0 3px #83bde22b;
+      }
+      .acq-tip[open] > summary {
+        border-color: var(--blue);
+        background: #315568;
+        color: #fff;
+      }
+      .museum-source-tip summary {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        width: auto;
+        min-width: 28px;
+        height: 28px;
+        padding: 0 8px;
+        border-radius: 8px;
+        white-space: nowrap;
+        font-size: 11px;
+      }
+      .museum-source-tip summary span {
+        font-size: 14px;
+        font-weight: 900;
+      }
+      .acq-tip summary::-webkit-details-marker {
+        display: none;
+      }
+      .tip-pop {
+        position: absolute;
+        right: 0;
+        top: 27px;
+        z-index: 8;
+        width: min(300px, 78vw);
+        padding: 10px 12px;
+        background: #11170f;
+        border: 1px solid #596c4c;
+        border-radius: 9px;
+        box-shadow: var(--shadow);
+        color: var(--muted);
+        font-size: 11px;
+      }
+      .tip-pop b {
+        display: block;
+        color: var(--text);
+        margin-bottom: 4px;
+      }
+      .tip-line {
+        padding: 2px 0;
+      }
+      .grid-item .annotation-actions {
+        justify-content: center;
+        margin-top: 5px;
+      }
+      .bundle-item .annotation-actions button {
+        padding: 0 3px;
+        min-width: 19px;
+        font-size: 10px;
+      }
+      .note-modal {
+        position: fixed;
+        inset: 0;
+        z-index: 20;
+        background: #070a07c9;
+        display: grid;
+        place-items: center;
+        overflow-y: auto;
+        padding: max(15px, env(safe-area-inset-top))
+          max(15px, env(safe-area-inset-right))
+          max(15px, env(safe-area-inset-bottom))
+          max(15px, env(safe-area-inset-left));
+      }
+      .note-dialog {
+        width: min(430px, 100%);
+        max-height: calc(100vh - 30px);
+        max-height: calc(100dvh - 30px);
+        overflow-y: auto;
+        background: var(--panel);
+        border: 1px solid #566748;
+        border-radius: 14px;
+        padding: 17px;
+        box-shadow: var(--shadow);
+      }
+      .note-dialog h2 {
+        font-size: 17px;
+        margin: 0 0 5px;
+      }
+      .note-dialog textarea {
+        display: block;
+        width: 100%;
+        min-height: 100px;
+        resize: vertical;
+        margin: 12px 0;
+        background: #11170f;
+        border: 1px solid var(--line);
+        border-radius: 9px;
+        color: var(--text);
+        padding: 10px;
+        font: inherit;
+      }
+      .note-dialog .actions {
+        justify-content: flex-end;
+      }
+      @media (max-width: 900px) {
+        .sidebar {
+          position: sticky;
+          top: 0;
+          width: 100%;
+          height: auto;
+          padding: 7px 8px;
+          display: block;
+          border-right: 0;
+          border-bottom: 1px solid var(--line);
+        }
+        .brand {
+          padding: 1px 4px 7px;
+          font-size: 14px;
+        }
+        .brand-mark {
+          width: 28px;
+          height: 28px;
+        }
+        .nav {
+          display: none;
+        }
+        .mobile-nav {
+          display: block;
+          min-height: 40px;
+          background: #151a13;
+          border-color: #596c4c;
+        }
+        .sidefoot {
+          display: none;
+        }
+        .main {
+          margin-left: 0;
+        }
+        header {
+          position: static;
+          padding: 10px 13px;
+        }
+        .content {
+          padding: 14px;
+        }
+        .two,
+        .three {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+        .title-row h1 {
+          font-size: 21px;
+        }
+      }
+      @media (max-width: 600px) {
+        .content {
+          padding: 12px;
+        }
+        .welcome-row {
+          padding: 12px;
+        }
+        .welcome-ornament {
+          width: 34px;
+          height: 34px;
+        }
+        .today-layout {
+          gap: 12px;
+        }
+        .two,
+        .three {
+          grid-template-columns: 1fr;
+        }
+        .title-row,
+        .section-head {
+          align-items: flex-start;
+        }
+        .actions input[type="search"] {
+          flex: 1 1 100%;
+          width: 100%;
+        }
+        .form input[type="text"],
+        .form select {
+          flex: 1 1 100%;
+        }
+        .right {
+          justify-content: flex-start;
+        }
+        .note-dialog {
+          max-height: calc(100vh - 24px);
+          max-height: calc(100dvh - 24px);
+        }
+      }
+      @media (max-width: 450px) {
+        button {
+          min-height: 40px;
+        }
+        .annotation-actions button {
+          min-height: 34px;
+          min-width: 36px;
+        }
+        .bundle-item .annotation-actions button {
+          min-height: 28px;
+          min-width: 24px;
+        }
+        .nav a {
+          min-height: 38px;
+          align-items: center;
+        }
+        .acq-tip summary {
+          width: 32px;
+          height: 32px;
+        }
+        .museum-source-tip summary {
+          width: auto;
+          min-height: 32px;
+          height: 32px;
+        }
+        header {
+          align-items: flex-start;
+        }
+        .farm {
+          width: 100%;
+        }
+        .header-tools {
+          width: 100%;
+          gap: 5px;
+        }
+        .header-tools select {
+          flex: 1;
+          max-width: 100%;
+        }
+        .pill {
+          font-size: 10px;
+        }
+        .content {
+          padding: 11px;
+        }
+        .stats {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 8px;
+        }
+        .stat {
+          padding: 10px;
+          min-height: 80px;
+        }
+        .stat-number {
+          font-size: 20px;
+        }
+        .ring {
+          width: 39px;
+          height: 39px;
+        }
+        .row {
+          grid-template-columns: 32px minmax(0, 1fr);
+          gap: 7px;
+          padding: 8px;
+        }
+        .row > .right {
+          grid-column: 2;
+          justify-content: flex-start;
+        }
+        .item-icon {
+          width: 28px;
+          height: 28px;
+          background-size: 672px 1092px;
+        }
+        .item-icon.sheet1 {
+          background-size: 224px 560px;
+        }
+        .item-icon.sheet2 {
+          width: 28px;
+          height: 56px;
+          background-size: 224px 2576px;
+        }
+        .icon-grid {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+        .actions {
+          width: 100%;
+        }
+        .actions input[type="search"] {
+          flex: 1;
+          width: auto;
+        }
+        .bundles {
+          grid-template-columns: 1fr;
+        }
+        .people {
+          grid-template-columns: 1fr;
+        }
+        .section-head {
+          margin-top: 16px;
+        }
+      }
+      @media (max-width: 360px) {
+        .content {
+          padding: 8px;
+        }
+        .stats {
+          grid-template-columns: 1fr;
+        }
+        .pill {
+          white-space: normal;
+        }
+        .note-modal {
+          padding: 8px;
+        }
+        .note-dialog {
+          padding: 13px;
+          max-height: calc(100vh - 16px);
+          max-height: calc(100dvh - 16px);
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        html {
+          scroll-behavior: auto;
+        }
+        *,
+        *::before,
+        *::after {
+          scroll-behavior: auto !important;
+          animation-duration: 0.01ms !important;
+          transition-duration: 0.01ms !important;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Lucide icons v1.70.0, ISC license; see assets/icons/LICENSE. -->
+    <svg
+      class="icon-sprite"
+      aria-hidden="true"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <symbol
+        id="icon-house"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8" />
+        <path
+          d="M3 10a2 2 0 0 1 .709-1.528l7-6a2 2 0 0 1 2.582 0l7 6A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"
+        />
+      </symbol>
+      <symbol
+        id="icon-calendar-days"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <path d="M8 2v3" />
+        <path d="M16 2v3" />
+        <rect x="3" y="3" width="18" height="18" rx="2" />
+        <path d="M3 9h18" />
+        <path d="M8 13h.01" />
+        <path d="M12 13h.01" />
+        <path d="M16 13h.01" />
+        <path d="M8 17h.01" />
+        <path d="M12 17h.01" />
+        <path d="M16 17h.01" />
+      </symbol>
+      <symbol
+        id="icon-sparkles"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <path
+          d="M11.017 2.814a1 1 0 0 1 1.966 0l1.051 5.558a2 2 0 0 0 1.594 1.594l5.558 1.051a1 1 0 0 1 0 1.966l-5.558 1.051a2 2 0 0 0-1.594 1.594l-1.051 5.558a1 1 0 0 1-1.966 0l-1.051-5.558a2 2 0 0 0-1.594-1.594l-5.558-1.051a1 1 0 0 1 0-1.966l5.558-1.051a2 2 0 0 0 1.594-1.594z"
+        />
+        <path d="M20 2v4" />
+        <path d="M22 4h-4" />
+        <circle cx="4" cy="20" r="2" />
+      </symbol>
+      <symbol
+        id="icon-package-open"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <path d="M12 22v-9" />
+        <path
+          d="M15.17 2.21a1.67 1.67 0 0 1 1.63 0L21 4.57a1.93 1.93 0 0 1 0 3.36L8.82 14.79a1.655 1.655 0 0 1-1.64 0L3 12.43a1.93 1.93 0 0 1 0-3.36z"
+        />
+        <path
+          d="M20 13v3.87a2.06 2.06 0 0 1-1.11 1.83l-6 3.08a1.93 1.93 0 0 1-1.78 0l-6-3.08A2.06 2.06 0 0 1 4 16.87V13"
+        />
+        <path
+          d="M21 12.43a1.93 1.93 0 0 0 0-3.36L8.83 2.2a1.64 1.64 0 0 0-1.63 0L3 4.57a1.93 1.93 0 0 0 0 3.36l12.18 6.86a1.636 1.636 0 0 0 1.63 0z"
+        />
+      </symbol>
+      <symbol
+        id="icon-sword"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <path d="m11 19-6-6" />
+        <path d="m5 21-2-2" />
+        <path d="m8 16-4 4" />
+        <path
+          d="M9.5 17.5 20.414 6.586A2 2 0 0021 5.172V3h-2.172a2 2 0 00-1.414.586L6.5 14.5"
+        />
+      </symbol>
+      <symbol
+        id="icon-landmark"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <path d="M10 18v-7" />
+        <path
+          d="M11.119 2.205a2 2 0 0 1 1.762 0l7.84 3.846A.5.5 0 0 1 20.5 7h-17a.5.5 0 0 1-.22-.949z"
+        />
+        <path d="M14 18v-7" />
+        <path d="M18 18v-7" />
+        <path d="M3 22h18" />
+        <path d="M6 18v-7" />
+      </symbol>
+      <symbol
+        id="icon-fish"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <path
+          d="M6.5 12c.94-3.46 4.94-6 8.5-6 3.56 0 6.06 2.54 7 6-.94 3.47-3.44 6-7 6s-7.56-2.53-8.5-6Z"
+        />
+        <path d="M18 12v.5" />
+        <path d="M16 17.93a9.77 9.77 0 0 1 0-11.86" />
+        <path
+          d="M7 10.67C7 8 5.58 5.97 2.73 5.5c-1 1.5-1 5 .23 6.5-1.24 1.5-1.24 5-.23 6.5C5.58 18.03 7 16 7 13.33"
+        />
+        <path
+          d="M10.46 7.26C10.2 5.88 9.17 4.24 8 3h5.8a2 2 0 0 1 1.98 1.67l.23 1.4"
+        />
+        <path
+          d="m16.01 17.93-.23 1.4A2 2 0 0 1 13.8 21H9.5a5.96 5.96 0 0 0 1.49-3.98"
+        />
+      </symbol>
+      <symbol
+        id="icon-package"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <path
+          d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z"
+        />
+        <path d="M12 22V12" />
+        <polyline points="3.29 7 12 12 20.71 7" />
+        <path d="m7.5 4.27 9 5.15" />
+      </symbol>
+      <symbol
+        id="icon-cooking-pot"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <path d="M2 12h20" />
+        <path d="M20 12v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-8" />
+        <path d="m4 8 16-4" />
+        <path
+          d="m8.86 6.78-.45-1.81a2 2 0 0 1 1.45-2.43l1.94-.48a2 2 0 0 1 2.43 1.46l.45 1.8"
+        />
+      </symbol>
+      <symbol
+        id="icon-hammer"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <path d="m15 12-9.373 9.373a1 1 0 0 1-3.001-3L12 9" />
+        <path d="m18 15 4-4" />
+        <path
+          d="m21.5 11.5-1.914-1.914A2 2 0 0 1 19 8.172v-.344a2 2 0 0 0-.586-1.414l-1.657-1.657A6 6 0 0 0 12.516 3H9l1.243 1.243A6 6 0 0 1 12 8.485V10l2 2h1.172a2 2 0 0 1 1.414.586L18.5 14.5"
+        />
+      </symbol>
+      <symbol
+        id="icon-users-round"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <path d="M18 21a8 8 0 0 0-16 0" />
+        <circle cx="10" cy="8" r="5" />
+        <path d="M22 20c0-3.37-2-6.5-4-8a5 5 0 0 0-.45-8.3" />
+      </symbol>
+      <symbol
+        id="icon-bookmark"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <path
+          d="M17 3a2 2 0 0 1 2 2v15a1 1 0 0 1-1.496.868l-4.512-2.578a2 2 0 0 0-1.984 0l-4.512 2.578A1 1 0 0 1 5 20V5a2 2 0 0 1 2-2z"
+        />
+      </symbol>
+      <symbol
+        id="icon-target"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <circle cx="12" cy="12" r="10" />
+        <circle cx="12" cy="12" r="6" />
+        <circle cx="12" cy="12" r="2" />
+      </symbol>
+      <symbol
+        id="icon-calendar-check"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <path d="M8 2v3" />
+        <path d="M16 2v3" />
+        <rect x="3" y="3" width="18" height="18" rx="2" />
+        <path d="M3 9h18" />
+        <path d="m9 15 2 2 4-4" />
+      </symbol>
+      <symbol
+        id="icon-chart-no-axes-column-increasing"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <path d="M5 21v-6" />
+        <path d="M12 21V9" />
+        <path d="M19 21V3" />
+      </symbol>
+      <symbol
+        id="icon-library-big"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <rect width="8" height="18" x="3" y="3" rx="1" />
+        <path d="M7 3v18" />
+        <path
+          d="M20.4 18.9c.2.5-.1 1.1-.6 1.3l-1.9.7c-.5.2-1.1-.1-1.3-.6L11.1 5.1c-.2-.5.1-1.1.6-1.3l1.9-.7c.5-.2 1.1.1 1.3.6Z"
+        />
+      </symbol>
+      <symbol
+        id="icon-heart-handshake"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <path
+          d="M19.414 14.414C21 12.828 22 11.5 22 9.5a5.5 5.5 0 0 0-9.591-3.676.6.6 0 0 1-.818.001A5.5 5.5 0 0 0 2 9.5c0 2.3 1.5 4 3 5.5l5.535 5.362a2 2 0 0 0 2.879.052 2.12 2.12 0 0 0-.004-3 2.124 2.124 0 1 0 3-3 2.124 2.124 0 0 0 3.004 0 2 2 0 0 0 0-2.828l-1.881-1.882a2.41 2.41 0 0 0-3.409 0l-1.71 1.71a2 2 0 0 1-2.828 0 2 2 0 0 1 0-2.828l2.823-2.762"
+        />
+      </symbol>
+    </svg>
+    <div class="shell">
+      <aside class="sidebar">
+        <div class="brand">
+          <svg
+            class="brand-mark"
+            viewBox="0 0 40 40"
+            aria-hidden="true"
+            focusable="false"
+          >
+            <rect
+              x="1"
+              y="1"
+              width="38"
+              height="38"
+              rx="12"
+              fill="#233522"
+              stroke="#617b50"
+            />
+            <circle cx="29" cy="10" r="3" fill="#f0c966" />
+            <path
+              d="m8 21 11-9 11 9"
+              fill="none"
+              stroke="#f1efdf"
+              stroke-width="2.2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+            <path
+              d="M11.5 19.5V29h15v-9.5"
+              fill="#34492f"
+              stroke="#9bd276"
+              stroke-width="2"
+              stroke-linejoin="round"
+            />
+            <path
+              d="M17.5 29v-6h4v6"
+              fill="#1b2118"
+              stroke="#f0c966"
+              stroke-width="1.6"
+              stroke-linejoin="round"
+            />
+            <path
+              d="M7 33c4-2 7-2 11 0s7 2 11 0 4-2 5-2"
+              fill="none"
+              stroke="#9bd276"
+              stroke-width="1.5"
+              stroke-linecap="round"
+            />
+          </svg>
+          <span id="brandTitle">Stardew Трекер</span>
+        </div>
+        <nav id="nav" class="nav"></nav>
+        <select
+          id="mobileNav"
+          class="mobile-nav"
+          aria-label="Навигация"
+        ></select>
+        <div id="sidefoot" class="sidefoot"></div>
+      </aside>
+      <main class="main">
+        <header>
+          <div class="farm">
+            <b id="farmName">Stardew Valley Tracker</b>
+            <div id="farmSub"></div>
+          </div>
+          <div id="hdrRight" class="header-tools"></div>
+        </header>
+        <div id="view" class="content"></div>
+      </main>
+    </div>
+    <div
+      id="toast"
+      class="toast"
+      role="status"
+      aria-live="polite"
+      aria-atomic="true"
+    ></div>
+    <div
+      id="noteModal"
+      class="note-modal hidden"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="noteTitle"
+      aria-describedby="noteItemName"
+    >
+      <div class="note-dialog">
+        <h2 id="noteTitle"></h2>
+        <div id="noteItemName" class="sub"></div>
+        <textarea
+          id="noteText"
+          maxlength="280"
+          placeholder="Короткая заметка…"
+        ></textarea>
+        <div class="actions">
+          <button type="button" id="noteCancel">Отмена</button
+          ><button type="button" id="noteSave" class="active">Сохранить</button>
+        </div>
+      </div>
+    </div>
+    <script>
+      window.__STATE__ = /*__STATE__*/ null;
+      window.__ERROR__ = /*__ERROR__*/ null;
+      window.__MODE__ = /*__MODE_VALUE__*/ "live";
+    </script>
+    <script>
+      "use strict";
+      const $ = (s, r = document) => r.querySelector(s),
+        esc = (s) =>
+          String(s == null ? "" : s).replace(
+            /[&<>"']/g,
+            (c) =>
+              ({
+                "&": "&amp;",
+                "<": "&lt;",
+                ">": "&gt;",
+                '"': "&quot;",
+                "'": "&#39;",
+              })[c],
+          );
+      const MODE = window.__MODE__,
+        LS = {
+          get(k, d) {
+            try {
+              let v = localStorage.getItem("sdt." + k);
+              return v === null ? d : JSON.parse(v);
+            } catch (e) {
+              return d;
+            }
+          },
+          set(k, v) {
+            try {
+              localStorage.setItem("sdt." + k, JSON.stringify(v));
+              return true;
+            } catch (e) {
+              return false;
+            }
+          },
+        };
+      const prefs = {
+        lang: LS.get("lang", "ru") === "en" ? "en" : "ru",
+        view: LS.get("view", "list") === "grid" ? "grid" : "list",
+        hideDone: LS.get("hideDone", false) === true,
+      };
+      let S = window.__STATE__,
+        ERR = window.__ERROR__;
+      if (S) {
+        S.goals = S.goals || { goals: [], tasks: [] };
+        if (MODE === "static")
+          S.goals.annotations = {
+            ...(S.goals.annotations || {}),
+            ...LS.get("annotations", {}),
+          };
+      }
+      const seasons = {
+        spring: ["Весна", "Spring", 7],
+        summer: ["Лето", "Summer", 8],
+        fall: ["Осень", "Fall", 9],
+        winter: ["Зима", "Winter", 10],
+      };
+      const labels = {
+        ru: {
+          overview: "Путеводитель",
+          today: "Сегодня",
+          perfection: "Перфекция",
+          museum: "Музей",
+          fish: "Рыба",
+          shipped: "Отправка",
+          cooking: "Готовка",
+          crafting: "Крафт",
+          people: "Жители",
+          bundles: "Бандлы",
+          bundleInfo: "Подробности бандла",
+          bundleMissingItems: "Не хватает",
+          openBundleRoom: "Открыть комнату",
+          openBundleItem: "Перейти к бандлу",
+          guild: "Гильдия",
+          goals: "Цели",
+          done: "Готово",
+          missing: "Не выполнено",
+          known: "Рецепт известен",
+          unknown: "Не изучено",
+          found: "Найдено",
+          donated: "Сдано",
+          foundAlert: "Найдено, но не сдано",
+          weather: "Погода",
+          refresh: "Обновить",
+          updated: "Сейв обновлён",
+          search: "Поиск по названию…",
+          all: "Все",
+          hideDone: "Скрыть готовое",
+          showGrid: "Плитки",
+          showList: "Список",
+          export: "Экспорт целей",
+          import: "Импорт целей",
+          addGoal: "Добавить цель",
+          addTask: "Добавить задачу",
+          title: "Название",
+          total: "Всего",
+          left: "осталось",
+          season: "Сезон",
+          now: "Доступно сейчас",
+          later: "Позже сегодня",
+          birthday: "День рождения",
+          noResults: "Ничего не найдено",
+          todayPlan: "План на сегодня",
+          noSave: "Сейв не загружен",
+          restore: "Обновить",
+          language: "EN",
+          goalHint: "Пользовательские цели и задачи сохраняются в goals.json.",
+          offlineGoalsHint:
+            "В автономном отчёте цели и задачи доступны только для просмотра; пометки хранятся в этом браузере.",
+          ready: "Подготовлено",
+          museumDonate: "Отнести в музей",
+          progress: "Прогресс",
+          save: "Сохранение",
+          unlocked: "Открыто",
+          notUnlocked: "Не изучено",
+          skills: "Навыки",
+          stardrops: "Звёздные капли",
+          waivers: "Послабления",
+          score: "Перфекция",
+          filterNow: "Ловится сейчас",
+          noData: "Нет данных в сохранении",
+          task: "Задачи",
+          warning: "Внимание",
+          rewards: "Награда",
+          items: "Предметы",
+          summer: "Лето",
+          cancel: "Отмена",
+          serverOnly: "Импорт/экспорт доступен в режиме сервера.",
+          birthdaysUpcoming: "Дней рождения на этой неделе",
+          saveFailed: "Не удалось сохранить изменения",
+          savedSuccessfully: "Изменения сохранены",
+          imported: "Цели импортированы",
+          invalidFile: "Не удалось импортировать файл",
+          apiError: "Ошибка сервера",
+          daysShort: "дн.",
+          year: "г.",
+          deepestMine: "Самый глубокий уровень шахты",
+          skullCavern: "Пещера Черепа",
+          officialCriteria: "Официальные критерии 1.6",
+          rawScore: "исходный результат",
+          metric_fish: "Поймано рыбы",
+          metric_museum: "Сдано в музей",
+          metric_museum_found: "Найдено для музея",
+          metric_shipped: "Отправлено предметов",
+          metric_cooking: "Приготовлено блюд",
+          metric_crafting: "Создано предметов",
+          metric_monsters: "Побеждено монстров",
+          metric_hearts: "Уровень дружбы",
+          metric_money: "Золото",
+          metric_walnuts: "Золотые орехи",
+          metric_perfection: "Перфекция",
+          sections: "Навигация",
+          colorCode: "Цветовые статусы",
+          greeting: "Привет",
+          farmerFallback: "фермер",
+          statusDone: "Готово",
+          statusProgress: "Есть прогресс",
+          statusAction: "Нужно действие",
+          statusIdle: "Пока не выполнено",
+          statusInfo: "Условия и подсказки",
+          knownNotDone: "Рецепт изучен — осталось приготовить",
+          brand: "Stardew Трекер",
+          appTitle: "Stardew Трекер — прогресс фермы",
+          navPlan: "План фермы",
+          navProgress: "Прогресс",
+          navCollections: "Коллекции",
+          navPersonal: "Люди и личное",
+          exploreFeatures: "Куда заглянуть?",
+          planDescription:
+            "План дня и дела, которые удобно сделать прямо сейчас.",
+          progressDescription:
+            "Следи за большими целями и тем, сколько ещё осталось.",
+          collectionsDescription:
+            "Находи предметы, отмечай коллекции и проверяй рецепты.",
+          personalDescription: "Подарки жителям, свои пометки и задачи.",
+          deleteGoal: "Удалить цель",
+          deleteTask: "Удалить задачу",
+          heartCount: "сердец дружбы",
+          metric: "Показатель цели",
+          goalTargetHint: "Оставьте пустым, чтобы взять полный показатель.",
+          goalsComplete: "целей выполнено",
+          farmerLevel: "Уровень фермера",
+          noGoals: "Пользовательских целей пока нет.",
+          noTasks: "Задач пока нет.",
+          weight: "вес",
+        },
+        en: {
+          overview: "Farm guide",
+          today: "Today",
+          perfection: "Perfection",
+          museum: "Museum",
+          fish: "Fish",
+          shipped: "Shipping",
+          cooking: "Cooking",
+          crafting: "Crafting",
+          people: "Villagers",
+          bundles: "Bundles",
+          bundleInfo: "Bundle details",
+          bundleMissingItems: "Missing items",
+          openBundleRoom: "Open room",
+          openBundleItem: "Open bundle",
+          guild: "Adventurer's Guild",
+          goals: "Goals",
+          done: "Done",
+          missing: "Missing",
+          known: "Recipe known",
+          unknown: "Unknown",
+          found: "Found",
+          donated: "Donated",
+          foundAlert: "Found but not donated",
+          weather: "Weather",
+          refresh: "Refresh",
+          updated: "Save updated",
+          search: "Search names…",
+          all: "All",
+          hideDone: "Hide done",
+          showGrid: "Tiles",
+          showList: "List",
+          export: "Export goals",
+          import: "Import goals",
+          addGoal: "Add goal",
+          addTask: "Add task",
+          title: "Title",
+          total: "Total",
+          left: "left",
+          season: "Season",
+          now: "Available now",
+          later: "Later today",
+          birthday: "Birthday",
+          noResults: "No results",
+          todayPlan: "Today’s plan",
+          noSave: "No save loaded",
+          restore: "Refresh",
+          language: "RU",
+          goalHint: "Custom goals and tasks are saved in goals.json.",
+          offlineGoalsHint:
+            "Goals and tasks are read-only in this offline report; annotations are stored in this browser.",
+          ready: "Ready",
+          museumDonate: "Donate to museum",
+          progress: "Progress",
+          save: "Save",
+          unlocked: "Known",
+          notUnlocked: "Unknown",
+          skills: "Skills",
+          stardrops: "Stardrops",
+          waivers: "Waivers",
+          score: "Perfection",
+          filterNow: "Catchable now",
+          noData: "No save data",
+          task: "Tasks",
+          warning: "Warning",
+          rewards: "Reward",
+          items: "Items",
+          summer: "Summer",
+          cancel: "Cancel",
+          serverOnly: "Import/export is available in server mode.",
+          birthdaysUpcoming: "birthdays this week",
+          saveFailed: "Could not save changes",
+          savedSuccessfully: "Changes saved",
+          imported: "Goals imported",
+          invalidFile: "Could not import this file",
+          apiError: "Server error",
+          daysShort: "d",
+          year: "Year",
+          deepestMine: "Deepest mine level",
+          skullCavern: "Skull Cavern",
+          officialCriteria: "Official 1.6 criteria",
+          rawScore: "raw score",
+          metric_fish: "Fish caught",
+          metric_museum: "Museum donations",
+          metric_museum_found: "Museum items found",
+          metric_shipped: "Items shipped",
+          metric_cooking: "Meals cooked",
+          metric_crafting: "Items crafted",
+          metric_monsters: "Monsters defeated",
+          metric_hearts: "Friendship level",
+          metric_money: "Gold",
+          metric_walnuts: "Golden walnuts",
+          metric_perfection: "Perfection",
+          sections: "Navigation",
+          colorCode: "Color guide",
+          greeting: "Hello",
+          farmerFallback: "farmer",
+          statusDone: "Complete",
+          statusProgress: "In progress",
+          statusAction: "Needs attention",
+          statusIdle: "Not done yet",
+          statusInfo: "Conditions & tips",
+          knownNotDone: "Recipe learned — still to make",
+          brand: "Stardew Tracker",
+          appTitle: "Stardew Tracker — Farm Progress",
+          navPlan: "Farm plan",
+          navProgress: "Progress",
+          navCollections: "Collections",
+          navPersonal: "People & personal",
+          exploreFeatures: "What would you like to explore?",
+          planDescription:
+            "A friendly daily plan and things you can do right now.",
+          progressDescription:
+            "Keep track of big milestones and what is left to do.",
+          collectionsDescription:
+            "Find items, update collections, and check recipes.",
+          personalDescription: "Villager gifts, saved items, notes, and tasks.",
+          deleteGoal: "Delete goal",
+          deleteTask: "Delete task",
+          heartCount: "friendship hearts",
+          metric: "Goal metric",
+          goalTargetHint: "Leave blank to use the full available total.",
+          goalsComplete: "goals complete",
+          farmerLevel: "Farmer level",
+          noGoals: "No custom goals yet.",
+          noTasks: "No tasks yet.",
+          weight: "weight",
+        },
+      };
+      const t = (k) => labels[prefs.lang][k] || k,
+        metricLabel = (key) => t(`metric_${key}`);
+      let EN = prefs.lang === "en";
+      function dayCount(value) {
+        if (EN) return `${value} ${value === 1 ? "day" : "days"}`;
+        const lastTwo = value % 100,
+          last = value % 10,
+          unit =
+            lastTwo >= 11 && lastTwo <= 14
+              ? "дней"
+              : last === 1
+                ? "день"
+                : last >= 2 && last <= 4
+                  ? "дня"
+                  : "дней";
+        return `${value} ${unit}`;
+      }
+      function yearText(value) {
+        return EN ? `${t("year")} ${value}` : `${value} ${t("year")}`;
+      }
+      Object.assign(labels.ru, {
+        saved: "Пометки",
+        mark: "Запомнить",
+        unmark: "Убрать пометку",
+        note: "Заметка",
+        notePrompt: "Короткая заметка",
+        saveNote: "Сохранить",
+        cancel: "Отмена",
+        howToGet: "Как получить",
+        acquisition: "Получение",
+        noAnnotations:
+          "Пока нет помеченных предметов. Нажмите ☆ или добавьте заметку в любой коллекции.",
+        artifactHint:
+          "Артефакты могут находиться в точках артефактов, сундуках при рыбалке, геодах и добыче монстров; источник зависит от предмета.",
+        artifactSources: "Где найти",
+        mineralHint:
+          "Минералы можно добывать в шахтах и получать из геод и сундуков; точный источник зависит от минерала.",
+        seasonHint: "Сезон",
+        timeHint: "Время",
+        weatherHint: "Погода",
+        locationHint: "Место",
+        difficultyHint: "Сложность",
+        behaviorHint: "Поведение",
+        waterHint: "Водоём",
+        unlockHint: "Открывается",
+        ingredientsHint: "Ингредиенты",
+        groupHint: "Категория",
+        priceHint: "Цена продажи",
+      });
+      Object.assign(labels.en, {
+        saved: "Saved items",
+        mark: "Remember",
+        unmark: "Unmark",
+        note: "Note",
+        notePrompt: "Short note",
+        saveNote: "Save note",
+        cancel: "Cancel",
+        howToGet: "How to get",
+        acquisition: "Acquisition",
+        noAnnotations:
+          "No saved items yet. Use ☆ or add a note in any collection.",
+        artifactHint:
+          "Artifacts can come from artifact spots, fishing chests, geodes, and monster drops; the exact source varies by item.",
+        artifactSources: "Where to find",
+        mineralHint:
+          "Minerals can be mined or obtained from geodes and chests; the exact source varies by mineral.",
+        seasonHint: "Season",
+        timeHint: "Time",
+        weatherHint: "Weather",
+        locationHint: "Location",
+        difficultyHint: "Difficulty",
+        behaviorHint: "Bite pattern",
+        waterHint: "Water",
+        unlockHint: "Unlock",
+        ingredientsHint: "Ingredients",
+        groupHint: "Category",
+        priceHint: "Sell price",
+      });
+      const sections = [
+        "overview",
+        "today",
+        "perfection",
+        "museum",
+        "fish",
+        "shipped",
+        "cooking",
+        "crafting",
+        "people",
+        "bundles",
+        "guild",
+        "saved",
+        "goals",
+      ];
+      const initialHash = (location.hash || "#overview").slice(1).split("/");
+      let route = initialHash.shift(),
+        routeTarget = initialHash.join("/");
+      if (!sections.includes(route)) {
+        route = "overview";
+        routeTarget = "";
+      }
+      let search = "",
+        stateFilter = "missing",
+        kindFilter = "",
+        nowOnly = false;
+      const sprVars = ["--spr-obj0", "--spr-obj1", "--spr-bc"];
+      function itemIcon(sp, small = false) {
+        if (!sp)
+          return `<span class="ui-icon" style="background-position:-32px 0"></span>`;
+        let sh = +sp[0],
+          idx = +sp[1],
+          cw = 16,
+          ch = sh === 2 ? 32 : 16,
+          cols = sh === 0 ? 24 : 8,
+          scale = small ? 1.75 : 2,
+          cls = sh === 0 ? "" : " sheet" + sh;
+        if (sh < 0 || sh > 2) return "";
+        let style = `background-image:var(${sprVars[sh]});background-position:-${(idx % cols) * cw * scale}px -${Math.floor(idx / cols) * ch * scale}px`;
+        return `<span class="item-icon${cls}${small ? " small" : ""}" style="${style}" aria-hidden="true"></span>`;
+      }
+      function uiIcon(i) {
+        return `<span class="ui-icon" aria-hidden="true" style="background-position:-${(i % 16) * 16}px -${Math.floor(i / 16) * 16}px"></span>`;
+      }
+      function heartsBar(n, max = 10) {
+        return `<span class="hearts" role="img" aria-label="${n} / ${max} ${t("heartCount")}">${Array.from({ length: max }, (_, i) => `<span class="ui-icon heart-icon" aria-hidden="true" style="background-position:-${(i < n ? 0 : 1) * 20}px 0"></span>`).join("")}</span>`;
+      }
+      function qualityStars(q) {
+        let idx = q >= 3 ? 6 : q === 2 ? 5 : 4;
+        return `<span class="quality">${Array.from({ length: q }, () => uiIcon(idx)).join("")}</span>`;
+      }
+      function portrait(i, compact = false) {
+        const cell = compact ? 32 : 48;
+        return `<span class="portrait${compact ? " compact" : ""}" aria-hidden="true" style="background-image:var(--spr-npcs);background-position:-${(i % 6) * cell}px -${Math.floor(i / 6) * cell}px"></span>`;
+      }
+      function monsterIcon(i) {
+        return `<span class="monster-icon" aria-hidden="true" style="background-image:var(--spr-monsters);background-position:-${(i % 6) * 32}px -${Math.floor(i / 6) * 32}px"></span>`;
+      }
+      function bundleIcon(slot) {
+        return `<span class="bundle-icon" aria-hidden="true" style="background-image:var(--spr-bundles);background-position:-${(slot % 20) * 32}px -${Math.floor(slot / 20) * 32}px"></span>`;
+      }
+      function nm(o) {
+        let a = o.ru || o.en || o.id || "?",
+          b = o.en || o.ru || "";
+        return EN
+          ? `${esc(b)}${a !== b ? `<span class="en"> · ${esc(a)}</span>` : ""}`
+          : `${esc(a)}${a !== b ? `<span class="en"> · ${esc(b)}</span>` : ""}`;
+      }
+      function markKey(r, section) {
+        if (r._markKey) return r._markKey;
+        if (section === "museum") return `museum:${r.kind}:${r.id}`;
+        if (section === "crafting") return `crafting:${r.rec_en || r.id}`;
+        if (section === "cooking") return `cooking:${r.en || r.id}`;
+        return `${section || "item"}:${r.id || r.en || "unknown"}`;
+      }
+      function annotation(key) {
+        return (
+          (S?.goals?.annotations || {})[key] || { marked: false, note: "" }
+        );
+      }
+      function annotationTools(key) {
+        let a = annotation(key);
+        return `<span class="annotation-actions"><button type="button" data-mark="${esc(key)}" class="${a.marked ? "marked" : ""}" aria-pressed="${!!a.marked}" aria-label="${a.marked ? t("unmark") : t("mark")}" title="${a.marked ? t("unmark") : t("mark")}">${a.marked ? "★" : "☆"}</button><button type="button" data-note="${esc(key)}" class="${a.note ? "has-note" : ""}" aria-label="${t("note")}" title="${t("note")}">✎</button></span>${a.note ? `<span class="note-preview">${esc(a.note)}</span>` : ""}`;
+      }
+      function fishTime(value) {
+        return (value || "")
+          .split(" ")
+          .map((v) => {
+            let n = +v;
+            return `${String(Math.floor(n / 100)).padStart(2, "0")}:${String(n % 100).padStart(2, "0")}`;
+          })
+          .join("–");
+      }
+      function acquisitionDetails(r, type) {
+        let lines = [];
+        if (type === "fish") {
+          if (r.seasons?.length)
+            lines.push([
+              t("seasonHint"),
+              r.seasons
+                .map((s) => (seasons[s] || [s, s])[EN ? 1 : 0])
+                .join(", "),
+            ]);
+          if (r.time) lines.push([t("timeHint"), fishTime(r.time)]);
+          if (r.weather && r.weather !== "both")
+            lines.push([t("weatherHint"), weatherText(r.weather)]);
+          if (r.locs?.length)
+            lines.push([
+              t("locationHint"),
+              r.locs.map((x) => (EN ? x.en : x.ru)).join(", "),
+            ]);
+          if (r.diff) lines.push([t("difficultyHint"), r.diff]);
+          if (r.beh) lines.push([t("behaviorHint"), r.beh]);
+          if (r.water) lines.push([t("waterHint"), r.water]);
+          if (r.trap)
+            lines.push([
+              t("acquisition"),
+              EN ? "Crab pot" : "Крабовая ловушка",
+            ]);
+          if (r.size?.length)
+            lines.push([EN ? "Size" : "Размер", r.size.join("–")]);
+        } else if (type === "museum") {
+          if (r.kind === "artifact") {
+            const sources = r.locations?.[EN ? "en" : "ru"] || [];
+            if (sources.length)
+              return `<details class="acq-tip museum-source-tip"><summary class="museum-source-toggle" aria-label="${t("artifactSources")}" title="${t("artifactSources")}"><span aria-hidden="true">?</span>${t("artifactSources")}</summary><div class="tip-pop"><b>${t("artifactSources")}</b>${sources.map((source) => `<div class="tip-line">${esc(source)}</div>`).join("")}</div></details>`;
+            lines.push([t("artifactSources"), t("artifactHint")]);
+          } else {
+            lines.push([t("acquisition"), t("mineralHint")]);
+          }
+        } else if (type === "shipped") {
+          if (r.seasons?.length)
+            lines.push([
+              t("seasonHint"),
+              r.seasons
+                .map((s) => (seasons[s] || [s, s])[EN ? 1 : 0])
+                .join(", "),
+            ]);
+          if (r.grp) lines.push([t("groupHint"), r.grp]);
+          if (r.price) lines.push([t("priceHint"), `${r.price}g`]);
+        } else if (type === "recipe") {
+          let unlock = EN ? r.unlock_en : r.unlock_ru;
+          if (unlock) lines.push([t("unlockHint"), unlock]);
+          if (r.ing?.length)
+            lines.push([
+              t("ingredientsHint"),
+              r.ing.map((i) => `${EN ? i[1] : i[0]} ×${i[2]}`).join(", "),
+            ]);
+        }
+        if (!lines.length) return "";
+        return `<details class="acq-tip"><summary aria-label="${t("howToGet")}" title="${t("howToGet")}">i</summary><div class="tip-pop"><b>${t("howToGet")}</b>${lines.map(([k, v]) => `<div class="tip-line"><strong>${esc(k)}:</strong> ${typeof v === "string" ? esc(v) : v}</div>`).join("")}</div></details>`;
+      }
+      function allSavedEntries() {
+        let out = [];
+        const add = (section, label, rows, type) =>
+          rows.forEach((r) => {
+            let key = markKey(r, section),
+              a = annotation(key);
+            if (a.marked || a.note) out.push({ key, label, row: r, type });
+          });
+        add("fish", t("fish"), S.fish, "fish");
+        add("museum", t("museum"), S.museum, "museum");
+        add("shipped", t("shipped"), S.shipped, "shipped");
+        add("cooking", t("cooking"), S.cooking, "recipe");
+        add("crafting", t("crafting"), S.crafting, "recipe");
+        S.bundles.forEach((room) =>
+          room.list.forEach((b) =>
+            b.items.forEach((i) => {
+              let key = `bundle:${b.slot}:${i.id}`,
+                a = annotation(key);
+              if (a.marked || a.note)
+                out.push({
+                  key,
+                  label: `${t("bundles")} · ${EN ? room.en : room.ru}`,
+                  row: i,
+                  type: "shipped",
+                });
+            }),
+          ),
+        );
+        return out;
+      }
+      function ring(a, b) {
+        let p = b ? Math.max(0, Math.min(1, a / b)) : 0,
+          c = 2 * Math.PI * 18;
+        return `<svg class="ring" role="img" aria-label="${Math.round(p * 100)}% ${t("score")}" viewBox="0 0 44 44"><circle cx="22" cy="22" r="18" fill="none" stroke="#30392c" stroke-width="4"/><circle cx="22" cy="22" r="18" fill="none" stroke="${p >= 1 ? "#9bd276" : "#f0c966"}" stroke-width="4" stroke-linecap="round" stroke-dasharray="${c}" stroke-dashoffset="${c * (1 - p)}" transform="rotate(-90 22 22)"/><text x="22" y="24" text-anchor="middle">${Math.round(p * 100)}%</text></svg>`;
+      }
+      function meter(a, b, color = "") {
+        const percent = b ? Math.max(0, Math.min(100, (a / b) * 100)) : 0,
+          state =
+            color ||
+            (percent >= 100 ? "done" : percent > 0 ? "progress" : "idle");
+        return `<div class="bar ${state}" role="progressbar" aria-label="${t("progress")}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(percent)}"><i style="width:${percent}%"></i></div>`;
+      }
+      function colorLegend() {
+        return `<div class="color-legend" role="note" aria-label="${t("colorCode")}"><strong class="color-legend-title">${t("colorCode")}:</strong><span class="color-key"><i class="color-dot done" aria-hidden="true">✓</i>${t("statusDone")}</span><span class="color-key"><i class="color-dot progress" aria-hidden="true">◒</i>${t("statusProgress")}</span><span class="color-key"><i class="color-dot action" aria-hidden="true">!</i>${t("statusAction")}</span><span class="color-key"><i class="color-dot idle" aria-hidden="true">–</i>${t("statusIdle")}</span><span class="color-key"><i class="color-dot info" aria-hidden="true">i</i>${t("statusInfo")}</span></div>`;
+      }
+      function rowStatus(row, type) {
+        if (row.done) return { className: "ok", label: t("done"), marker: "✓" };
+        if (row.found && !row.donated)
+          return {
+            className: "alert",
+            label: t("foundAlert"),
+            marker: "!",
+          };
+        if (type === "recipe" && row.known)
+          return {
+            className: "warn",
+            label: t("knownNotDone"),
+            marker: "◒",
+          };
+        if (row.known === false)
+          return { className: "no", label: t("unknown"), marker: "?" };
+        return { className: "no", label: t("missing"), marker: "–" };
+      }
+      function filtered(rows, which = "done") {
+        let q = search.toLowerCase().trim();
+        return rows.filter((r) => {
+          let done = !!r[which];
+          if (stateFilter === "missing" && done) return false;
+          if (stateFilter === "done" && !done) return false;
+          if (
+            q &&
+            !`${r.ru || ""} ${r.en || ""} ${r.rec_en || ""}`
+              .toLowerCase()
+              .includes(q)
+          )
+            return false;
+          return true;
+        });
+      }
+      function title(title, desc = "", tools = "") {
+        return `<div class="title-row"><div><h1>${title}</h1><div class="sub">${desc}</div></div>${tools}</div>`;
+      }
+      function countStat(key, label, iconSp, go) {
+        const v = S.counts[key] || [0, 0],
+          state =
+            v[1] > 0 && v[0] >= v[1]
+              ? "complete"
+              : v[0] > 0
+                ? "progressing"
+                : "not-started",
+          stateText = t(
+            state === "complete"
+              ? "statusDone"
+              : state === "progressing"
+                ? "statusProgress"
+                : "statusIdle",
+          );
+        return `<div class="card stat ${state}" ${go ? `data-go="${go}" role="link" tabindex="0" aria-label="${esc(label)}: ${v[0]} / ${v[1]} · ${stateText}"` : ""}><div><div class="stat-label">${itemIcon(iconSp, true)} ${label}</div><div class="stat-number">${v[0]}<small> / ${v[1]}</small></div><div class="stat-sub">${Math.max(0, v[1] - v[0])} ${t("left")}</div></div>${ring(v[0], v[1])}</div>`;
+      }
+      function header() {
+        let m = (S && S.meta) || {};
+        if ($("#noteText")) $("#noteText").placeholder = t("notePrompt");
+        if ($("#noteTitle")) $("#noteTitle").textContent = t("notePrompt");
+        if ($("#noteText") && $("#noteItemName"))
+          $("#noteText").setAttribute(
+            "aria-label",
+            `${t("notePrompt")}: ${$("#noteItemName").textContent}`,
+          );
+        if ($("#noteCancel")) $("#noteCancel").textContent = t("cancel");
+        if ($("#noteSave")) $("#noteSave").textContent = t("saveNote");
+        $("#farmName").textContent = m.farm
+          ? `${m.farm} — ${m.farmer}`
+          : t("appTitle");
+        $("#farmSub").innerHTML = m.farm
+          ? `${esc((seasons[m.season] || [m.season, m.season])[EN ? 1 : 0])} ${esc(m.day)}, ${yearText(m.year)} · ${esc(m.clock || "")} · ${Number(m.money || 0).toLocaleString(EN ? "en-US" : "ru-RU")}g${m.weather ? ` · ${weatherLabel(m.weather)}` : ""}`
+          : "";
+        let opts = "";
+        if (MODE === "live")
+          opts = `<select id="saveSelect" aria-label="${t("save")}"><option>${t("save")}: ${esc(m.save_name || "…")}</option></select><button id="refresh">↻ ${t("refresh")}</button>`;
+        $("#hdrRight").innerHTML =
+          opts +
+          `<span class="pill">${esc(m.mtime_str || "")}</span><button id="language">${t("language")}</button>`;
+        $("#language").onclick = () => {
+          prefs.lang = EN ? "ru" : "en";
+          EN = prefs.lang === "en";
+          LS.set("lang", prefs.lang);
+          render();
+          $("#language")?.focus();
+        };
+        let rb = $("#refresh");
+        if (rb)
+          rb.onclick = async () => {
+            try {
+              const response = await fetch("/api/refresh");
+              if (!response.ok) throw new Error("Refresh failed");
+              await pull(true);
+              $("#refresh")?.focus();
+            } catch (e) {
+              toast(t("apiError"));
+            }
+          };
+        let ss = $("#saveSelect");
+        if (ss) loadSaves(ss, m.save_path);
+      }
+      function weatherText(w) {
+        let map = {
+          sunny: EN ? "Sunny" : "Ясно",
+          rainy: EN ? "Rain" : "Дождь",
+          storm: EN ? "Storm" : "Гроза",
+          green_rain: EN ? "Green rain" : "Зелёный дождь",
+          snow: EN ? "Snow" : "Снег",
+          wind: EN ? "Wind" : "Ветер",
+        };
+        return map[w] || String(w || "");
+      }
+      function weatherLabel(w) {
+        let icons = {
+          sunny: 11,
+          rainy: 12,
+          storm: 13,
+          green_rain: 12,
+          snow: 15,
+          wind: 14,
+        };
+        return icons[w] != null
+          ? `${uiIcon(icons[w])} ${esc(weatherText(w))}`
+          : esc(w || "");
+      }
+      async function loadSaves(sel, active) {
+        try {
+          const response = await fetch("/api/saves");
+          if (!response.ok) throw new Error("Save list unavailable");
+          let j = await response.json();
+          sel.innerHTML = "";
+          for (let s of j.saves || []) {
+            let o = document.createElement("option");
+            o.value = s.path;
+            const season = (seasons[s.season] || [s.season, s.season])[
+              EN ? 1 : 0
+            ];
+            o.textContent = `${s.farm} — ${s.farmer} · ${season} ${s.day}, ${yearText(s.year)}`;
+            if (s.path === active) o.selected = true;
+            sel.append(o);
+          }
+          if (!sel.options.length)
+            sel.innerHTML = `<option>${t("noSave")}</option>`;
+          sel.onchange = async () => {
+            let r = await fetch("/api/saves/select", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ path: sel.value }),
+            });
+            let x = await r.json();
+            if (r.ok) {
+              S = x;
+              render();
+              $("#saveSelect")?.focus();
+              toast(t("updated"));
+            } else toast(x.error?.title || x.error || t("apiError"));
+          };
+        } catch (e) {
+          if (sel.isConnected) toast(t("apiError"));
+        }
+      }
+      function nav() {
+        $("#brandTitle").textContent = t("brand");
+        if (!S) {
+          $("#nav").innerHTML = "";
+          $("#mobileNav").innerHTML = "";
+          $("#sidefoot").textContent = "";
+          return;
+        }
+        const groups = [
+            { label: t("navPlan"), routes: ["overview", "today"] },
+            {
+              label: t("navProgress"),
+              routes: ["perfection", "bundles", "guild"],
+            },
+            {
+              label: t("navCollections"),
+              routes: ["museum", "fish", "shipped", "cooking", "crafting"],
+            },
+            {
+              label: t("navPersonal"),
+              routes: ["people", "saved", "goals"],
+            },
+          ],
+          icons = {
+            overview: "house",
+            today: "calendar-days",
+            perfection: "sparkles",
+            bundles: "package-open",
+            guild: "sword",
+            museum: "landmark",
+            fish: "fish",
+            shipped: "package",
+            cooking: "cooking-pot",
+            crafting: "hammer",
+            people: "users-round",
+            saved: "bookmark",
+            goals: "target",
+          },
+          labelsBadges = {
+            museum: S.counts.museum,
+            fish: S.counts.fish,
+            shipped: S.counts.shipped,
+            cooking: S.counts.cooking,
+            crafting: S.counts.crafting,
+          },
+          savedCount = Object.values(S.goals?.annotations || {}).filter(
+            (a) => a && (a.marked || a.note),
+          ).length;
+        $("#nav").setAttribute("aria-label", t("sections"));
+        $("#nav").innerHTML = groups
+          .map(
+            (group) =>
+              `<div class="nav-group"><div class="nav-group-title">${group.label}</div>${group.routes
+                .map((key) => {
+                  const badge =
+                    key === "saved"
+                      ? savedCount || ""
+                      : labelsBadges[key]?.join("/") || "";
+                  return `<a href="#${key}" class="${route === key ? "selected" : ""}" ${route === key ? 'aria-current="page"' : ""}><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><use href="#icon-${icons[key]}"></use></svg></span><span class="nav-label">${t(key)}</span><small aria-hidden="true">${badge}</small></a>`;
+                })
+                .join("")}</div>`,
+          )
+          .join("");
+        $("#mobileNav").setAttribute("aria-label", t("sections"));
+        $("#mobileNav").innerHTML = groups
+          .map(
+            (group) =>
+              `<optgroup label="${group.label}">${group.routes
+                .map((key) => `<option value="${key}">${t(key)}</option>`)
+                .join("")}</optgroup>`,
+          )
+          .join("");
+        $("#mobileNav").value = route;
+        $("#mobileNav").onchange = (event) => {
+          location.hash = event.target.value;
+        };
+        $("#sidefoot").innerHTML =
+          `${t("score")}: ${S.perfection.pct}%<br>${t("museum")}: ${S.counts.museum.join("/")} · ${t("fish")}: ${S.counts.fish.join("/")}`;
+      }
+      function focusViewHeading() {
+        const heading = $("#view h1");
+        if (!heading) return;
+        heading.tabIndex = -1;
+        heading.focus();
+      }
+      function focusBundleTarget() {
+        if (route !== "bundles" || !routeTarget) return false;
+        const target = document.getElementById(routeTarget);
+        if (!target) return false;
+        target.tabIndex = -1;
+        target.scrollIntoView?.({ behavior: "smooth", block: "start" });
+        target.focus({ preventScroll: true });
+        return true;
+      }
+      function focusDataControl(attribute, value) {
+        const target = [...document.querySelectorAll(`[${attribute}]`)].find(
+          (element) => element.getAttribute(attribute) === value,
+        );
+        if (target) target.focus();
+        else focusViewHeading();
+      }
+      function controls(extra = "") {
+        return `<div class="actions"><input type="search" id="search" aria-label="${t("search")}" placeholder="${t("search")}" value="${esc(search)}"><button type="button" data-filter="missing" aria-pressed="${stateFilter === "missing"}" class="${stateFilter === "missing" ? "active" : ""}">${t("missing")}</button><button type="button" data-filter="done" aria-pressed="${stateFilter === "done"}" class="${stateFilter === "done" ? "active" : ""}">${t("done")}</button><button type="button" data-filter="all" aria-pressed="${stateFilter === "all"}" class="${stateFilter === "all" ? "active" : ""}">${t("all")}</button><button type="button" id="viewToggle">${prefs.view === "grid" ? t("showList") : t("showGrid")}</button><button type="button" data-hide="1" aria-pressed="${!!prefs.hideDone}" class="${prefs.hideDone ? "active" : ""}">${t("hideDone")}</button>${extra}</div>`;
+      }
+      function bindControls() {
+        let q = $("#search");
+        if (q)
+          q.oninput = () => {
+            let pos = q.selectionStart;
+            search = q.value;
+            let y = scrollY;
+            render();
+            window.scrollTo(0, y);
+            let nq = $("#search");
+            if (nq) {
+              nq.focus();
+              nq.setSelectionRange(pos, pos);
+            }
+          };
+        document.querySelectorAll("[data-filter]").forEach(
+          (b) =>
+            (b.onclick = () => {
+              stateFilter = b.dataset.filter;
+              render();
+              focusDataControl("data-filter", stateFilter);
+            }),
+        );
+        let v = $("#viewToggle");
+        if (v)
+          v.onclick = () => {
+            prefs.view = prefs.view === "grid" ? "list" : "grid";
+            LS.set("view", prefs.view);
+            render();
+            $("#viewToggle")?.focus();
+          };
+        document.querySelectorAll("[data-go]").forEach((e) => {
+          e.onclick = () => (location.hash = e.dataset.go);
+          if (e.getAttribute("role") === "link")
+            e.onkeydown = (event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                location.hash = e.dataset.go;
+              }
+            };
+        });
+        document.querySelectorAll("[data-hide]").forEach(
+          (e) =>
+            (e.onclick = () => {
+              prefs.hideDone = !prefs.hideDone;
+              LS.set("hideDone", prefs.hideDone);
+              render();
+              document.querySelector("[data-hide]")?.focus();
+            }),
+        );
+      }
+      function museumSourcePreview(item) {
+        if (item.kind !== "artifact") return "";
+        const sources = item.locations?.[EN ? "en" : "ru"] || [];
+        if (!sources.length) return "";
+        const shown = sources.slice(0, 2),
+          remaining = sources.length - shown.length;
+        return `<div class="museum-source-preview"><b>${t("artifactSources")}:</b> ${shown.map(esc).join(" · ")}${remaining ? ` <span class="museum-source-more">+${remaining}</span>` : ""}</div>`;
+      }
+      function rowsView(rows, type = "normal", section = "") {
+        if (prefs.hideDone) rows = rows.filter((x) => !x.done);
+        if (prefs.view === "grid")
+          return `<div class="grid icon-grid">${
+            rows
+              .map((r) => {
+                const key = markKey(r, section),
+                  status = rowStatus(r, type);
+                return `<div class="grid-item ${status.className === "alert" ? "alert" : ""}">${itemIcon(r.sp)}<span class="name">${nm(r)}</span>${museumSourcePreview(r)}<span class="badge ${status.className}" aria-label="${status.label}" title="${status.label}">${status.marker}</span><div class="item-footer">${annotationTools(key)}${acquisitionDetails(r, type)}</div></div>`;
+              })
+              .join("") || `<div class="empty">${t("noResults")}</div>`
+          }</div>`;
+        return `<div class="rows">${
+          rows
+            .map((r) => {
+              let meta = [];
+              if (type === "fish") {
+                (r.seasons || []).forEach((s) =>
+                  meta.push(
+                    `<span class="chip ${s === S.meta.season ? "blue" : ""}">${(seasons[s] || [s])[EN ? 1 : 0]}</span>`,
+                  ),
+                );
+                if (r.time)
+                  meta.push(`<span class="chip">${fishTime(r.time)}</span>`);
+                if (r.weather && r.weather !== "both")
+                  meta.push(
+                    `<span class="chip ${r.weather_ok ? "blue" : "warn"}">${weatherLabel(r.weather)}</span>`,
+                  );
+                if (r.diff)
+                  meta.push(
+                    `<span class="chip">${EN ? "Difficulty" : "Сложность"} ${r.diff}</span>`,
+                  );
+                if (r.locs?.length)
+                  meta.push(
+                    `<span class="chip">${esc(r.locs.map((x) => (EN ? x.en : x.ru)).join(", "))}</span>`,
+                  );
+              }
+              if (type === "recipe") {
+                if (r.ing)
+                  meta.push(
+                    ...r.ing.map(
+                      (i) =>
+                        `<span class="chip">${itemIcon(i[3], true)} ${esc(EN ? i[1] : i[0])} ×${i[2]}</span>`,
+                    ),
+                  );
+                if (r.unlock_ru || r.unlock_en)
+                  meta.push(
+                    `<span class="chip blue">${esc(EN ? r.unlock_en : r.unlock_ru)}</span>`,
+                  );
+              }
+              if (r.count) meta.push(`<span class="chip">×${r.count}</span>`);
+              const status = rowStatus(r, type),
+                key = markKey(r, section),
+                a = annotation(key);
+              if (type === "fish" && r.now && !r.done)
+                meta.push(`<span class="chip blue">${t("now")}</span>`);
+              return `<div class="row ${r.done ? "done" : ""} ${status.className === "alert" ? "alert" : ""} ${a.marked ? "is-marked" : ""}">${itemIcon(r.sp)}<div class="row-main"><div class="name">${nm(r)}</div>${museumSourcePreview(r)}<div class="meta">${meta.join("")}</div></div><div class="right"><span class="badge status-badge ${status.className}" aria-label="${status.label}">${status.marker} ${status.label}</span>${annotationTools(key)}${acquisitionDetails(r, type)}</div></div>`;
+            })
+            .join("") || `<div class="empty">${t("noResults")}</div>`
+        }</div>`;
+      }
+      function featureNavigation() {
+        const groups = [
+          {
+            label: t("navPlan"),
+            description: t("planDescription"),
+            icon: "calendar-check",
+            routes: ["today"],
+          },
+          {
+            label: t("navProgress"),
+            description: t("progressDescription"),
+            icon: "chart-no-axes-column-increasing",
+            routes: ["perfection", "bundles", "guild"],
+          },
+          {
+            label: t("navCollections"),
+            description: t("collectionsDescription"),
+            icon: "library-big",
+            routes: ["museum", "fish", "shipped", "cooking", "crafting"],
+          },
+          {
+            label: t("navPersonal"),
+            description: t("personalDescription"),
+            icon: "heart-handshake",
+            routes: ["people", "saved", "goals"],
+          },
+        ];
+        return `<section class="feature-nav" aria-labelledby="featureNavTitle"><div class="section-head"><h2 id="featureNavTitle">${t("exploreFeatures")}</h2></div><div class="grid feature-grid">${groups
+          .map(
+            (group) =>
+              `<article class="feature-card"><div class="feature-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><use href="#icon-${group.icon}"></use></svg></div><div><h3>${group.label}</h3><p>${group.description}</p><div class="feature-links">${group.routes
+                .map((key) => `<a href="#${key}">${t(key)} →</a>`)
+                .join("")}</div></div></article>`,
+          )
+          .join("")}</div></section>`;
+      }
+      function greetingTitle(meta) {
+        const farmer = String(meta.farmer || "").trim() || t("farmerFallback"),
+          details = `${esc((seasons[meta.season] || [meta.season, meta.season])[EN ? 1 : 0])} ${esc(meta.day)}, ${yearText(meta.year)} · ${esc(meta.clock)} · ${weatherLabel(meta.weather || "")} · ${t("score")} ${Number(S.perfection.pct)}%`;
+        return `<div class="title-row welcome-row"><div><p class="welcome-eyebrow">${t("overview")}</p><h1 id="welcomeTitle">${t("greeting")}, ${esc(farmer)}!</h1><div class="sub">${details}</div></div><span class="welcome-ornament" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><use href="#icon-sparkles"></use></svg></span></div>`;
+      }
+      function bundleRoomAnchor(room) {
+        const key = String(room.key || room.en || room.ru)
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, "-")
+          .replace(/^-|-$/g, "");
+        return `bundle-room-${key}`;
+      }
+      function bundleAnchor(bundle) {
+        return `bundle-${Number(bundle.slot)}`;
+      }
+      function bundleRoomTooltip(room) {
+        const label = EN ? room.en : room.ru,
+          bundleLinks = room.list
+            .map((bundle) => {
+              const bundleLabel = EN ? bundle.en : bundle.ru,
+                state = bundle.complete
+                  ? "ok"
+                  : bundle.have > 0
+                    ? "warn"
+                    : "no";
+              return `<a class="tip-line bundle-tip-link" href="#bundles/${bundleAnchor(bundle)}" aria-label="${esc(bundleLabel)}: ${bundle.have}/${bundle.need}"><span>${esc(bundleLabel)}</span><b class="badge ${state}">${bundle.complete ? "✓" : `${bundle.have}/${bundle.need}`}</b></a>`;
+            })
+            .join("");
+        return `<details class="acq-tip bundle-tooltip"><summary aria-label="${t("bundleInfo")}: ${esc(label)}" title="${t("bundleInfo")}">i</summary><div class="tip-pop"><b>${esc(label)}</b><div class="tip-line">${t("progress")}: ${room.done}/${room.total}</div><div class="tip-line"><strong>${t("bundles")}:</strong></div>${bundleLinks}</div></details>`;
+      }
+      function bundleTooltip(bundle) {
+        const label = EN ? bundle.en : bundle.ru,
+          missing = (bundle.items || bundle.missing || []).filter(
+            (item) => !item.have,
+          ),
+          missingNames = missing
+            .map(
+              (item) =>
+                `${esc(EN ? item.en : item.ru)}${item.qty > 1 ? ` ×${item.qty}` : ""}${item.qual ? ` ${qualityStars(item.qual)}` : ""}`,
+            )
+            .join(", "),
+          reward = bundle.reward
+            ? `<div class="tip-line"><strong>${t("rewards")}:</strong> ${esc(EN ? bundle.reward.en : bundle.reward.ru)}${bundle.reward.qty > 1 ? ` ×${bundle.reward.qty}` : ""}</div>`
+            : "";
+        return `<details class="acq-tip bundle-tooltip"><summary aria-label="${t("bundleInfo")}: ${esc(label)}" title="${t("bundleInfo")}">i</summary><div class="tip-pop"><b>${esc(label)}</b><div class="tip-line">${t("progress")}: ${bundle.have}/${bundle.need}</div>${missing.length ? `<div class="tip-line"><strong>${t("bundleMissingItems")}:</strong> ${missingNames}</div>` : `<div class="tip-line">${t("statusDone")}</div>`}${reward}</div></details>`;
+      }
+      function bundleRoomCard(room) {
+        const label = EN ? room.en : room.ru,
+          state =
+            room.done === room.total ? "ok" : room.done > 0 ? "warn" : "no";
+        return `<article class="card overview-bundle-card"><a class="overview-bundle-link" href="#bundles/${bundleRoomAnchor(room)}" aria-label="${t("openBundleRoom")}: ${esc(label)}"><div class="overview-bundle-head"><span class="overview-bundle-icon">${bundleIcon(room.list[0]?.slot)}</span><b>${esc(label)}</b><span class="badge ${state}">${room.done}/${room.total}</span></div>${meter(room.done, room.total)}<span class="bundle-open-hint">${t("openBundleRoom")} →</span></a>${bundleRoomTooltip(room)}</article>`;
+      }
+      function overview() {
+        let c = S.counts,
+          m = S.meta;
+        return `${greetingTitle(m)}<div class="grid stats">${[
+          ["museum", t("museum"), [0, 72], "museum"],
+          ["fish", t("fish"), [0, 128], "fish"],
+          ["shipped", t("shipped"), [0, 24], "shipped"],
+          ["cooking", t("cooking"), [0, 194], "cooking"],
+          ["crafting", t("crafting"), [2, 13], "crafting"],
+          ["perfection", t("perfection"), [1, 96], "perfection"],
+        ]
+          .map(([k, l, i, g]) => countStat(k, l, i, g))
+          .join(
+            "",
+          )}</div>${colorLegend()}${featureNavigation()}<div class="grid two overview-panels"><section class="card"><h2 class="panel-title">${t("todayPlan")}</h2>${todayHighlights()}</section><section class="card"><h2 class="panel-title">${t("foundAlert")} <span class="badge ${S.alerts.museum_found_not_donated.length ? "alert" : "ok"}">${S.alerts.museum_found_not_donated.length}</span></h2><div class="overview-items">${
+          S.alerts.museum_found_not_donated
+            .slice(0, 6)
+            .map(
+              (x) =>
+                `<div class="row alert">${itemIcon(x.sp, true)}<div class="row-main">${nm(x)}</div><span class="badge alert">!</span></div>`,
+            )
+            .join("") || `<div class="sub">${t("noData")}</div>`
+        }</div></section></div><div class="section-head"><h2>${t("bundles")}</h2><button data-go="bundles">${t("bundles")} →</button></div><div class="grid two">${S.bundles.map((room) => bundleRoomCard(room)).join("")}</div>`;
+      }
+      function todayHighlights() {
+        let x = S.today,
+          bits = [];
+        if (x.birthdays_today.length)
+          bits.push(
+            `<div class="row">${uiIcon(2)}<div class="row-main"><b>${t("birthday")}:</b> ${x.birthdays_today.map((p) => esc(EN ? p.en : p.ru)).join(", ")}</div><span class="badge warn">${uiIcon(0)}</span></div>`,
+          );
+        if (x.donate_museum.length)
+          bits.push(
+            `<div class="row alert">${uiIcon(21)}<div class="row-main"><b>${t("museumDonate")}</b><div class="meta">${x.donate_museum
+              .slice(0, 3)
+              .map((r) => esc(EN ? r.en : r.ru))
+              .join(
+                ", ",
+              )}</div></div><span class="badge alert">${x.donate_museum.length}</span></div>`,
+          );
+        if (x.fish_now.length)
+          bits.push(
+            `<div class="row">${itemIcon(x.fish_now[0].sp)}<div class="row-main"><b>${t("now")}:</b> ${x.fish_now
+              .slice(0, 3)
+              .map((r) => esc(EN ? r.en : r.ru))
+              .join(
+                ", ",
+              )}</div><span class="badge ok">${x.fish_now.length}</span></div>`,
+          );
+        if (x.bundles_close.length)
+          bits.push(
+            `<div class="row">${bundleIcon(x.bundles_close[0].slot)}<div class="row-main"><b>${t("bundles")}:</b> ${x.bundles_close
+              .slice(0, 2)
+              .map((b) => esc(EN ? b.en : b.ru))
+              .join(
+                ", ",
+              )}</div><span class="badge warn">${x.bundles_close.length}</span></div>`,
+          );
+        if (x.birthdays_soon.length)
+          bits.push(
+            `<div class="row">${uiIcon(2)}<div class="row-main"><b>${t("birthday")}:</b> ${x.birthdays_soon
+              .slice(0, 3)
+              .map((p) => `${esc(EN ? p.en : p.ru)} (${dayCount(p.until)})`)
+              .join(", ")}</div><span class="badge">7d</span></div>`,
+          );
+        return `<div class="overview-items">${bits.join("") || `<div class="empty">${t("noData")}</div>`}</div>`;
+      }
+      function today() {
+        const x = S.today,
+          meta = S.meta,
+          todayDate = `${esc((seasons[meta.season] || [meta.season, meta.season])[EN ? 1 : 0])} ${esc(meta.day)}, ${yearText(meta.year)} · ${esc(meta.clock)} · ${weatherLabel(meta.weather || "")}`;
+        return `${title(t("todayPlan"), todayDate)}${colorLegend()}<div class="today-layout">
+          <div class="grid two today-pair">
+            <section class="card today-card">
+              <h2 class="panel-title">${t("birthday")}</h2>
+              <div class="today-list">
+                ${[...x.birthdays_today, ...x.birthdays_soon].map((person) => `<div class="row">${portrait(person.p_idx, true)}<div class="row-main"><b>${esc(EN ? person.en : person.ru)}</b><div class="meta">${person.until === 0 ? t("today") : dayCount(person.until)} · ${heartsBar(person.hearts, 10)}</div></div><div class="right"><span class="badge ${person.until === 0 ? "warn" : "no"}">${uiIcon(person.until === 0 ? 0 : 2)}</span></div></div>`).join("") || `<div class="empty">—</div>`}
+              </div>
+            </section>
+            <section class="card today-card">
+              <h2 class="panel-title">${t("museumDonate")}</h2>
+              <div class="today-list">${rowsView(x.donate_museum, "normal", "museum")}</div>
+            </section>
+          </div>
+          <div class="grid two today-pair">
+            <section class="card today-card">
+              <div class="section-head"><h2>${t("fish")} — ${t("now")}</h2><button type="button" data-go="fish">${t("fish")} →</button></div>
+              <div class="today-list">${rowsView(x.fish_now, "fish", "fish")}</div>
+            </section>
+            <section class="card today-card">
+              <h2 class="panel-title">${t("later")}</h2>
+              <div class="today-list">${rowsView(x.fish_later, "fish", "fish")}</div>
+            </section>
+          </div>
+          <section class="card today-card">
+            <h2 class="panel-title">${t("bundles")}</h2>
+            <div class="grid bundles today-bundles">${x.bundles_close.map((bundle) => `<article class="bundle today-bundle"><div class="bundle-head"><a class="today-bundle-link" href="#bundles/${bundleAnchor(bundle)}" aria-label="${t("openBundleItem")}: ${esc(EN ? bundle.en : bundle.ru)}">${bundleIcon(bundle.slot)}<span class="today-bundle-name"><b>${esc(EN ? bundle.en : bundle.ru)}</b><span class="sub">${esc(EN ? bundle.room_en : bundle.room_ru)}</span></span></a>${bundleTooltip(bundle)}</div><div class="sub">${bundle.have}/${bundle.need} · ${bundle.left} ${t("left")}</div><div class="bundle-items">${bundle.missing.map((item) => `<span class="bundle-item">${itemIcon(item.sp, true)}${esc(EN ? item.en : item.ru)}</span>`).join("")}</div></article>`).join("") || `<div class="empty">—</div>`}</div>
+          </section>
+          <div class="grid two today-pair">
+            <section class="card today-card"><h2 class="panel-title">${t("cooking")} · ${t("ready")}</h2><div class="today-list">${rowsView(x.ready_cook.slice(0, 8), "recipe", "cooking")}</div></section>
+            <section class="card today-card"><h2 class="panel-title">${t("crafting")} · ${t("ready")}</h2><div class="today-list">${rowsView(x.ready_craft.slice(0, 8), "recipe", "crafting")}</div></section>
+          </div>
+        </div>`;
+      }
+      function listPage(key, label, rows, type = "normal", extra = "") {
+        let c = S.counts[key] || [0, 0],
+          filteredRows = filtered(rows);
+        if (key === "fish" && nowOnly)
+          filteredRows = filteredRows.filter((r) => r.now && !r.done);
+        return `${title(label, `${c[0]} / ${c[1]} · ${c[1] - c[0]} ${t("left")}`, controls(extra))}${colorLegend()}${type === "museum" ? `<div class="tabs"><button type="button" data-kind="all" aria-pressed="${kindFilter === ""}" class="${kindFilter === "" ? "active" : ""}">${t("all")}</button><button type="button" data-kind="artifact" aria-pressed="${kindFilter === "artifact"}" class="${kindFilter === "artifact" ? "active" : ""}">${itemIcon([0, 96], true)} ${EN ? "Artifacts" : "Артефакты"}</button><button type="button" data-kind="mineral" aria-pressed="${kindFilter === "mineral"}" class="${kindFilter === "mineral" ? "active" : ""}">${itemIcon([0, 72], true)} ${EN ? "Minerals" : "Минералы"}</button><span class="badge alert">${t("foundAlert")}: ${S.alerts.museum_found_not_donated.length}</span></div>` : ""}${rowsView(type === "museum" && kindFilter ? filteredRows.filter((r) => r.kind === kindFilter) : filteredRows, type, key)}`;
+      }
+      function perfection() {
+        let p = S.perfection;
+        return `${title(t("perfection"), `${t("score")}: ${p.pct}%${p.waivers ? ` · ${t("waivers")}: +${p.waivers}%` : ""}`)}${colorLegend()}<div class="card perfection-summary">${ring(p.pct, 100)}<div class="perfection-copy"><b>${p.pct}% ${t("score")}</b><div class="sub">${t("officialCriteria")} · ${t("rawScore")} ${p.raw_pct}% ${p.waivers ? `· ${p.waivers} ${t("waivers")}` : ""}</div>${meter(p.pct, 100)}</div></div><div class="grid two">${p.categories.map((c) => `<div class="card"><div class="row" style="border:0;padding:0;background:transparent;grid-template-columns:34px 1fr auto">${itemIcon(c.sp)}<div class="row-main"><b>${esc(EN ? c.en : c.ru)}</b><div class="meta">${c.have} / ${c.total} · ${c.weight}% ${t("weight")}</div>${meter(c.have, c.total)}</div><span class="badge ${c.done ? "ok" : c.have > 0 ? "warn" : "no"}">${c.earned}%</span></div></div>`).join("")}</div><div class="section-head"><h2>${EN ? "Farm obelisks" : "Обелиски и Золотые часы"}</h2></div><div class="grid two">${p.obelisks.map((o) => `<div class="card"><span class="badge ${o.done ? "ok" : "no"}">${o.done ? "✓" : "○"}</span> ${esc(EN ? o.en : o.ru)}</div>`).join("")}<div class="card">${p.gold_clock ? itemIcon([1, 79], true) : uiIcon(23)} ${EN ? "Golden Clock" : "Золотые часы"}</div></div><div class="section-head"><h2>${t("stardrops")}</h2></div><div class="grid two">${p.stardrops.map((s) => `<div class="card"><span class="badge ${s.done ? "ok" : "no"}">${s.done ? "✓" : "○"}</span> ${esc(EN ? s.en : s.ru)}</div>`).join("")}</div><div class="section-head"><h2>${t("skills")}</h2><span class="badge">${t("farmerLevel")} ${S.skills.farmer_level}/25</span></div><div class="grid three">${S.skills.list.map((s) => `<div class="card">${uiIcon(s.ui_idx)} <b>${esc(EN ? s.en : s.ru)}</b><div class="stat-number">${s.level}<small> / 10</small></div>${meter(s.level, 10)}</div>`).join("")}</div>`;
+      }
+      function people() {
+        return `${title(t("people"), EN ? `${S.alerts.birthdays_week.length} ${t("birthdaysUpcoming")}` : `${t("birthdaysUpcoming")}: ${S.alerts.birthdays_week.length}`)}<div class="grid people">${S.people
+          .map(
+            (p) =>
+              `<div class="card person">${portrait(p.p_idx)}<div class="person-content"><b>${esc(EN ? p.en : p.ru)}</b><div class="meta">${(seasons[p.birth[0]] || [p.birth[0]])[EN ? 1 : 0]} ${p.birth[1]}${p.until <= 7 ? ` · <span class="chip warn">${p.until === 0 ? t("today") : `${p.until} ${t("daysShort")}`}</span>` : ""}<span class="chip">${uiIcon(2)} ${p.gifts_week}/2</span></div>${
+                p.loved?.length
+                  ? `<div class="meta">${p.loved
+                      .slice(0, 4)
+                      .map(
+                        (i) =>
+                          `<span class="chip good">${itemIcon(i.sp, true)}${esc(EN ? i.en : i.ru)}</span>`,
+                      )
+                      .join("")}</div>`
+                  : ""
+              }</div><div class="person-hearts">${heartsBar(p.hearts, 10)}</div></div>`,
+          )
+          .join("")}</div>`;
+      }
+      function rewardCard(reward) {
+        const name = EN ? reward.en : reward.ru;
+        return `<div class="reward-card"><span class="reward-card-label">${t("rewards")}</span><span class="reward-card-icon">${itemIcon(reward.sp, true)}</span><span class="reward-card-name">${esc(name)}${reward.qty > 1 ? ` ×${reward.qty}` : ""}</span></div>`;
+      }
+      function bundleDetailCard(bundle) {
+        const status = bundle.complete ? "ok" : bundle.have > 0 ? "warn" : "no",
+          label = EN ? bundle.en : bundle.ru;
+        return `<article class="bundle ${bundle.complete ? "complete" : ""}" id="${bundleAnchor(bundle)}" tabindex="-1"><div class="bundle-head">${bundleIcon(bundle.slot)}<div class="bundle-title"><b>${esc(label)}</b><div class="sub">${bundle.have}/${bundle.need}</div></div>${bundleTooltip(bundle)}<span class="badge ${status}">${bundle.complete ? "✓" : `${bundle.have}/${bundle.need}`}</span></div>${meter(bundle.have, bundle.need)}<div class="bundle-items">${bundle.items.map((item) => `<span class="bundle-item ${item.have ? "have" : ""}">${itemIcon(item.sp, true)}<span class="name">${esc(EN ? item.en : item.ru)}${item.qty > 1 ? ` ×${item.qty}` : ""}${item.qual ? ` ${qualityStars(item.qual)} ` : ""}</span>${acquisitionDetails(item, "shipped")}${annotationTools(`bundle:${bundle.slot}:${item.id}`)}</span>`).join("")}</div>${bundle.reward ? rewardCard(bundle.reward) : ""}</article>`;
+      }
+      function bundles() {
+        const completed = S.bundles.reduce((sum, room) => sum + room.done, 0),
+          total = S.bundles.reduce((sum, room) => sum + room.total, 0);
+        return `${title(t("bundles"), `${completed} / ${total}`)}${colorLegend()}${S.bundles.map((room) => `<section class="bundle-room" id="${bundleRoomAnchor(room)}" tabindex="-1"><div class="section-head"><h2>${esc(EN ? room.en : room.ru)}</h2><span class="badge ${room.done === room.total ? "ok" : room.done > 0 ? "warn" : "no"}">${room.done}/${room.total}</span></div><div class="grid bundles">${room.list.map(bundleDetailCard).join("")}</div></section>`).join("")}`;
+      }
+      function savedPage() {
+        let entries = allSavedEntries();
+        return `${title(t("saved"), `${entries.length} ${t("saved").toLowerCase()}`)}${
+          entries.length
+            ? `<div class="rows">${entries
+                .map((e) => {
+                  let a = annotation(e.key);
+                  return `<div class="row is-marked">${itemIcon(e.row.sp)}<div class="row-main"><div class="name">${nm(e.row)}</div><div class="meta"><span class="chip blue">${esc(e.label)}</span>${a.marked ? `<span class="chip warn">★ ${t("mark")}</span>` : ""}</div>${a.note ? `<span class="note-preview">${esc(a.note)}</span>` : ""}</div><div class="right">${annotationTools(e.key)}${acquisitionDetails(e.row, e.type)}<button data-go="${e.key.startsWith("bundle:") ? "bundles" : esc(e.key.split(":")[0])}" title="${t("all")}">↗</button></div></div>`;
+                })
+                .join("")}</div>`
+            : `<div class="empty">${t("noAnnotations")}</div>`
+        }`;
+      }
+      function guild() {
+        let g = S.monsters;
+        return `${title(t("guild"), `${g.completed[0]} / ${g.completed[1]} ${t("goalsComplete")} · ${t("deepestMine")}: ${g.deepest_mine}/120${g.skull_cavern ? ` · ${t("skullCavern")}: ${g.skull_cavern}` : ""}`)}${colorLegend()}<div class="grid three">${g.goals.map((m) => `<div class="card"><div class="row" style="grid-template-columns:34px minmax(0,1fr) auto;border:0;padding:0;background:transparent">${monsterIcon(m.idx)}<div class="row-main"><b>${esc(EN ? m.en : m.ru)}</b><div class="meta">${m.killed} / ${m.target} · ${esc(EN ? m.where_en : m.where_ru)}</div>${meter(m.killed, m.target)}</div><span class="badge ${m.done ? "ok" : m.killed > 0 ? "warn" : "no"}">${m.done ? "✓" : m.target - m.killed}</span></div>${m.reward ? rewardCard(m.reward) : ""}</div>`).join("")}</div>`;
+      }
+      function goals() {
+        let G = S.goals || { goals: [], tasks: [] },
+          live = MODE === "live";
+        let metrics = Object.keys(S.counts)
+          .filter((k) => Array.isArray(S.counts[k]))
+          .map((k) => `<option value="${k}">${metricLabel(k)}</option>`)
+          .join("");
+        return `${title(t("goals"), t(live ? "goalHint" : "offlineGoalsHint"), live ? `<div class="actions"><a class="badge" href="/api/goals/export">⇩ ${t("export")}</a><button type="button" id="importGoals" class="badge import-button">⇧ ${t("import")}</button><input id="goalsFile" type="file" accept="application/json" class="hidden"></div>` : "")}${colorLegend()}${live ? `<div class="form"><input id="goalTitle" type="text" maxlength="120" aria-label="${t("title")}" placeholder="${t("title")}"><select id="goalMetric" aria-label="${t("metric")}">${metrics}</select><input id="goalTarget" type="number" min="1" step="1" title="${t("goalTargetHint")}" aria-label="${t("total")}" placeholder="${t("total")}" style="width:100px"><button type="button" id="addGoal">+ ${t("addGoal")}</button></div>` : ""}${
+          G.goals
+            .map((g) => {
+              let c = S.counts[g.metric] || [0, 0],
+                target = +g.target || c[1];
+              return `<div class="card goal"><div class="goal-head"><b>${esc(g.title)}</b><span class="badge ${c[0] >= target ? "ok" : c[0] > 0 ? "warn" : "no"}">${c[0]} / ${target}</span></div><div class="sub">${metricLabel(g.metric)}</div>${meter(c[0], target)}${live ? `<button type="button" data-delgoal="${esc(g.id)}" aria-label="${t("deleteGoal")}" title="${t("deleteGoal")}" style="margin-top:8px">×</button>` : ""}</div>`;
+            })
+            .join("") || `<div class="empty">${t("noGoals")}</div>`
+        }<section class="card" style="margin-top:14px"><h2 class="panel-title">${t("task")} <span class="badge ${G.tasks.length > 0 && G.tasks.every((x) => x.done) ? "ok" : G.tasks.some((x) => x.done) ? "warn" : "no"}">${G.tasks.filter((x) => !x.done).length}/${G.tasks.length}</span></h2>${live ? `<div class="form"><input id="taskTitle" type="text" maxlength="120" aria-label="${t("title")}" placeholder="${t("title")}"><button type="button" id="addTask">+ ${t("addTask")}</button></div>` : ""}${G.tasks.map((a) => `<div class="task ${a.done ? "done" : ""}"><input type="checkbox" data-task="${esc(a.id)}" aria-label="${esc(a.title)}" ${a.done ? "checked" : ""} ${live ? "" : "disabled"}><span style="flex:1;${a.done ? "text-decoration:line-through;color:var(--state-done)" : ""}">${esc(a.title)}</span>${live ? `<button type="button" data-deltask="${esc(a.id)}" aria-label="${t("deleteTask")}" title="${t("deleteTask")}">×</button>` : ""}</div>`).join("") || `<div class="empty">${t("noTasks")}</div>`}</section>`;
+      }
+      function errorView() {
+        let e = ERR || {};
+        return `<div class="error"><h2>${esc(e.title || t("noSave"))}</h2><p>${esc(e.detail || "")}</p>${(e.steps || []).map((s) => `<div>• ${esc(s)}</div>`).join("")}<button id="retry" style="margin-top:12px">${t("restore")}</button></div>`;
+      }
+      const views = {
+        overview,
+        today,
+        perfection,
+        museum: () => listPage("museum", t("museum"), S.museum, "museum"),
+        fish: () =>
+          listPage(
+            "fish",
+            t("fish"),
+            S.fish,
+            "fish",
+            `<button type="button" id="nowOnly" aria-pressed="${nowOnly}" class="${nowOnly ? "active" : ""}">${t("filterNow")}</button>`,
+          ),
+        shipped: () => listPage("shipped", t("shipped"), S.shipped),
+        cooking: () => listPage("cooking", t("cooking"), S.cooking, "recipe"),
+        crafting: () =>
+          listPage("crafting", t("crafting"), S.crafting, "recipe"),
+        people,
+        bundles,
+        guild,
+        saved: savedPage,
+        goals,
+      };
+      let toastTimer;
+      function toast(s) {
+        let e = $("#toast");
+        e.textContent = s;
+        e.classList.add("show");
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => e.classList.remove("show"), 2400);
+      }
+      async function persist() {
+        S.goals.annotations = S.goals.annotations || {};
+        if (MODE === "live") {
+          try {
+            const response = await fetch("/api/goals", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(S.goals),
+            });
+            if (!response.ok) throw new Error("Save rejected");
+            return true;
+          } catch (e) {
+            toast(t("saveFailed"));
+            return false;
+          }
+        }
+        const saved = LS.set("annotations", S.goals.annotations);
+        if (!saved) toast(t("saveFailed"));
+        return saved;
+      }
+      let noteKeyActive = "",
+        noteTrigger = null;
+      function noteButtonFor(key) {
+        return [...document.querySelectorAll("[data-note]")].find(
+          (button) => button.dataset.note === key,
+        );
+      }
+      function openNote(key, button) {
+        noteKeyActive = key;
+        noteTrigger = button;
+        let a = annotation(key),
+          card = button.closest(".row,.grid-item,.bundle-item"),
+          name = card?.querySelector(".name")?.textContent || key;
+        $("#noteTitle").textContent = t("notePrompt");
+        $("#noteItemName").textContent = name;
+        $("#noteText").setAttribute(
+          "aria-label",
+          `${t("notePrompt")}: ${name}`,
+        );
+        $("#noteText").value = a.note || "";
+        $("#noteModal").classList.remove("hidden");
+        document.body.classList.add("modal-open");
+        $("#noteText").focus();
+      }
+      function closeNote(restoreFocus = true) {
+        const key = noteKeyActive;
+        $("#noteModal").classList.add("hidden");
+        document.body.classList.remove("modal-open");
+        noteKeyActive = "";
+        if (restoreFocus) {
+          const target = noteTrigger?.isConnected
+            ? noteTrigger
+            : noteButtonFor(key);
+          target?.focus();
+        }
+        noteTrigger = null;
+      }
+      async function saveNote() {
+        if (!noteKeyActive) return;
+        S.goals = S.goals || { goals: [], tasks: [] };
+        S.goals.annotations = S.goals.annotations || {};
+        const key = noteKeyActive,
+          saveButton = $("#noteSave");
+        let a = annotation(key);
+        a.note = $("#noteText").value.trim().slice(0, 280);
+        if (a.marked || a.note) S.goals.annotations[key] = a;
+        else delete S.goals.annotations[key];
+        if (saveButton) saveButton.disabled = true;
+        const saved = await persist();
+        if (saveButton) saveButton.disabled = false;
+        if (!saved) return;
+        closeNote(false);
+        render();
+        const target = noteButtonFor(key) || $("#view h1");
+        if (target) {
+          if (target.tagName === "H1") target.tabIndex = -1;
+          target.focus();
+        }
+        toast(t("savedSuccessfully"));
+      }
+      function bind() {
+        bindControls();
+        document.querySelectorAll("details.acq-tip").forEach((tip) => {
+          tip.addEventListener("pointerleave", () => {
+            tip.open = false;
+          });
+          tip.addEventListener("focusout", (event) => {
+            if (!tip.contains(event.relatedTarget)) tip.open = false;
+          });
+        });
+        [$("#goalTitle"), $("#goalTarget")].forEach((input) => {
+          if (input)
+            input.onkeydown = (event) => {
+              if (event.key === "Enter") {
+                event.preventDefault();
+                $("#addGoal")?.click();
+              }
+            };
+        });
+        const taskTitle = $("#taskTitle");
+        if (taskTitle)
+          taskTitle.onkeydown = (event) => {
+            if (event.key === "Enter") {
+              event.preventDefault();
+              $("#addTask")?.click();
+            }
+          };
+        document.querySelectorAll("[data-mark]").forEach(
+          (b) =>
+            (b.onclick = () => {
+              S.goals = S.goals || { goals: [], tasks: [] };
+              S.goals.annotations = S.goals.annotations || {};
+              let key = b.dataset.mark,
+                a = annotation(key);
+              a.marked = !a.marked;
+              if (a.marked || a.note) S.goals.annotations[key] = a;
+              else delete S.goals.annotations[key];
+              persist();
+              render();
+              focusDataControl("data-mark", key);
+            }),
+        );
+        document
+          .querySelectorAll("[data-note]")
+          .forEach((b) => (b.onclick = () => openNote(b.dataset.note, b)));
+        let modal = $("#noteModal"),
+          saveNoteBtn = $("#noteSave"),
+          cancelNoteBtn = $("#noteCancel");
+        if (saveNoteBtn) saveNoteBtn.onclick = saveNote;
+        if (cancelNoteBtn) cancelNoteBtn.onclick = closeNote;
+        if (modal)
+          modal.onclick = (e) => {
+            if (e.target === modal) closeNote();
+          };
+        document.onkeydown = (e) => {
+          const modal = $("#noteModal");
+          if (!modal || modal.classList.contains("hidden")) return;
+          if (e.key === "Escape") {
+            closeNote();
+            return;
+          }
+          if (e.key === "Tab") {
+            const focusable = modal.querySelectorAll(
+              'button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), a[href], [tabindex]:not([tabindex="-1"])',
+            );
+            if (!focusable.length) {
+              e.preventDefault();
+              modal.focus();
+              return;
+            }
+            const first = focusable[0],
+              last = focusable[focusable.length - 1];
+            if (e.shiftKey && document.activeElement === first) {
+              e.preventDefault();
+              last.focus();
+            } else if (!e.shiftKey && document.activeElement === last) {
+              e.preventDefault();
+              first.focus();
+            }
+          }
+        };
+        let n = $("#nowOnly");
+        if (n)
+          n.onclick = () => {
+            nowOnly = !nowOnly;
+            render();
+            $("#nowOnly")?.focus();
+          };
+        document.querySelectorAll("[data-kind]").forEach(
+          (b) =>
+            (b.onclick = () => {
+              kindFilter = b.dataset.kind === "all" ? "" : b.dataset.kind;
+              render();
+              focusDataControl("data-kind", b.dataset.kind);
+            }),
+        );
+        let r = $("#retry");
+        if (r)
+          r.onclick = () =>
+            fetch("/api/refresh")
+              .then((response) => {
+                if (!response.ok) throw new Error("Refresh failed");
+                return pull(true);
+              })
+              .catch(() => toast(t("apiError")));
+        let ag = $("#addGoal");
+        if (ag)
+          ag.onclick = () => {
+            let v = $("#goalTitle").value.trim();
+            if (!v) {
+              $("#goalTitle").focus();
+              return;
+            }
+            const metric = $("#goalMetric").value,
+              targetInput = $("#goalTarget"),
+              target = targetInput.value.trim()
+                ? Number(targetInput.value)
+                : S.counts[metric]?.[1] || 1;
+            if (!Number.isInteger(target) || target < 1) {
+              targetInput.focus();
+              targetInput.reportValidity?.();
+              return;
+            }
+            S.goals.goals.push({
+              id: Math.random().toString(36).slice(2),
+              title: v,
+              metric,
+              target,
+            });
+            persist();
+            render();
+            $("#goalTitle")?.focus();
+          };
+        let at = $("#addTask");
+        if (at)
+          at.onclick = () => {
+            let v = $("#taskTitle").value.trim();
+            if (!v) {
+              $("#taskTitle").focus();
+              return;
+            }
+            S.goals.tasks.push({
+              id: Math.random().toString(36).slice(2),
+              title: v,
+              done: false,
+            });
+            persist();
+            render();
+            $("#taskTitle")?.focus();
+          };
+        document.querySelectorAll("[data-delgoal]").forEach(
+          (b) =>
+            (b.onclick = () => {
+              const id = b.dataset.delgoal;
+              S.goals.goals = S.goals.goals.filter((x) => x.id !== id);
+              persist();
+              render();
+              const next = [...document.querySelectorAll("[data-delgoal]")][0];
+              (next || $("#goalTitle"))?.focus();
+            }),
+        );
+        document.querySelectorAll("[data-deltask]").forEach(
+          (b) =>
+            (b.onclick = () => {
+              const id = b.dataset.deltask;
+              S.goals.tasks = S.goals.tasks.filter((x) => x.id !== id);
+              persist();
+              render();
+              const next = [...document.querySelectorAll("[data-deltask]")][0];
+              (next || $("#taskTitle"))?.focus();
+            }),
+        );
+        document.querySelectorAll("[data-task]").forEach(
+          (c) =>
+            (c.onchange = () => {
+              const id = c.dataset.task;
+              let x = S.goals.tasks.find((a) => a.id === id);
+              if (x) x.done = c.checked;
+              persist();
+              render();
+              focusDataControl("data-task", id);
+            }),
+        );
+        let fi = $("#goalsFile"),
+          importButton = $("#importGoals");
+        if (importButton && fi) importButton.onclick = () => fi.click();
+        if (fi)
+          fi.onchange = async () => {
+            if (!fi.files?.[0]) return;
+            try {
+              let d = JSON.parse(await fi.files[0].text());
+              if (!Array.isArray(d.goals) || !Array.isArray(d.tasks))
+                throw Error("Invalid goals JSON");
+              S.goals = d;
+              if (!(await persist())) {
+                $("#importGoals")?.focus();
+                return;
+              }
+              render();
+              $("#importGoals")?.focus();
+              toast(t("imported"));
+            } catch (e) {
+              $("#importGoals")?.focus();
+              toast(t("invalidFile"));
+            } finally {
+              fi.value = "";
+            }
+          };
+      }
+      function render() {
+        document.documentElement.lang = EN ? "en" : "ru";
+        document.title = t("appTitle");
+        header();
+        nav();
+        let v = $("#view");
+        if (!S) {
+          v.innerHTML = errorView();
+          bind();
+          return;
+        }
+        v.innerHTML = (views[route] || overview)();
+        bind();
+      }
+      async function pull(force) {
+        if (MODE !== "live") return;
+        try {
+          let r = await fetch("/api/state", { cache: "no-store" });
+          if (!r.ok) {
+            let e = await r.json();
+            ERR = e.error;
+            S = null;
+            render();
+            return;
+          }
+          let n = await r.json();
+          if (
+            force ||
+            !S ||
+            n.meta.save_mtime !== S.meta.save_mtime ||
+            JSON.stringify(n.goals) !== JSON.stringify(S.goals)
+          ) {
+            S = n;
+            ERR = null;
+            render();
+          }
+        } catch (e) {
+          if (force) toast(t("apiError"));
+        }
+      }
+      window.addEventListener("hashchange", () => {
+        const hashParts = location.hash.slice(1).split("/"),
+          requested = hashParts.shift();
+        route = sections.includes(requested) ? requested : "overview";
+        routeTarget = route === "bundles" ? hashParts.join("/") : "";
+        search = "";
+        render();
+        scrollTo(0, 0);
+        if (!focusBundleTarget()) focusViewHeading();
+      });
+      if (!S && MODE === "live") fetch("/api/refresh").then(pull);
+      render();
+      focusBundleTarget();
+      if (MODE === "live") setInterval(pull, 3000);
+    </script>
+  </body>
+</html>
