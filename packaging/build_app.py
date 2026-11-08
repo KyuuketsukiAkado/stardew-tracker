@@ -18,7 +18,20 @@ ROOT = Path(__file__).resolve().parent.parent
 SPEC = ROOT / "packaging" / "stardew-tracker.spec"
 
 
+def _safe_stdio() -> None:
+    """Русский текст не должен ронять сборку в Windows с cp1252."""
+
+    for stream in (sys.stdout, sys.stderr):
+        reconfigure = getattr(stream, "reconfigure", None)
+        if reconfigure is not None:
+            try:
+                reconfigure(errors="replace")
+            except (ValueError, OSError):
+                pass
+
+
 def main() -> int:
+    _safe_stdio()
     try:
         import PyInstaller  # noqa: F401
     except ModuleNotFoundError:

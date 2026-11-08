@@ -100,7 +100,7 @@ python3 tracker.py info --saves-dir /tmp/saves
 python3 tracker.py build --saves-dir /tmp/saves --out /tmp/report.html
 ```
 
-Тесты используют только `unittest` и синтетический XML-сейв: 127 тестов, покрытие 90%.
+Тесты используют только `unittest` и синтетический XML-сейв: 129 тестов, покрытие 90%.
 CI прогоняет их на Python 3.9, 3.11 и 3.13, а отдельный quality-job проверяет `ruff`, формат,
 `mypy`, `bandit` и покрытие не ниже 85%.
 
@@ -145,7 +145,7 @@ assets/dashboard.html      интерфейс (inline CSS/JS)
 assets/sprites/*.png       игровые пиксельные атласы
 saves/                     необязательная папка для сейвов (игнорируется git)
 goals.json                 локальные цели и задачи (игнорируется git)
-tests/                     127 тестов и генератор тестового сейва
+tests/                     129 тестов и генератор тестового сейва
 docs/index.html            автономная демонстрационная сборка
 docs/AUDIT.md              аудит, находки и AQA-отчёт
 pyproject.toml             настройки ruff/mypy/coverage и метаданные

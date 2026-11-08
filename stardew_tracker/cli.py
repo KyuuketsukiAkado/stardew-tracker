@@ -16,6 +16,24 @@ from .state import build_state
 from .version import __version__
 
 
+def configure_stdio() -> None:
+    """Не падать на кириллице, если stdout перенаправлен в cp1252/cp866.
+
+    В Windows консольное приложение печатает UTF-8, но при перенаправлении
+    в файл или канал Python берёт кодировку локали. Ошибки кодирования
+    заменяются на ``?``, чтобы диагностика не превращалась в трассировку.
+    """
+
+    for stream in (sys.stdout, sys.stderr):
+        reconfigure = getattr(stream, "reconfigure", None)
+        if reconfigure is None:
+            continue
+        try:
+            reconfigure(errors="replace")
+        except (ValueError, OSError):
+            continue
+
+
 def info(save: str | None = None, saves_dir: str | None = None) -> None:
     """Диагностика: что найдено и сколько прогресса видит парсер."""
 
@@ -117,6 +135,7 @@ def main(argv: list[str] | None = None) -> int:
 def run() -> None:
     """Точка входа с человеческим сообщением вместо трассировки."""
 
+    configure_stdio()
     try:
         raise SystemExit(main())
     except SaveError:

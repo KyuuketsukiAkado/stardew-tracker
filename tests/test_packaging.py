@@ -4,8 +4,9 @@ from __future__ import annotations
 
 import unittest
 from pathlib import Path
+from unittest import mock
 
-from stardew_tracker import paths
+from stardew_tracker import cli, paths
 
 ROOT = Path(__file__).resolve().parent.parent
 SPEC = ROOT / "packaging" / "stardew-tracker.spec"
@@ -60,6 +61,35 @@ class UserDataDirTests(unittest.TestCase):
             home="/home/farmer",
         )
         self.assertEqual(result, Path("~/portable").expanduser())
+
+
+class _RecordingStream:
+    def __init__(self) -> None:
+        self.options: dict[str, str] = {}
+
+    def reconfigure(self, **kwargs: str) -> None:
+        self.options.update(kwargs)
+
+
+class _FailingStream:
+    def reconfigure(self, **kwargs: str) -> None:
+        raise ValueError("closed")
+
+
+class StdioTests(unittest.TestCase):
+    def test_configure_stdio_replaces_encoding_errors(self) -> None:
+        out, err = _RecordingStream(), _RecordingStream()
+        with mock.patch.object(cli.sys, "stdout", out), mock.patch.object(cli.sys, "stderr", err):
+            cli.configure_stdio()
+        self.assertEqual(out.options, {"errors": "replace"})
+        self.assertEqual(err.options, {"errors": "replace"})
+
+    def test_configure_stdio_tolerates_broken_and_plain_streams(self) -> None:
+        with (
+            mock.patch.object(cli.sys, "stdout", _FailingStream()),
+            mock.patch.object(cli.sys, "stderr", object()),
+        ):
+            cli.configure_stdio()
 
 
 class SpecTests(unittest.TestCase):
