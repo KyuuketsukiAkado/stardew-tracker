@@ -40,13 +40,25 @@ jobs:
         shell: bash
         run: python packaging/build_app.py 2>&1 | tee build.log
 
-      - name: Smoke-тест собранного файла
+      - name: Smoke: версия
+        shell: bash
+        run: '"${{ matrix.binary }}" --version'
+
+      - name: Smoke: тестовый сейв
+        shell: bash
+        run: python tests/make_test_save.py build-smoke/saves
+
+      - name: Smoke: info
+        shell: bash
+        run: '"${{ matrix.binary }}" info --saves-dir build-smoke/saves'
+
+      - name: Smoke: статический отчёт
+        shell: bash
+        run: '"${{ matrix.binary }}" build --saves-dir build-smoke/saves --out build-smoke/report.html'
+
+      - name: Smoke: проверка отчёта
         shell: bash
         run: |
-          python tests/make_test_save.py build-smoke/saves
-          "${{ matrix.binary }}" --version
-          "${{ matrix.binary }}" info --saves-dir build-smoke/saves
-          "${{ matrix.binary }}" build --saves-dir build-smoke/saves --out build-smoke/report.html
           test -s build-smoke/report.html
           grep -q "Тестовая" build-smoke/report.html
           grep -q "data:image/png;base64," build-smoke/report.html
