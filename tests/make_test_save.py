@@ -217,7 +217,20 @@ def write_test_save(base_dir):
     return path
 
 
+def _safe_output() -> None:
+    """Кириллица в cp1252-канал Windows не должна ронять генератор."""
+
+    for stream in (sys.stdout, sys.stderr):
+        reconfigure = getattr(stream, "reconfigure", None)
+        if reconfigure is not None:
+            try:
+                reconfigure(errors="replace")
+            except (ValueError, OSError):
+                pass
+
+
 if __name__ == "__main__":
+    _safe_output()
     target = sys.argv[1] if len(sys.argv) > 1 else "saves"
     p = write_test_save(os.path.abspath(target))
     print("Создан тестовый сейв:", p)
