@@ -100,17 +100,11 @@ def _int(v):
 
 
 def _dict(d):
-    return "".join(
-        f"<item><key><string>(O){k}</string></key>{_arr(v)}</item>"
-        for k, v in d.items()
-    )
+    return "".join(f"<item><key><string>(O){k}</string></key>{_arr(v)}</item>" for k, v in d.items())
 
 
 def _dict_int(d):
-    return "".join(
-        f"<item><key><string>(O){k}</string></key>{_int(v)}</item>"
-        for k, v in d.items()
-    )
+    return "".join(f"<item><key><string>(O){k}</string></key>{_int(v)}</item>" for k, v in d.items())
 
 
 def build_xml():
@@ -122,8 +116,7 @@ def build_xml():
         for k, (p, gt, gw, st) in FRIENDS.items()
     )
     museum = "".join(
-        f"<item><key><Vector2><X>{12 + i}</X><Y>5</Y></Vector2></key>"
-        f"<value><int>{v}</int></value></item>"
+        f"<item><key><Vector2><X>{12 + i}</X><Y>5</Y></Vector2></key><value><int>{v}</int></value></item>"
         for i, v in enumerate(MUSEUM_PIECES)
     )
     bundles = "".join(
@@ -133,16 +126,13 @@ def build_xml():
         for idx, flags in BUNDLES.items()
     )
     cooking = "".join(
-        f"<item><key><string>{k}</string></key><value><int>{v}</int></value></item>"
-        for k, v in COOKING_KNOWN.items()
+        f"<item><key><string>{k}</string></key><value><int>{v}</int></value></item>" for k, v in COOKING_KNOWN.items()
     )
     crafting = "".join(
-        f"<item><key><string>{k}</string></key><value><int>{v}</int></value></item>"
-        for k, v in CRAFTED.items()
+        f"<item><key><string>{k}</string></key><value><int>{v}</int></value></item>" for k, v in CRAFTED.items()
     )
     monsters = "".join(
-        f"<item><key><string>{k}</string></key><value><int>{v}</int></value></item>"
-        for k, v in MONSTERS.items()
+        f"<item><key><string>{k}</string></key><value><int>{v}</int></value></item>" for k, v in MONSTERS.items()
     )
 
     return f"""<?xml version="1.0" encoding="utf-8"?>
@@ -162,6 +152,8 @@ def build_xml():
     <foragingLevel>9</foragingLevel>
     <fishingLevel>8</fishingLevel>
     <combatLevel>8</combatLevel>
+    <!-- Удача не входит в Farmer Level; значение проверяет регрессию формулы. -->
+    <luckLevel>4</luckLevel>
     <deepestMineLevel>155</deepestMineLevel>
     <hasSkullKey>true</hasSkullKey>
     <mailReceived>

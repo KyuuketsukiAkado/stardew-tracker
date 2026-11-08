@@ -106,7 +106,7 @@ class TestResponsiveStyles(unittest.TestCase):
         self.assertIn('<use href="#icon-${group.icon}">', html)
         license_file = TEMPLATE.parents[1] / "assets" / "icons" / "LICENSE"
         self.assertIn("ISC License", license_file.read_text(encoding="utf-8"))
-        self.assertIn('grid-template-columns: repeat(auto-fit, minmax(235px, 1fr))', self.css)
+        self.assertIn("grid-template-columns: repeat(auto-fit, minmax(235px, 1fr))", self.css)
 
     def test_home_bundle_cards_deep_link_and_have_individual_tips(self):
         html = TEMPLATE.read_text(encoding="utf-8")
@@ -168,7 +168,7 @@ class TestResponsiveStyles(unittest.TestCase):
             'artifactSources: "Where to find"',
             'r.locations?.[EN ? "en" : "ru"] || []',
             "function museumSourcePreview(item)",
-            '${museumSourcePreview(r)}',
+            "${museumSourcePreview(r)}",
             'class="museum-source-preview"',
             'class="acq-tip museum-source-tip"',
             'class="museum-source-toggle"',
@@ -197,7 +197,6 @@ class TestResponsiveStyles(unittest.TestCase):
         self.assertIn('farmerFallback: "фермер"', html)
         self.assertIn('farmerFallback: "farmer"', html)
         self.assertIn('id="welcomeTitle"', html)
-        welcome = css_block(self.css, ".welcome-row")
         self.assertIn("overflow-wrap: anywhere", css_block(self.css, ".welcome-row h1"))
         self.assertIn("min-width: 0", css_block(self.css, ".welcome-row > div:first-child"))
 
@@ -248,18 +247,18 @@ class TestResponsiveStyles(unittest.TestCase):
             'role="progressbar"',
             'document.documentElement.lang = EN ? "en" : "ru"',
             'document.body.classList.add("modal-open")',
-            'target.focus();',
+            "target.focus();",
         ):
             self.assertIn(token, html)
-        self.assertIn("if (event.key === \"Enter\" || event.key === \" \")", html)
+        self.assertIn('if (event.key === "Enter" || event.key === " ")', html)
         self.assertIn("const focusable = modal.querySelectorAll(", html)
 
     def test_locale_toggle_and_goal_metrics_stay_consistent(self):
         html = TEMPLATE.read_text(encoding="utf-8")
         self.assertIn('let EN = prefs.lang === "en"', html)
         self.assertIn('EN = prefs.lang === "en"', html)
-        self.assertIn('metricLabel(k)', html)
-        self.assertIn('${metricLabel(g.metric)}', html)
+        self.assertIn("metricLabel(k)", html)
+        self.assertIn("${metricLabel(g.metric)}", html)
         self.assertIn('t(live ? "goalHint" : "offlineGoalsHint")', html)
         self.assertIn('document.documentElement.lang = EN ? "en" : "ru"', html)
 
