@@ -1,0 +1,67 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: Python ${{ matrix.python }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.9", "3.11", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+
+      - name: Юнит-тесты
+        run: python -m unittest discover -s tests -v
+
+      - name: Smoke-тест CLI на синтетическом сейве
+        run: |
+          python tests/make_test_save.py /tmp/saves
+          python tracker.py info --saves-dir /tmp/saves
+          python tracker.py build --saves-dir /tmp/saves
+          test -s report.html
+          grep -q "Тестовая" report.html
+          grep -q "data:image/png;base64," report.html
+          grep -q "Сегодня" report.html
+          grep -q 'window.__MODE__ = "static";' report.html
+
+      - name: Проверка, что data/ не пустая и валидна
+        run: |
+          python - <<'EOF'
+          import json, pathlib
+          d = pathlib.Path("data")
+          for f in sorted(d.glob("*.json")):
+              obj = json.loads(f.read_text(encoding="utf-8"))
+              print(f"{f.name:16s} ok  ({len(obj)} ключей)")
+          items = json.loads((d / "items.json").read_text(encoding="utf-8"))
+          assert len(items) > 700
+          fish = json.loads((d / "fish.json").read_text(encoding="utf-8"))
+          assert len(fish) == 74
+          print("OK")
+          EOF
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: py_compile
+        run: |
+          python -m py_compile tracker.py build_data.py tests/*.py
+      - name: flake8 (необязательно, не валит сборку)
+        continue-on-error: true
+        run: |
+          pip install flake8
+          flake8 --max-line-length=120 tracker.py build_data.py tests/

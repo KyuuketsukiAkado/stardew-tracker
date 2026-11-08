@@ -1,0 +1,29 @@
+# Пользовательские данные и локальные отчёты (приватность)
+goals.json
+goals.json.bak
+goals.json.tmp
+report.html
+saves/
+*.save
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+ENV/
+
+# Node / Playwright (если запускали локальную проверку UI)
+node_modules/
+package-lock.json
+test-results/
+playwright-report/
+
+# Архивы релизов и мусор ОС
+*.zip
+.DS_Store
+Thumbs.db
