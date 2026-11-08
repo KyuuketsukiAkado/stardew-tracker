@@ -9,6 +9,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import shutil
 import subprocess
 import sys
@@ -24,10 +25,8 @@ def _safe_stdio() -> None:
     for stream in (sys.stdout, sys.stderr):
         reconfigure = getattr(stream, "reconfigure", None)
         if reconfigure is not None:
-            try:
+            with contextlib.suppress(ValueError, OSError):
                 reconfigure(errors="replace")
-            except (ValueError, OSError):
-                pass
 
 
 def main() -> int:
