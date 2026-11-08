@@ -26,13 +26,13 @@ jobs:
           - python: "3.9"
             os: ubuntu-22.04
           - python: "3.11"
-            os: ubuntu-latest
+            os: ubuntu-24.04
           - python: "3.13"
-            os: ubuntu-latest
+            os: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python }}
 
@@ -68,11 +68,11 @@ jobs:
 
   quality:
     name: Линтеры, типы, безопасность, покрытие
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
           cache: pip
