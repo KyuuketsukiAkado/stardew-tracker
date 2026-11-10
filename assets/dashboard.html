@@ -117,6 +117,68 @@
         --shadow: 0 1px 2px #0005, 0 8px 22px #0006;
         --shadow-hover: 0 2px 6px #0006, 0 12px 28px #0008;
       }
+      /* B2 · Frost Deco — светлая холодная тема с ар-деко рамками (утверждена по A/B). */
+      :root[data-theme="frost"] {
+        color-scheme: light;
+        --bg: #e8eef4;
+        --bg-top: #d6e4f2;
+        --surface: #fbfcfe;
+        --surface-2: #eef3f8;
+        --surface-3: #dde6ef;
+        --side-bg: #f4f7fb;
+        --header-bg: #f4f7fbe6;
+        --line: #d3dde8;
+        --line-strong: #b5c4d4;
+        --text: #0f1b2b;
+        --muted: #465c78;
+        --faint: #566883;
+        --accent: #2f6fb3;
+        --accent-strong: #1f5590;
+        --accent-soft: #dbe9f7;
+        --on-accent: #ffffff;
+        --green: #1d734d;
+        --gold: #8a5d09;
+        --red: #b63628;
+        --blue: #2b66a4;
+        --purple: #4b3fa0;
+        --state-done: #1d734d;
+        --state-progress: #8a5d09;
+        --state-action: #b63628;
+        --state-idle: #58697c;
+        --state-info: #2b66a4;
+        --state-lock: #4b3fa0;
+        --done-soft: #d9efe5;
+        --done-line: #8cc8aa;
+        --progress-soft: #f6ead0;
+        --progress-line: #dfbd70;
+        --action-soft: #fbe3e0;
+        --action-line: #e8a49d;
+        --idle-soft: #e9eff5;
+        --idle-line: #c5d2df;
+        --info-soft: #dbe9f7;
+        --info-line: #9bbfe3;
+        --lock-soft: #e6e4f7;
+        --lock-line: #bdb6e6;
+        --danger: #b3261e;
+        --danger-soft: #fdeeee;
+        --danger-line: #eba5a0;
+        --track: #d3dde8;
+        --tip-bg: #fbfcfe;
+        --overlay: #0f1b2b59;
+        --shadow: 0 1px 2px #2a4a700d, 0 18px 36px -26px #2a4a7066;
+        --shadow-hover: 0 2px 4px #2a4a701a, 0 22px 40px -24px #2a4a7080;
+        --radius: 16px;
+        /* Токены декора Frost Deco */
+        --frost-glow-a: #cfe0f2;
+        --frost-glow-b: #dde3f6;
+        --frost-frame: #c3d1e0;
+        --frost-ink: #0f1b2b;
+        --frost-ink-2: #1c3352;
+        --frost-on-ink: #e8eef4;
+        --frost-on-ink-muted: #a9bdd6;
+        --frost-ink-accent: #9fd0ff;
+        --frost-ink-frame: #3d5b80;
+      }
       /*__INLINE_SPRITES__*/
       * {
         box-sizing: border-box;
@@ -379,8 +441,8 @@
         height: 16px;
       }
       .content {
-        max-width: 1500px;
-        padding: 24px 26px 40px;
+        max-width: 1840px;
+        padding: 24px clamp(18px, 2.2vw, 40px) 40px;
         margin: auto;
       }
       .title-row {
@@ -438,12 +500,29 @@
         outline: 3px solid var(--blue);
         outline-offset: 3px;
       }
+      .stat > div:first-child {
+        min-width: 0;
+      }
       .stat-label {
+        display: flex;
+        align-items: center;
+        gap: 7px;
         font-size: 11.5px;
         color: var(--muted);
         text-transform: uppercase;
         letter-spacing: 0.6px;
         font-weight: 650;
+      }
+      /* Иконка в фиксированной рамке: высокие спрайты (крафт) не сдвигают заголовки соседних плиток. */
+      .stat-icon {
+        width: 28px;
+        height: 28px;
+        flex: none;
+        display: grid;
+        place-items: center;
+      }
+      .stat-icon .item-icon.sheet2 {
+        transform: scale(0.5);
       }
       .stat-number {
         font-size: 25px;
@@ -2066,6 +2145,116 @@
       .note-dialog .actions {
         justify-content: flex-end;
       }
+      /* ===== Сетки главной: без «сирот» в последнем ряду ===== */
+      @media (min-width: 1440px) {
+        .stats {
+          grid-template-columns: repeat(6, minmax(0, 1fr));
+        }
+      }
+      @media (min-width: 760px) and (max-width: 1439px) {
+        .stats {
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+      }
+      @media (min-width: 451px) and (max-width: 759px) {
+        .stats {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+      }
+      @media (min-width: 1360px) {
+        .feature-grid {
+          grid-template-columns: repeat(4, minmax(0, 1fr));
+        }
+      }
+      @media (min-width: 560px) and (max-width: 1359px) {
+        .feature-grid {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+      }
+      /* ===== Frost Deco: оформление (цвета только из токенов темы) ===== */
+      :root[data-theme="frost"] body {
+        background:
+          radial-gradient(1000px 600px at 100% 0, var(--frost-glow-a), transparent 60%),
+          radial-gradient(800px 500px at 0 100%, var(--frost-glow-b), transparent 60%),
+          var(--bg);
+        background-attachment: fixed;
+      }
+      :root[data-theme="frost"] .stat,
+      :root[data-theme="frost"] .feature-card,
+      :root[data-theme="frost"] .welcome-row {
+        position: relative;
+      }
+      /* Ар-деко: внутренняя тонкая рамка со срезанными углами. */
+      :root[data-theme="frost"] .stat::before,
+      :root[data-theme="frost"] .feature-card::before,
+      :root[data-theme="frost"] .welcome-row::before {
+        content: "";
+        position: absolute;
+        inset: 7px;
+        border: 1px solid var(--frost-frame);
+        border-radius: 12px;
+        pointer-events: none;
+        clip-path: polygon(
+          14px 0,
+          calc(100% - 14px) 0,
+          100% 14px,
+          100% calc(100% - 14px),
+          calc(100% - 14px) 100%,
+          14px 100%,
+          0 calc(100% - 14px),
+          0 14px
+        );
+      }
+      :root[data-theme="frost"] .welcome-row {
+        background: linear-gradient(160deg, var(--frost-ink), var(--frost-ink-2));
+        border-color: var(--frost-ink-2);
+        color: var(--frost-on-ink);
+      }
+      :root[data-theme="frost"] .welcome-row::before {
+        border-color: var(--frost-ink-frame);
+      }
+      :root[data-theme="frost"] .welcome-row .sub {
+        color: var(--frost-on-ink-muted);
+      }
+      :root[data-theme="frost"] .welcome-eyebrow {
+        color: var(--frost-ink-accent);
+      }
+      :root[data-theme="frost"] .welcome-eyebrow::before,
+      :root[data-theme="frost"] .welcome-eyebrow::after {
+        content: "◆";
+        margin: 0 8px;
+        font-size: 8px;
+        vertical-align: 2px;
+        opacity: 0.7;
+      }
+      :root[data-theme="frost"] .welcome-eyebrow::before {
+        margin-left: 0;
+      }
+      :root[data-theme="frost"] .welcome-ornament {
+        color: var(--frost-ink-accent);
+      }
+      :root[data-theme="frost"] .nav a.selected {
+        background: var(--frost-ink);
+        color: var(--frost-on-ink);
+        box-shadow: none;
+      }
+      :root[data-theme="frost"] .nav a.selected .nav-icon {
+        background: transparent;
+        border-color: var(--frost-ink-frame);
+        color: var(--frost-ink-accent);
+      }
+      :root[data-theme="frost"] .nav a.selected small {
+        color: var(--frost-on-ink-muted);
+      }
+      :root[data-theme="frost"] button.active {
+        background: var(--frost-ink);
+        border-color: var(--frost-ink);
+        color: var(--frost-on-ink);
+      }
+      :root[data-theme="frost"] button.active:hover:not(:disabled) {
+        background: var(--frost-ink-2);
+        border-color: var(--frost-ink-2);
+      }
       @media (max-width: 900px) {
         .sidebar {
           position: sticky;
@@ -2217,6 +2406,9 @@
         .stat {
           padding: 10px;
           min-height: 80px;
+        }
+        :root[data-theme="frost"] .stat::before {
+          display: none;
         }
         .stat-number {
           font-size: 20px;
@@ -2801,16 +2993,19 @@
       const prefs = {
         lang: LS.get("lang", "ru") === "en" ? "en" : "ru",
         view: LS.get("view", "list") === "grid" ? "grid" : "list",
-        theme: ["light", "dark", "auto"].includes(LS.get("theme", "light"))
-          ? LS.get("theme", "light")
-          : "light",
+        theme: ["frost", "light", "dark", "auto"].includes(LS.get("theme", "frost"))
+          ? LS.get("theme", "frost")
+          : "frost",
       };
       const darkQuery = window.matchMedia?.("(prefers-color-scheme: dark)");
       function applyTheme() {
-        const dark =
-          prefs.theme === "dark" ||
-          (prefs.theme === "auto" && !!darkQuery?.matches);
-        document.documentElement.dataset.theme = dark ? "dark" : "light";
+        const theme =
+          prefs.theme === "auto"
+            ? darkQuery?.matches
+              ? "dark"
+              : "light"
+            : prefs.theme;
+        document.documentElement.dataset.theme = theme;
       }
       applyTheme();
       darkQuery?.addEventListener?.("change", () => {
@@ -3211,6 +3406,7 @@
         shown: "показано",
         extendedFish: "Только в задании Ки — не входит в коллекцию",
         nightMarketOnly: "Только Ночной рынок: зима 15–17, 17:00–02:00",
+        themeFrost: "Иней",
         themeLight: "Светлая тема",
         themeDark: "Тёмная тема",
         themeAuto: "Как в системе",
@@ -3285,6 +3481,7 @@
         shown: "shown",
         extendedFish: "Qi quest only — not part of the collection",
         nightMarketOnly: "Night Market only: Winter 15–17, 5 pm – 2 am",
+        themeFrost: "Frost theme",
         themeLight: "Light theme",
         themeDark: "Dark theme",
         themeAuto: "System theme",
@@ -3662,7 +3859,7 @@
                 ? "statusProgress"
                 : "statusIdle",
           );
-        return `<div class="card stat ${state}" ${go ? `data-go="${go}" role="link" tabindex="0" aria-label="${esc(label)}: ${v[0]} / ${v[1]} · ${stateText}"` : ""}><div><div class="stat-label">${itemIcon(iconSp, true)} ${label}</div><div class="stat-number">${v[0]}<small> / ${v[1]}</small></div><div class="stat-sub">${Math.max(0, v[1] - v[0])} ${t("left")}</div></div>${ring(v[0], v[1])}</div>`;
+        return `<div class="card stat ${state}" ${go ? `data-go="${go}" role="link" tabindex="0" aria-label="${esc(label)}: ${v[0]} / ${v[1]} · ${stateText}"` : ""}><div><div class="stat-label"><span class="stat-icon">${itemIcon(iconSp, true)}</span><span>${label}</span></div><div class="stat-number">${v[0]}<small> / ${v[1]}</small></div><div class="stat-sub">${Math.max(0, v[1] - v[0])} ${t("left")}</div></div>${ring(v[0], v[1])}</div>`;
       }
       function header() {
         let m = (S && S.meta) || {};
@@ -3684,9 +3881,15 @@
         let opts = "";
         if (MODE === "live")
           opts = `<select id="saveSelect" aria-label="${t("save")}"><option>${t("save")}: ${esc(m.save_name || "…")}</option></select><button id="refresh">↻ ${t("refresh")}</button>`;
-        const themeNext = { light: "dark", dark: "auto", auto: "light" },
-          themeIcon = { light: "sun", dark: "moon", auto: "sun" },
+        const themeNext = {
+            frost: "light",
+            light: "dark",
+            dark: "auto",
+            auto: "frost",
+          },
+          themeIcon = { frost: "sparkles", light: "sun", dark: "moon", auto: "sun" },
           themeLabel = {
+            frost: t("themeFrost"),
             light: t("themeLight"),
             dark: t("themeDark"),
             auto: t("themeAuto"),

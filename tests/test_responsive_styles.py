@@ -267,16 +267,58 @@ class TestResponsiveStyles(unittest.TestCase):
         html = TEMPLATE.read_text(encoding="utf-8")
         light = css_block(self.css, ":root {")
         dark = css_block(self.css, ':root[data-theme="dark"] {')
+        frost = css_block(self.css, ':root[data-theme="frost"] {')
         for token in ("--bg:", "--surface:", "--text:", "--state-lock:", "--danger:"):
             self.assertIn(token, light)
             self.assertIn(token, dark)
+            self.assertIn(token, frost)
         # Вне блоков объявления тем hex-цветов быть не должно.
-        components = self.css.replace(light, "").replace(dark, "")
+        components = self.css.replace(light, "").replace(dark, "").replace(frost, "")
         import re
 
         self.assertEqual(re.findall(r"#[0-9a-fA-F]{3,8}\b", components), [])
         for token in ("function applyTheme()", 'id="themeToggle"', "prefers-color-scheme: dark", 'LS.set("theme"'):
             self.assertIn(token, html)
+
+    def test_frost_deco_theme_is_default_and_in_the_switcher(self):
+        """B2 · Frost Deco: тема по умолчанию, участвует в цикле переключения, RU/EN-подписи."""
+
+        html = TEMPLATE.read_text(encoding="utf-8")
+        self.assertIn('LS.get("theme", "frost")', html)
+        self.assertIn('["frost", "light", "dark", "auto"]', html)
+        self.assertIn('frost: "light"', html)
+        self.assertIn('auto: "frost"', html)
+        self.assertIn('themeFrost: "Иней"', html)
+        self.assertIn('themeFrost: "Frost theme"', html)
+        self.assertIn("color-scheme: light", css_block(self.css, ':root[data-theme="frost"] {'))
+        # Декор Frost Deco: срезанная рамка и тёмная «hero»-плитка без хардкода цветов.
+        frame = css_block(self.css, ':root[data-theme="frost"] .stat::before,')
+        self.assertIn("clip-path: polygon(", frame)
+        self.assertIn("var(--frost-frame)", frame)
+        self.assertIn("linear-gradient(160deg, var(--frost-ink), var(--frost-ink-2))", self.css)
+
+    def test_overview_grids_have_no_orphan_rows(self):
+        """Плитки метрик (6) и карточки разделов (4) делят ряды поровну на любой ширине."""
+
+        stats_wide = css_block(self.css, "@media (min-width: 1440px)")
+        self.assertIn("repeat(6, minmax(0, 1fr))", stats_wide)
+        stats_mid = css_block(self.css, "@media (min-width: 760px) and (max-width: 1439px)")
+        self.assertIn("repeat(3, minmax(0, 1fr))", stats_mid)
+        features_wide = css_block(self.css, "@media (min-width: 1360px)")
+        self.assertIn("repeat(4, minmax(0, 1fr))", features_wide)
+        features_mid = css_block(self.css, "@media (min-width: 560px) and (max-width: 1359px)")
+        self.assertIn("repeat(2, minmax(0, 1fr))", features_mid)
+        self.assertIn("max-width: 1840px", css_block(self.css, ".content {"))
+
+    def test_stat_icons_sit_in_a_fixed_box(self):
+        """Высокие спрайты (крафт) не сдвигают заголовки соседних плиток."""
+
+        html = TEMPLATE.read_text(encoding="utf-8")
+        self.assertIn('<span class="stat-icon">${itemIcon(iconSp, true)}</span>', html)
+        icon_box = css_block(self.css, ".stat-icon {")
+        self.assertIn("width: 28px", icon_box)
+        self.assertIn("height: 28px", icon_box)
+        self.assertIn("display: flex", css_block(self.css, ".stat-label {"))
 
     def test_requirements_filters_and_danger_zone(self):
         html = TEMPLATE.read_text(encoding="utf-8")
