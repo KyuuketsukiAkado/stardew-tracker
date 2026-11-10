@@ -25,8 +25,10 @@ def compute_counts(
 ) -> dict[str, list[float | int]]:
     """Счётчики для шапок разделов, карточек и пользовательских целей."""
 
+    # «Легендарные II» (задание Ки) не входят во вкладку «Рыба» и в перфекцию.
+    collection_fish = [row for row in fish_rows if not row.get("extended")]
     counts: dict[str, list[float | int]] = {
-        "fish": [sum(1 for row in fish_rows if row["done"]), len(fish_rows)],
+        "fish": [sum(1 for row in collection_fish if row["done"]), len(collection_fish)],
         "museum": [sum(1 for row in museum_rows if row["donated"]), len(museum_rows)],
         "museum_found": [
             sum(1 for row in museum_rows if row["found"] or row["donated"]),

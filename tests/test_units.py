@@ -82,6 +82,35 @@ class TestTimeUtil(unittest.TestCase):
         self.assertTrue(timeutil.weather_matches("sunny", "sunny"))
 
 
+class TestRegressions(unittest.TestCase):
+    """Баги, найденные в ревью ноября 2026."""
+
+    def test_norm_id_unclosed_paren_does_not_crash(self):
+        self.assertEqual(xmlutil.norm_id("(O"), "(O")
+        self.assertEqual(xmlutil.norm_id("(O)SeaJelly"), "SeaJelly")
+
+    def test_empty_player_stats_is_not_replaced_by_root_stats(self):
+        from stardew_tracker.saveparser import _parse_stats
+
+        root = ET.fromstring(
+            "<SaveGame><player><stats/></player>"
+            "<stats><specificMonstersKilled><item><key><string>Bat</string></key>"
+            "<value><int>9</int></value></item></specificMonstersKilled></stats></SaveGame>"
+        )
+        host = xmlutil.kid(root, "player")
+        monsters, _values, _total = _parse_stats(host, root)
+        self.assertEqual(monsters, {})
+
+    def test_allowed_save_paths_survives_save_error(self):
+        from stardew_tracker.errors import SaveError
+        from stardew_tracker.server import TrackerApp
+
+        app = TrackerApp(saves_dir="/definitely/missing")
+        error = SaveError("no_saves", "t", "d", [])
+        with mock.patch("stardew_tracker.server.find_saves", side_effect=error):
+            self.assertEqual(app.allowed_save_paths(), set())
+
+
 class TestXmlUtil(unittest.TestCase):
     def test_namespace_helpers(self):
         root = ET.fromstring(

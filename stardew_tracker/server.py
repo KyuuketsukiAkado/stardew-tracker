@@ -86,6 +86,9 @@ class TrackerApp:
     def allowed_save_paths(self) -> set[str]:
         """Белый список сейвов, на которые можно переключиться из UI."""
 
+        # Без начального значения ``paths`` падал UnboundLocalError, если
+        # поиск сейвов выбрасывал SaveError (папка исчезла, нет прав).
+        paths: list[str] = []
         with contextlib.suppress(SaveError):
             paths = find_saves(saves_dir=self.saves_dir)
         allowed = {os.path.abspath(path) for path in paths}
@@ -303,6 +306,9 @@ class _BaseHandler(BaseHTTPRequestHandler):
                 save_goals(goals)
                 self.application.set_goals(goals)
             self._json(200, {"ok": True, "goals": goals})
+        except OSError as exc:
+            # Ошибка диска — это сбой сервера, а не «плохой запрос» клиента.
+            self._json(500, {"error": f"Не удалось записать goals.json: {exc}"})
         except Exception as exc:
             self._json(400, {"error": str(exc)})
 

@@ -88,7 +88,6 @@ class TestResponsiveStyles(unittest.TestCase):
         self.assertIn('appTitle: "Stardew Tracker — Farm Progress"', html)
         self.assertIn('document.title = t("appTitle")', html)
         self.assertIn('viewBox="0 0 40 40"', html)
-        self.assertIn('stroke="#9bd276"', html)
         self.assertIn("width: 36px", css_block(self.css, ".brand-mark"))
 
     def test_player_friendly_navigation_and_home_feature_cards(self):
@@ -150,9 +149,9 @@ class TestResponsiveStyles(unittest.TestCase):
         self.assertIn('class="reward-card-icon"', html)
         self.assertIn("function rewardCard(reward)", html)
         self.assertIn('${m.reward ? rewardCard(m.reward) : ""}', html)
-        self.assertIn("border-left: 4px solid #e0b64f", reward)
+        self.assertIn("border-left: 4px solid var(--gold)", reward)
         self.assertIn("background: linear-gradient", reward)
-        self.assertIn("color: #f3d992", label)
+        self.assertIn("background: var(--gold)", label)
         self.assertIn("font-weight: 800", label)
         self.assertIn("width: 32px", icon)
         self.assertIn("height: 32px", icon)
@@ -170,7 +169,7 @@ class TestResponsiveStyles(unittest.TestCase):
             "function museumSourcePreview(item)",
             "${museumSourcePreview(r)}",
             'class="museum-source-preview"',
-            'class="acq-tip museum-source-tip"',
+            'class="acq-tip museum-source-tip${req ? " req-tip" : ""}"',
             'class="museum-source-toggle"',
             'sources.map((source) => `<div class="tip-line">${esc(source)}</div>`)',
         ):
@@ -178,8 +177,8 @@ class TestResponsiveStyles(unittest.TestCase):
         tooltip = css_block(self.css, ".museum-source-tip .tip-pop {")
         self.assertIn("max-height: min(360px, 70vh)", tooltip)
         self.assertIn("overflow-y: auto", tooltip)
-        self.assertIn("background: #203442", css_block(self.css, ".acq-tip summary {"))
-        self.assertIn("background: #2d5061", css_block(self.css, ".acq-tip summary:hover {"))
+        self.assertIn("background: var(--info-soft)", css_block(self.css, ".acq-tip summary {"))
+        self.assertIn("background: var(--blue)", css_block(self.css, ".acq-tip summary:hover {"))
         self.assertIn("width: auto", css_block(self.css, ".museum-source-tip summary {"))
         self.assertIn("align-items: center", css_block(self.css, ".tabs {"))
 
@@ -261,6 +260,65 @@ class TestResponsiveStyles(unittest.TestCase):
         self.assertIn("${metricLabel(g.metric)}", html)
         self.assertIn('t(live ? "goalHint" : "offlineGoalsHint")', html)
         self.assertIn('document.documentElement.lang = EN ? "en" : "ru"', html)
+
+    def test_light_and_dark_themes_use_tokens(self):
+        """Цвета компонентов берутся из переменных темы, а не захардкожены."""
+
+        html = TEMPLATE.read_text(encoding="utf-8")
+        light = css_block(self.css, ":root {")
+        dark = css_block(self.css, ':root[data-theme="dark"] {')
+        for token in ("--bg:", "--surface:", "--text:", "--state-lock:", "--danger:"):
+            self.assertIn(token, light)
+            self.assertIn(token, dark)
+        # Вне блоков объявления тем hex-цветов быть не должно.
+        components = self.css.replace(light, "").replace(dark, "")
+        import re
+
+        self.assertEqual(re.findall(r"#[0-9a-fA-F]{3,8}\b", components), [])
+        for token in ("function applyTheme()", 'id="themeToggle"', "prefers-color-scheme: dark", 'LS.set("theme"'):
+            self.assertIn(token, html)
+
+    def test_requirements_filters_and_danger_zone(self):
+        html = TEMPLATE.read_text(encoding="utf-8")
+        for token in (
+            "function reqChip(r)",
+            "function reqTip(r)",
+            "function unlocksPanel()",
+            "function filterBar(type, shown, total)",
+            "function applyFilters(rows, type)",
+            "function secretsPage()",
+            'id="dangerConsent"',
+            "dangerConsent = false;",
+            'data-reveal-key="${esc(key)}"',
+            '.replace(/\\S/g, "•")',
+        ):
+            self.assertIn(token, html)
+        self.assertIn("border-style: dashed", css_block(self.css, ".row.locked,"))
+        self.assertIn("filter: blur(6px)", css_block(self.css, ".spoiler-text.blurred > p"))
+
+    def test_spoiler_visuals_schemes_and_wiki_links(self):
+        """Визуал к решениям: свои схемы, иконки предметов, внешние ссылки без referrer."""
+
+        import json
+
+        html = TEMPLATE.read_text(encoding="utf-8")
+        for token in (
+            "const SCHEMES = {",
+            "function spoilerExtras(entry)",
+            "function wikiLink(url, label)",
+            'target="_blank" rel="noopener noreferrer"',
+            'if (kind === "solution") el.insertAdjacentHTML("beforeend", spoilerExtras(entry));',
+            # Визуал не рендерится, пока решение не раскрыто.
+            'extras = open && kind === "solution" ? spoilerExtras(findSecret(id)) : ""',
+        ):
+            self.assertIn(token, html)
+        secrets_path = TEMPLATE.parents[1] / "data" / "secrets.json"
+        secrets = json.loads(secrets_path.read_text(encoding="utf-8"))
+        used = {e["scheme"] for s in secrets["sections"] for e in s["entries"] if e.get("scheme")}
+        self.assertGreaterEqual(len(used), 10)
+        for scheme in used:
+            self.assertIn(f"  {scheme}: () =>", html, scheme)
+        self.assertIn("fill: var(--danger)", css_block(self.css, ".sc-target {"))
 
     def test_short_viewport_and_toast_are_contained(self):
         html = TEMPLATE.read_text(encoding="utf-8")

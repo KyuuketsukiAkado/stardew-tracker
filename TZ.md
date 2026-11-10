@@ -65,10 +65,10 @@ python tracker.py serve --saves-dir /tmp/saves --port 8777 --no-open
 
 ```
 Ферма: Тестовая / Фермер   Осень 12, год 3, 13:50
-  fish              8 / 74
+  fish              8 / 72
   museum            4 / 95
   museum_found      8 / 95
-  shipped           5 / 155
+  shipped           5 / 154
   cooking           3 / 81
   crafting          6 / 150
   люди            34
@@ -142,9 +142,10 @@ bundles, alerts, goals`. `counts[key] = [сделано, всего]`. Полн�
 * **Музей**: `donated` = ID есть в `museumPieces`; `found` = ID есть в `archaeologyFound` (артефакты)
   или `mineralsFound` (минералы). Универсум: 42 артефакта (`Type == "Arch"`) + 53 минерала
   (`Type == "Minerals"`) = **95**. Отдельно считается `museum_found`.
-* **Рыба**: универсум = ключи `Data/Fish.json` = **74**. Мусор (`Trash`, `Driftwood`, `Soggy Newspaper`,
-  `Broken Glasses`, `Broken CD`, `Joja Cola` — ID 167–172) и желе 1.6 в коллекцию не входят.
-* **Отправка**: список 155 предметов (`data/shipping.json`), см. §10 про происхождение.
+* **Рыба** (исправлено в v0.3.0 по вики 1.6): коллекция = **72** вида — ключи `Data/Fish.json`
+  + 3 медузы 1.6 (`SeaJelly`, `RiverJelly`, `CaveJelly`), **без** 5 «легендарных II» (898–902, задание
+  Ки «Расширенная семья», в `fish.json` помечены `extended`). Мусор (ID 167–172) не входит.
+* **Отправка**: список **154** предмета (`data/shipping.json`); Гребешок (372) в 1.6 перешёл в рыбу.
 * **Готовка**: `recipesCooked[output_id] > 0`, `output_id` берётся из `Data/CookingRecipes.json` (поле 2).
 * **Крафт**: `craftingRecipes[имя_рецепта] > 0`, всего 150.
 * **Бандл готов**, когда `true`-флагов ≥ `need_count` (в `Data/Bundles.json` поле 4; у «любых N из M»

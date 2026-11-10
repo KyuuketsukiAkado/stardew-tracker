@@ -150,7 +150,7 @@ def norm_id(raw: object) -> str:
     if raw is None:
         return ""
     value = str(raw).strip()
-    if value.startswith("("):
+    if value.startswith("(") and ")" in value:
         value = value.split(")", 1)[1]
     match = re.match(r"^-?\d+", value)
     return match.group(0) if match else value

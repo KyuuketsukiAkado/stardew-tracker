@@ -9,6 +9,7 @@ import time
 from collections import OrderedDict
 from typing import Any
 
+from .catalog import item_info
 from .collections import (
     build_bundles,
     build_cooking_rows,
@@ -27,6 +28,13 @@ from .errors import SaveError
 from .gamedata import load_json
 from .goals import load_goals
 from .perfection import build_perfection, compute_counts
+from .requirements import (
+    UnlockContext,
+    build_unlocks,
+    location_filter_options,
+    museum_tag_options,
+    recipe_kind_options,
+)
 from .savefinder import find_saves, no_saves_error
 from .saveparser import _file_sig, parse_save
 from .timeutil import abs_day, fmt_clock, minutes_of_day
@@ -69,6 +77,36 @@ def _cached_copy(cached: dict[str, Any], saves_found: int) -> dict[str, Any]:
     return state
 
 
+def _secret_sections(
+    secrets: dict[str, Any], items: dict[str, Any], big_craftables: dict[str, Any]
+) -> list[dict[str, Any]]:
+    """Разделы danger zone: ID предметов -> иконки, относительные ссылки -> полные URL."""
+
+    base = str(secrets.get("wiki_base") or "")
+
+    def resolve(uid: str) -> dict[str, Any] | None:
+        if uid.startswith("BC:"):
+            info = big_craftables.get(uid[3:])
+            if not info:
+                return None
+            return {"id": uid, "ru": info.get("ru", ""), "en": info.get("en", ""), "sp": info.get("sp")}
+        if uid not in items:
+            return None
+        return item_info(items, uid)
+
+    def link(value: Any) -> str:
+        return base + str(value) if value else ""
+
+    sections: list[dict[str, Any]] = []
+    for section in secrets.get("sections", []):
+        entries = []
+        for entry in section.get("entries", []):
+            resolved = [item for item in (resolve(str(uid)) for uid in entry.get("items", [])) if item]
+            entries.append({**entry, "items": resolved, "wiki_url": link(entry.get("wiki"))})
+        sections.append({**section, "entries": entries, "wiki_url": link(section.get("wiki"))})
+    return sections
+
+
 def build_state(save_path: str | None = None, saves_dir: str | None = None) -> dict[str, Any]:
     """Полное состояние дашборда для самого свежего (или явно выбранного) сейва."""
 
@@ -92,9 +130,14 @@ def build_state(save_path: str | None = None, saves_dir: str | None = None) -> d
     shipping = load_json("shipping.json")
     monsters_config = load_json("monsters.json").get("goals") or []
 
+    recipe_sources = load_json("recipe_sources.json")
+    secrets = load_json("secrets.json")
+
     raw = parse_save(selected)
     current_abs_day = abs_day(raw["season"], raw["day"], raw["year"])
     current_minutes = minutes_of_day(raw["time"])
+    hearts = {key: int(value.get("points", 0)) // 250 for key, value in raw["friendship"].items()}
+    ctx = UnlockContext(raw, hearts)
 
     fish_rows = build_fish_rows(
         fish,
@@ -103,11 +146,12 @@ def build_state(save_path: str | None = None, saves_dir: str | None = None) -> d
         raw["season"],
         current_minutes,
         raw["weather"],
+        ctx,
     )
-    museum_rows = build_museum_rows(museum, artifact_locations, items, raw)
-    ship_rows = build_shipping_rows(shipping, items, raw, raw["season"])
-    cook_rows = build_cooking_rows(recipes, items, raw)
-    craft_rows, unmatched = build_crafting_rows(recipes, raw)
+    museum_rows = build_museum_rows(museum, artifact_locations, items, raw, ctx)
+    ship_rows = build_shipping_rows(shipping, items, raw, raw["season"], ctx)
+    cook_rows = build_cooking_rows(recipes, items, raw, ctx, recipe_sources.get("cooking"))
+    craft_rows, unmatched = build_crafting_rows(recipes, raw, ctx, recipe_sources.get("crafting"))
     people = build_people(npcs.get("npcs", {}), items, raw, current_abs_day)
     bundle_rooms = build_bundles(bundles, raw)
     monster_rows, monsters_state = build_monsters(monsters_config, raw)
@@ -192,6 +236,18 @@ def build_state(save_path: str | None = None, saves_dir: str | None = None) -> d
         },
         "perfection": perfection_state,
         "today": today_state,
+        "unlocks": build_unlocks(ctx, [fish_rows, museum_rows, ship_rows, cook_rows, craft_rows], secrets),
+        "filters": {
+            "fish_locations": location_filter_options(),
+            "museum_tags": museum_tag_options(),
+            "recipe_kinds": recipe_kind_options(),
+        },
+        "secrets": {
+            "sections": _secret_sections(secrets, items, load_json("big_craftables.json")),
+            "qi_orders_completed": sorted(
+                order for order in raw["special_orders"] if order.startswith("QiChallenge")
+            ),
+        },
         "alerts": {
             "museum_found_not_donated": [
                 {"id": row["id"], "ru": row["ru"], "en": row["en"], "sp": row["sp"]} for row in need_museum
