@@ -1,0 +1,299 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Stardew Трекер — A/B прототип: холодный Bento</title>
+    <style>
+      :root {
+        --spr-obj0: url("/assets/sprites/objects.png");
+        --spr-obj1: url("/assets/sprites/objects2.png");
+        --spr-bc: url("/assets/sprites/craftables.png");
+        --spr-npcs: url("/assets/sprites/npcs.png");
+        /* DIN-гротеск: Bahnschrift в Windows — вариация DIN 1451 с осью ширины. */
+        --din: "Bahnschrift", "DIN Pro", "DIN Alternate", "Roboto Condensed", "Arial Narrow", sans-serif;
+        --text: "Segoe UI Variable Text", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+        /* Модульная шкала ×1.25 (как в NFS Unbound). */
+        --t0: 13px; --t1: 15px; --t2: 18.75px; --t3: 23.4px; --t4: 29.3px; --t5: 36.6px; --t6: 45.8px; --t7: 57.2px; --t8: 71.5px; --t9: 89.4px;
+        --gap: 26px;
+        --pad: 32px;
+      }
+      /*__INLINE_SPRITES__*/
+      * { box-sizing: border-box; }
+      body { margin: 0; font: var(--t1)/1.7 var(--text); -webkit-font-smoothing: antialiased; }
+      button { font: inherit; color: inherit; cursor: pointer; background: none; border: 0; padding: 0; }
+      .spr { display: inline-block; image-rendering: pixelated; background-repeat: no-repeat; flex: none; vertical-align: middle; }
+      .din { font-family: var(--din); }
+      .condensed { font-family: var(--din); font-variation-settings: "wdth" 75; font-stretch: condensed; }
+
+      /* ---------- Панель A/B ---------- */
+      .ab-bar { position: sticky; top: 0; z-index: 50; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; justify-content: center; padding: 8px 12px; background: #05070c; color: #fff; font: 13px var(--text); }
+      .ab-bar b { margin-right: 8px; font-weight: 600; }
+      .ab-bar button { border-radius: 999px; padding: 6px 14px; color: #8d97ab; }
+      .ab-bar button.on { background: #fff; color: #05070c; font-weight: 700; }
+      .ab-bar .sep { width: 1px; height: 20px; background: #252b38; margin: 0 6px; }
+
+      /* ---------- Общая сетка Bento ---------- */
+      .app { max-width: 1320px; margin: 0 auto; padding: 48px 40px 120px; }
+      .top { display: flex; flex-wrap: wrap; gap: 24px; align-items: end; justify-content: space-between; margin-bottom: 56px; }
+      .kicker { margin: 0 0 14px; font: 600 var(--t0)/1 var(--din); letter-spacing: 0.22em; text-transform: uppercase; }
+      .hello { margin: 0; font: 700 var(--t8)/0.95 var(--din); font-variation-settings: "wdth" 75; font-stretch: condensed; letter-spacing: -0.01em; text-transform: uppercase; }
+      .sub { margin-top: 16px; font-size: var(--t2); line-height: 1.6; }
+      .seg { display: flex; gap: 4px; padding: 5px; border-radius: 999px; }
+      .seg button { padding: 10px 22px; border-radius: 999px; font: 600 var(--t1)/1 var(--din); letter-spacing: 0.08em; text-transform: uppercase; white-space: nowrap; }
+      .bento { display: grid; grid-template-columns: repeat(12, 1fr); gap: var(--gap); }
+      .tile { position: relative; padding: var(--pad); border-radius: 30px; overflow: hidden; }
+      .s3 { grid-column: span 3; } .s4 { grid-column: span 4; } .s5 { grid-column: span 5; } .s6 { grid-column: span 6; } .s7 { grid-column: span 7; } .s8 { grid-column: span 8; } .s12 { grid-column: span 12; }
+      .t-label { display: flex; align-items: center; justify-content: space-between; gap: 12px; font: 600 var(--t0)/1 var(--din); letter-spacing: 0.2em; text-transform: uppercase; }
+      .big { margin-top: 40px; font: 700 var(--t9)/0.85 var(--din); font-variation-settings: "wdth" 75; font-stretch: condensed; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+      .big sup { font: 600 var(--t3) var(--din); letter-spacing: 0; vertical-align: top; margin-left: 8px; opacity: 0.55; }
+      .bar { height: 6px; margin-top: 28px; border-radius: 99px; overflow: hidden; }
+      .bar i { display: block; height: 100%; width: var(--p); border-radius: inherit; }
+      .tile h3 { margin: 0 0 28px; font: 700 var(--t5)/1 var(--din); font-variation-settings: "wdth" 75; font-stretch: condensed; text-transform: uppercase; letter-spacing: 0.01em; }
+      .item { display: grid; grid-template-columns: 44px 1fr auto; gap: 18px; align-items: center; padding: 18px 0; }
+      .item b { display: block; font-weight: 600; font-size: var(--t2); line-height: 1.35; }
+      .item small { display: block; margin-top: 4px; font-size: var(--t1); line-height: 1.55; }
+      .chip { padding: 6px 14px; border-radius: 999px; font: 600 var(--t0)/1 var(--din); letter-spacing: 0.12em; text-transform: uppercase; white-space: nowrap; }
+      .unlocks { display: flex; flex-wrap: wrap; gap: 10px; }
+      .u { padding: 9px 16px; border-radius: 999px; font: 600 var(--t0)/1.2 var(--din); letter-spacing: 0.06em; }
+      .head { display: flex; flex-wrap: wrap; gap: 24px; align-items: end; justify-content: space-between; margin: 0 0 40px; }
+      .head h2 { margin: 0; font: 700 var(--t8)/0.9 var(--din); font-variation-settings: "wdth" 75; font-stretch: condensed; text-transform: uppercase; }
+      .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 20px; }
+      .fc { position: relative; padding: 24px; border-radius: 26px; min-height: 250px; display: grid; grid-template-rows: auto 1fr auto; }
+      .fc .row { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px; font: 600 var(--t0)/1.3 var(--din); letter-spacing: 0.1em; text-transform: uppercase; }
+      .fc .state { padding: 3px 9px; border-radius: 999px; letter-spacing: 0.08em; white-space: nowrap; }
+      .fc .pic { display: grid; place-items: center; padding: 22px 0; }
+      .fc b { display: block; font: 700 var(--t3)/1.15 var(--din); font-variation-settings: "wdth" 85; text-transform: uppercase; letter-spacing: 0.02em; }
+      .fc small { display: block; margin-top: 6px; font-size: var(--t0); line-height: 1.55; }
+      .lockchip { display: inline-block; margin-top: 12px; padding: 5px 12px; border-radius: 999px; font: 600 var(--t0)/1.2 var(--din); letter-spacing: 0.06em; }
+      .reveal { margin-top: 28px; font-size: var(--t2); line-height: 1.75; max-width: 62ch; }
+      .reveal.closed { color: transparent !important; user-select: none; }
+      .btn { display: inline-block; margin-top: 32px; padding: 16px 30px; border-radius: 999px; font: 700 var(--t1)/1 var(--din); letter-spacing: 0.14em; text-transform: uppercase; }
+      .step { display: grid; grid-template-columns: 40px 40px 1fr auto; gap: 16px; align-items: center; padding: 18px 0; font-size: var(--t2); line-height: 1.4; }
+      .step .n { width: 36px; height: 36px; display: grid; place-items: center; border-radius: 50%; font: 700 var(--t1) var(--din); }
+      .step em { font: 700 var(--t3) var(--din); font-style: normal; }
+
+      /* =========================================================
+         B1 · NIGHT RUN — тёмный холодный неон (NFS Unbound)
+         ========================================================= */
+      body.b1 { background: #070b14; color: #e8f1ff; }
+      body.b1::before { content: ""; position: fixed; inset: 0; z-index: -1; background: radial-gradient(900px 500px at 85% -10%, #1f3d8a55, transparent 60%), radial-gradient(700px 500px at -10% 110%, #00e0ff22, transparent 60%), repeating-linear-gradient(115deg, transparent 0 46px, #ffffff05 46px 47px); }
+      .b1 .kicker { color: #4de1ff; }
+      .b1 .hello { color: #fff; }
+      .b1 .hello em { font-style: italic; color: #4de1ff; }
+      .b1 .sub { color: #8f9bb5; }
+      .b1 .seg { background: #111a2c; box-shadow: inset 0 0 0 1px #1f2b45; }
+      .b1 .seg button { color: #7f8aa6; }
+      .b1 .seg button.on { background: #4de1ff; color: #05121d; }
+      .b1 .tile { background: #0f1626; box-shadow: inset 0 0 0 1px #1c2740; }
+      .b1 .tile.hero { background: linear-gradient(135deg, #1749ff 0%, #4de1ff 120%); color: #04101f; box-shadow: none; }
+      .b1 .tile.hero::after { content: ""; position: absolute; right: -40px; top: -30px; width: 260px; height: 260px; background: repeating-linear-gradient(115deg, #ffffff30 0 10px, transparent 10px 24px); transform: skewX(-12deg); }
+      .b1 .tile.ice { background: #b9e6ff; color: #04101f; box-shadow: none; }
+      .b1 .tile.violet { background: #8f7cff; color: #0b0720; box-shadow: none; }
+      .b1 .tile.mint { background: #5ff2c4; color: #03140f; box-shadow: none; }
+      .b1 .t-label { color: inherit; opacity: 0.8; }
+      .b1 .tile:not(.hero):not(.ice):not(.violet):not(.mint) .t-label { color: #4de1ff; opacity: 1; }
+      .b1 .big { font-style: italic; }
+      .b1 .bar { background: #ffffff1f; }
+      .b1 .tile.ice .bar, .b1 .tile.violet .bar, .b1 .tile.mint .bar, .b1 .tile.hero .bar { background: #00000022; }
+      .b1 .bar i { background: #4de1ff; }
+      .b1 .tile.ice .bar i, .b1 .tile.violet .bar i, .b1 .tile.mint .bar i, .b1 .tile.hero .bar i { background: #04101f; }
+      .b1 .item + .item { border-top: 1px solid #1c2740; }
+      .b1 .item small { color: #8f9bb5; }
+      .b1 .chip { background: #172340; color: #9fdcff; transform: skewX(-12deg); border-radius: 6px; }
+      .b1 .u { background: #172340; color: #9fdcff; }
+      .b1 .u.ok { background: #4de1ff; color: #04101f; }
+      .b1 .u.no { background: transparent; color: #6d7896; box-shadow: inset 0 0 0 1px #2a3654; }
+      .b1 .head h2 { font-style: italic; }
+      .b1 .head h2 em { color: #4de1ff; font-style: italic; }
+      .b1 .fc { background: #0f1626; box-shadow: inset 0 0 0 1px #1c2740; }
+      .b1 .fc .row { color: #6d7896; }
+      .b1 .fc small { color: #8f9bb5; }
+      .b1 .fc.now { background: linear-gradient(160deg, #123a63, #0f1626 70%); box-shadow: inset 0 0 0 1.5px #4de1ff; }
+      .b1 .fc .state { background: #172340; color: #9fdcff; }
+      .b1 .fc.now .state { background: #4de1ff; color: #04101f; }
+      .b1 .fc.done { opacity: 0.55; }
+      .b1 .fc.locked { background: #0c1220; box-shadow: inset 0 0 0 1px #2a2450; }
+      .b1 .fc.locked .pic .spr { opacity: 0.25; filter: grayscale(1); }
+      .b1 .lockchip { background: #8f7cff; color: #0b0720; transform: skewX(-12deg); border-radius: 6px; }
+      .b1 .reveal.closed { text-shadow: 0 0 14px #9fdcff99; }
+      .b1 .btn { background: #4de1ff; color: #04101f; transform: skewX(-12deg); border-radius: 8px; }
+      .b1 .btn > span { display: inline-block; transform: skewX(12deg); }
+      .b1 .step + .step { border-top: 1px solid #00000022; }
+      .b1 .step .n { background: #04101f; color: #b9e6ff; }
+
+      /* =========================================================
+         B2 · FROST DECO — светлый холодный ар-деко (Deadlock)
+         ========================================================= */
+      body.b2 { background: #e8eef4; color: #0f1b2b; }
+      body.b2::before { content: ""; position: fixed; inset: 0; z-index: -1; background: radial-gradient(1000px 600px at 100% 0, #cfe0f2, transparent 60%), radial-gradient(800px 500px at 0 100%, #dde3f6, transparent 60%); }
+      .b2 .kicker { color: #4a6888; }
+      .b2 .kicker::before, .b2 .kicker::after { content: "◆"; margin: 0 10px; font-size: 8px; vertical-align: 2px; color: #8aa3be; }
+      .b2 .kicker::before { margin-left: 0; }
+      .b2 .hello em { font-style: normal; color: #2f6fb3; }
+      .b2 .sub { color: #5a6d84; }
+      .b2 .seg { background: #fff; box-shadow: 0 0 0 1px #c9d5e2; }
+      .b2 .seg button { color: #5a6d84; }
+      .b2 .seg button.on { background: #0f1b2b; color: #e8eef4; }
+      .b2 .tile { background: #fbfcfe; box-shadow: 0 0 0 1px #d3dde8, 0 24px 48px -32px #2a4a7055; }
+      /* Ар-деко: внутренняя двойная рамка со срезанными углами. */
+      .b2 .tile::before { content: ""; position: absolute; inset: 12px; border: 1px solid #c3d1e0; border-radius: 20px; pointer-events: none; clip-path: polygon(18px 0, calc(100% - 18px) 0, 100% 18px, 100% calc(100% - 18px), calc(100% - 18px) 100%, 18px 100%, 0 calc(100% - 18px), 0 18px); }
+      .b2 .tile.hero { background: linear-gradient(160deg, #0f1b2b, #1c3352); color: #e8eef4; }
+      .b2 .tile.hero::before { border-color: #3d5b80; }
+      .b2 .tile.ice { background: #d6e8f8; }
+      .b2 .tile.violet { background: #dfe0f7; }
+      .b2 .tile.mint { background: #d5eeea; }
+      .b2 .t-label { color: #4a6888; }
+      .b2 .tile.hero .t-label { color: #9fb6d1; }
+      .b2 .bar { background: #0f1b2b14; }
+      .b2 .tile.hero .bar { background: #ffffff1f; }
+      .b2 .bar i { background: #0f1b2b; }
+      .b2 .tile.hero .bar i { background: #9fd0ff; }
+      .b2 .item + .item { border-top: 1px solid #dde5ee; }
+      .b2 .item small { color: #5a6d84; }
+      .b2 .chip { background: #e6edf5; color: #2c4a6c; box-shadow: inset 0 0 0 1px #c9d5e2; }
+      .b2 .u { background: #fff; color: #2c4a6c; box-shadow: inset 0 0 0 1px #c9d5e2; }
+      .b2 .u.ok { background: #0f1b2b; color: #e8eef4; box-shadow: none; }
+      .b2 .u.no { background: transparent; color: #7c8ea4; box-shadow: inset 0 0 0 1px #b5c4d4; border: 0; }
+      .b2 .head h2 em { color: #2f6fb3; font-style: normal; }
+      .b2 .fc { background: #fbfcfe; box-shadow: 0 0 0 1px #d3dde8; }
+      .b2 .fc .row { color: #6c8099; }
+      .b2 .fc small { color: #5a6d84; }
+      .b2 .fc.now { background: #0f1b2b; color: #e8eef4; box-shadow: none; }
+      .b2 .fc .state { background: #e6edf5; color: #2c4a6c; }
+      .b2 .fc.now .row { color: #9fd0ff; }
+      .b2 .fc.now .state { background: #9fd0ff; color: #0f1b2b; }
+      .b2 .fc.now small { color: #9fb6d1; }
+      .b2 .fc.done { background: #edf2f7; opacity: 0.7; }
+      .b2 .fc.locked { background: #eceaf7; box-shadow: 0 0 0 1px #cfc9ec; }
+      .b2 .fc.locked .pic .spr { opacity: 0.3; filter: grayscale(1); }
+      .b2 .lockchip { background: #4b3fa0; color: #fff; }
+      .b2 .reveal.closed { text-shadow: 0 0 14px #e8eef4cc; }
+      .b2 .btn { background: #9fd0ff; color: #0f1b2b; }
+      .b2 .step + .step { border-top: 1px solid #0f1b2b14; }
+      .b2 .step .n { background: #0f1b2b; color: #e8eef4; }
+
+      @media (max-width: 960px) {
+        :root { --gap: 18px; --pad: 26px; --t8: 52px; --t9: 68px; }
+        .app { padding: 32px 18px 90px; }
+        .top { margin-bottom: 36px; }
+        .bento > .tile { grid-column: span 12; }
+        .seg { max-width: 100%; overflow-x: auto; scrollbar-width: none; }
+        .cards { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+        .fc { min-height: 0; padding: 18px; }
+        .fc b { font-size: var(--t2); }
+        .t-label { flex-direction: column; align-items: flex-start; gap: 8px; letter-spacing: 0.14em; line-height: 1.4; }
+        .fc .row { letter-spacing: 0.06em; }
+      }
+    </style>
+  </head>
+  <body class="b1">
+    <script>
+      window.__STATE__ = /*__STATE__*/ null;
+      window.__ERROR__ = /*__ERROR__*/ null;
+      window.__MODE__ = /*__MODE_VALUE__*/ "live";
+    </script>
+    <div class="ab-bar" id="abBar"></div>
+    <div id="root"></div>
+    <script>
+      "use strict";
+      const S = window.__STATE__;
+      const esc = (s) => String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+      const store = {
+        get(k, d) { try { return localStorage.getItem("ab3." + k) || d; } catch (e) { return d; } },
+        set(k, v) { try { localStorage.setItem("ab3." + k, v); } catch (e) { /* приватный режим */ } },
+      };
+      const ui = { variant: store.get("variant", "b1"), view: store.get("view", "home"), fish: "all", revealed: false };
+      const SEASON = { spring: "Весна", summer: "Лето", fall: "Осень", winter: "Зима" };
+      const WEATHER = { sunny: "Ясно", rainy: "Дождь", storm: "Гроза", snow: "Снег", wind: "Ветер", green_rain: "Зелёный дождь" };
+      const SHEETS = {
+        0: { cols: 24, w: 16, h: 16, W: 384, H: 624, v: "--spr-obj0" },
+        1: { cols: 8, w: 16, h: 16, W: 128, H: 320, v: "--spr-obj1" },
+        2: { cols: 8, w: 16, h: 32, W: 128, H: 1472, v: "--spr-bc" },
+      };
+      function icon(sp, scale = 3) {
+        const sh = sp && SHEETS[+sp[0]];
+        if (!sh) return `<span class="spr" style="width:${16 * scale}px;height:${16 * scale}px"></span>`;
+        const i = +sp[1], x = (i % sh.cols) * sh.w * scale, y = Math.floor(i / sh.cols) * sh.h * scale;
+        return `<span class="spr" aria-hidden="true" style="width:${sh.w * scale}px;height:${sh.h * scale}px;background-image:var(${sh.v});background-size:${sh.W * scale}px ${sh.H * scale}px;background-position:-${x}px -${y}px"></span>`;
+      }
+      function portrait(i, cell = 44) {
+        return `<span class="spr" aria-hidden="true" style="width:${cell}px;height:${cell}px;border-radius:50%;background-image:var(--spr-npcs);background-size:${cell * 6}px ${cell * 6}px;background-position:-${(i % 6) * cell}px -${Math.floor(i / 6) * cell}px"></span>`;
+      }
+      const gate = (k) => S.unlocks?.gates?.[k] || { ru: k, how_ru: "", met: null };
+      const pending = (r) => (r.lock && r.lock !== "open" && !r.done ? (r.req || []).filter((k) => gate(k).met !== true) : []);
+      const hours = (v) => {
+        const n = String(v || "").split(/\s+/).filter(Boolean).map(Number), out = [];
+        for (let i = 0; i + 1 < n.length; i += 2) out.push(`${Math.floor(n[i] / 100) % 24}–${Math.floor(n[i + 1] / 100) % 24} ч`);
+        return out.join(", ") || "весь день";
+      };
+      const pct = (a, b) => (b ? Math.round((a / b) * 100) : 0);
+      const seasonsText = (list) => (!list?.length || list.length === 4 ? "Круглый год" : list.map((s) => SEASON[s]).join(" · "));
+      const STATS = [["museum", "Музей"], ["fish", "Рыба"], ["shipped", "Отправка"], ["cooking", "Готовка"], ["crafting", "Крафт"]];
+      const TONE = { museum: "ice", fish: "", shipped: "violet", cooking: "mint", crafting: "" };
+      const FILTERS = [["all", "Все"], ["now", "Сейчас"], ["mines", "Шахты"], ["ocean", "Океан"], ["locked", "Закрыто"]];
+      function fishRows(key = ui.fish) {
+        const base = S.fish.filter((r) => !r.extended);
+        if (key === "now") return base.filter((r) => r.now && !r.done);
+        if (key === "locked") return base.filter((r) => r.lock === "locked" && !r.done);
+        if (key !== "all") return base.filter((r) => (r.groups || []).includes(key));
+        return base;
+      }
+      function tasks() {
+        const t = S.today, out = [];
+        t.birthdays_today.forEach((p) => out.push({ ico: portrait(p.p_idx), title: `День рождения — ${p.ru}`, sub: `Любит: ${(p.loved || []).slice(0, 2).map((x) => x.ru).join(", ") || "—"}`, tag: "Сегодня" }));
+        if (t.donate_museum.length) out.push({ ico: icon(t.donate_museum[0].sp, 2.5), title: `Отнести в музей — ${t.donate_museum.length}`, sub: t.donate_museum.slice(0, 3).map((r) => r.ru).join(", "), tag: "Музей" });
+        t.fish_now.slice(0, 3).forEach((r) => out.push({ ico: icon(r.sp, 2.5), title: `Поймать — ${r.ru}`, sub: `${(r.locs || []).map((l) => l.ru).slice(0, 2).join(", ")} · ${hours(r.time)}`, tag: "Рыба" }));
+        t.bundles_close.slice(0, 2).forEach((b) => out.push({ ico: icon(b.missing[0]?.sp, 2.5), title: `Бандл «${b.ru}»`, sub: `Не хватает: ${b.missing.map((m) => m.ru).join(", ")}`, tag: "Бандл" }));
+        t.birthdays_soon.slice(0, 2).forEach((p) => out.push({ ico: portrait(p.p_idx), title: `Скоро ДР — ${p.ru}`, sub: `через ${p.until} дн.`, tag: `${p.until} дн.` }));
+        return out;
+      }
+      const secret = () => S.secrets?.sections?.find((s) => s.key === "qi_story")?.entries?.find((e) => e.id === "mysterious_qi");
+      const STEPS = [["Ящик в туннеле у автобусной остановки", "×1"], ["Ящик на платформе Железной дороги", "×1"], ["Холодильник мэра Льюиса", "×10"], ["Пасть скелета дракона в пустыне", "×1"]];
+      const masked = (text) => esc(String(text || "").replace(/\S/g, "•"));
+      const statTile = ([k, l], span) => { const c = S.counts[k]; return `<section class="tile ${TONE[k]} ${span}"><div class="t-label"><span>${l}</span><span>${pct(c[0], c[1])}%</span></div><div class="big">${c[0]}<sup>/${c[1]}</sup></div><div class="bar"><i style="--p:${pct(c[0], c[1])}%"></i></div></section>`; };
+
+      function view() {
+        const m = S.meta, views = [["home", "Сегодня"], ["fish", "Рыба"], ["secret", "Секреты"]];
+        const seg = `<nav class="seg">${views.map(([k, l]) => `<button data-view="${k}" class="${ui.view === k ? "on" : ""}">${l}</button>`).join("")}</nav>`;
+        let body = "";
+        if (ui.view === "home") {
+          body = `<header class="top"><div><p class="kicker">${esc(m.farm)} · ${SEASON[m.season] || m.season} ${m.day} · ${m.year}-й год</p><h1 class="hello">Привет, <em>${esc(m.farmer)}</em></h1><div class="sub">${esc(m.clock)} · ${WEATHER[m.weather] || ""} · ${Number(m.money).toLocaleString("ru-RU")}g</div></div>${seg}</header>
+          <div class="bento">
+            <section class="tile hero s5"><div class="t-label"><span>Перфекция</span><span>★</span></div><div class="big">${S.perfection.pct}<sup>%</sup></div><div class="bar"><i style="--p:${S.perfection.pct}%"></i></div></section>
+            ${statTile(STATS[0], "s4")}${statTile(STATS[1], "s3")}
+            <section class="tile s7"><h3>Сегодня</h3>${tasks().map((x) => `<div class="item">${x.ico}<span><b>${esc(x.title)}</b><small>${esc(x.sub)}</small></span><span class="chip">${esc(x.tag)}</span></div>`).join("")}</section>
+            <section class="tile s5"><h3>Ключи и доступы</h3><div class="unlocks">${(S.unlocks?.milestones || []).map((k) => `<span class="u ${k.met === true ? "ok" : k.met === false ? "no" : ""}" title="${esc(gate(k.key).how_ru)}">${k.met === false ? "🔒 " : ""}${esc(gate(k.key).ru)}</span>`).join("")}</div></section>
+            ${statTile(STATS[2], "s4")}${statTile(STATS[3], "s4")}${statTile(STATS[4], "s4")}
+          </div>`;
+        } else if (ui.view === "fish") {
+          body = `<header class="top"><div><p class="kicker">Коллекция · ${SEASON[m.season]} · ${esc(m.clock)}</p><h1 class="hello">Рыба <em>${S.counts.fish[0]}</em>/${S.counts.fish[1]}</h1></div>${seg}</header>
+          <div class="head"><nav class="seg">${FILTERS.map(([k, l]) => `<button data-fish="${k}" class="${ui.fish === k ? "on" : ""}">${l} · ${fishRows(k).length}</button>`).join("")}</nav></div>
+          <div class="cards">${fishRows().map((r) => { const p = pending(r); const cls = r.done ? "done" : r.now ? "now" : p.length && r.lock === "locked" ? "locked" : ""; return `<div class="fc ${cls}"><div class="row"><span>${seasonsText(r.seasons)}</span><span class="state">${r.done ? "✓ есть" : r.now ? "Клюёт" : hours(r.time)}</span></div><div class="pic">${icon(r.sp, 3.5)}</div><div><b>${esc(r.ru)}</b><small>${esc((r.locs || []).map((l) => l.ru).slice(0, 2).join(", "))}</small>${p.length ? `<span class="lockchip">🔒 ${esc(p.map((k) => gate(k).ru).join(" + "))}</span>` : ""}</div></div>`; }).join("")}</div>`;
+        } else {
+          const e = secret();
+          body = `<header class="top"><div><p class="kicker">Danger zone · спойлеры</p><h1 class="hello">Только если <em>сдались</em></h1></div>${seg}</header>
+          <div class="bento"><section class="tile hero s7"><div class="t-label"><span>Загадка мистера Ки</span><span>${esc(e?.meta_ru || "")}</span></div><div class="big" style="font-size:clamp(44px,6vw,var(--t8))">Таинственный Ки</div><p class="reveal ${ui.revealed ? "" : "closed"}">${ui.revealed ? esc(e?.sol_ru) : masked(e?.sol_ru)}</p><button class="btn" data-reveal="1"><span>${ui.revealed ? "Скрыть снова" : "Показать решение"}</span></button></section>
+          <section class="tile ice s5"><h3>Маршрут</h3>${ui.revealed && e ? STEPS.map((s, i) => `<div class="step"><span class="n">${i + 1}</span>${icon(e.items[i]?.sp, 2.5)}<span>${esc(s[0])}</span><em>${s[1]}</em></div>`).join("") : "<p style='opacity:.6;font-size:var(--t2)'>Появится вместе с решением.</p>"}</section></div>`;
+        }
+        return `<div class="app">${body}</div>`;
+      }
+      function draw() {
+        document.body.className = ui.variant;
+        document.getElementById("abBar").innerHTML = `<b>A/B тест · холодный Bento</b><button data-variant="b1" class="${ui.variant === "b1" ? "on" : ""}">B1 · Night Run</button><button data-variant="b2" class="${ui.variant === "b2" ? "on" : ""}">B2 · Frost Deco</button><span class="sep"></span>${[["home", "Сегодня"], ["fish", "Рыба"], ["secret", "Секреты"]].map(([k, l]) => `<button data-view="${k}" class="${ui.view === k ? "on" : ""}">${l}</button>`).join("")}`;
+        document.getElementById("root").innerHTML = S ? view() : "<p style='padding:24px'>Нет данных сейва</p>";
+      }
+      document.addEventListener("click", (event) => {
+        const el = event.target.closest("[data-variant],[data-view],[data-fish],[data-reveal]");
+        if (!el) return;
+        if (el.dataset.variant) { ui.variant = el.dataset.variant; store.set("variant", ui.variant); }
+        if (el.dataset.view) { ui.view = el.dataset.view; store.set("view", ui.view); window.scrollTo(0, 0); }
+        if (el.dataset.fish) ui.fish = el.dataset.fish;
+        if (el.dataset.reveal) ui.revealed = !ui.revealed;
+        draw();
+      });
+      window.abDraw = (variant, viewName, reveal) => { ui.variant = variant; ui.view = viewName; ui.revealed = !!reveal; draw(); };
+      draw();
+    </script>
+  </body>
+</html>
