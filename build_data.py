@@ -576,7 +576,7 @@ class Resolver:
             if table.get(key):
                 return table[key]
         for lg in lang_order:
-            for (a2, loc2), table in self.maps.items():
+            for (_a2, loc2), table in self.maps.items():
                 if loc2 == lg and table.get(key):
                     return table[key]
         return default or key.split(".")[-1].replace("_Name", "").replace("_", " ")

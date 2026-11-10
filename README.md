@@ -10,6 +10,7 @@
 - Пометки-закладки и короткие заметки к предметам; отдельная страница собирает всё сохранённое.
 - Подсказки получения для рыбы, минералов/артефактов, ингредиентов и рецептов.
 - Работают живой сервер (`serve`) и автономный HTML-отчёт (`build`), в который встроены спрайты.
+- Сервер по умолчанию слушает только `127.0.0.1`; доступ из локальной сети включается явно через `--host 0.0.0.0`.
 - Оригинальный SVG-логотип фермы и название Stardew Tracker отображаются на русском и английском; на главной странице трекер приветствует фермера по игровому имени.
 
 ## Запуск в Windows
@@ -22,15 +23,47 @@
 run.bat --save "%APPDATA%\StardewValley\Saves\МояФерма_123456789\МояФерма_123456789"
 ```
 
+Полезные ключи: `--host` (адрес сервера), `--port`, `--out` (путь отчёта), `--version`,
+`--no-open`, `--no-watch`.
+
 Другие системы и запуск из терминала:
 
 ```bash
 python3 tracker.py serve
 python3 tracker.py info
 python3 tracker.py build --save "/path/to/Saves/Farm_123/Farm_123"
+python3 -m stardew_tracker --version   # то же CLI через пакет
 ```
 
 Без сервера создайте автономный `report.html` командой `python3 tracker.py build`; `report.bat` делает то же в Windows. Цели и задачи можно редактировать только в живом режиме. Синтетическое сохранение для демонстрации: `python3 tests/make_test_save.py /tmp/saves`.
+
+## Сборка приложения (.exe / .app / Linux)
+
+Готовые standalone-файлы собирает workflow **Build app** в GitHub Actions: `Actions → Build app → Run workflow`. Он прогоняет PyInstaller на Windows, macOS и Linux и выкладывает `StardewTracker-windows`, `StardewTracker-macos` и `StardewTracker-linux` артефактами; при пуше тега `v*` те же архивы прикрепляются к релизу. В Windows это один `StardewTracker.exe`, Python на целевой машине не нужен.
+
+Локальная сборка в Windows:
+
+1. Установите Python 3.9+ и запустите `build_app.bat` — скрипт создаст окружение `.build-venv`, поставит PyInstaller и соберёт `dist\StardewTracker.exe`.
+2. Готовый файл можно переносить на другой компьютер без Python.
+
+Любая ОС:
+
+```bash
+python3 -m pip install -r requirements-build.txt
+python3 packaging/build_app.py
+```
+
+Запуск собранного файла без аргументов поднимает локальный сервер на `127.0.0.1:8777` и открывает браузер; закрытие консольного окна останавливает приложение. CLI сохраняется: `StardewTracker.exe info`, `build --out report.html`, `serve --port 9000 --no-open`.
+
+В standalone-сборке `goals.json` и `report.html` пишутся в каталог данных ОС, потому что папка приложения доступна только для чтения:
+
+- Windows — `%APPDATA%\StardewTracker`
+- macOS — `~/Library/Application Support/StardewTracker`
+- Linux — `${XDG_DATA_HOME:-~/.local/share}/StardewTracker`
+
+Расположение переопределяется переменной `STARDEW_TRACKER_HOME`. Если `goals.json` уже есть в версии для исходников, скопируйте его в этот каталог. Сейвы по-прежнему ищутся автоматически в стандартных папках Stardew Valley.
+
+Файл не подписан: Windows SmartScreen и macOS Gatekeeper могут показать предупреждение. В Windows нажмите «Подробнее → Выполнить всё равно», в macOS — «Открыть» в контекстном меню либо `xattr -d com.apple.quarantine StardewTracker`. Сборка консольная: окно с логами остаётся открытым, пока работает сервер.
 
 ## Разделы
 
@@ -48,7 +81,9 @@ python3 tracker.py build --save "/path/to/Saves/Farm_123/Farm_123"
 
 ## Сохранения и конфиденциальность
 
-Обычно сейвы находятся в `%APPDATA%\StardewValley\Saves\<Ферма>_<ID>\<Ферма>_<ID>`. Приложение читает XML локально. `goals.json` сохраняется рядом со скриптом; перед его перезаписью создаётся `goals.json.bak`. Локальные сейвы, цели и отчёт исключены из git.
+Обычно сейвы находятся в `%APPDATA%\StardewValley\Saves\<Ферма>_<ID>\<Ферма>_<ID>`. Приложение читает XML локально. `goals.json` сохраняется рядом со скриптом (в standalone-сборке — в каталоге данных ОС); перед его перезаписью создаётся `goals.json.bak`, а сама запись атомарна. Локальные сейвы, цели и отчёт исключены из git.
+
+Сервер не делает исходящих запросов, не отдаёт CORS-разрешений и по умолчанию доступен только с этого компьютера. XML-документы с `DOCTYPE`/`ENTITY` отклоняются как небезопасные. Подробный аудит и список исправлений — в [`docs/AUDIT.md`](docs/AUDIT.md).
 
 ## Пометки предметов и подсказки
 
@@ -62,10 +97,26 @@ python3 tracker.py build --save "/path/to/Saves/Farm_123/Farm_123"
 python3 -m unittest discover -s tests -v
 python3 tests/make_test_save.py /tmp/saves
 python3 tracker.py info --saves-dir /tmp/saves
-python3 tracker.py build --saves-dir /tmp/saves
+python3 tracker.py build --saves-dir /tmp/saves --out /tmp/report.html
 ```
 
-Тесты используют только `unittest` и синтетический XML-сейв. CI запускает тесты на Python 3.9, 3.11 и 3.13.
+Тесты используют только `unittest` и синтетический XML-сейв: 129 тестов, покрытие 90%.
+CI прогоняет их на Python 3.9, 3.11 и 3.13, а отдельный quality-job проверяет `ruff`, формат,
+`mypy`, `bandit` и покрытие не ниже 85%.
+
+```bash
+python3 -m pip install -r requirements-dev.txt
+ruff check .
+ruff format --check stardew_tracker tracker.py tests
+mypy
+bandit -q -r stardew_tracker tracker.py build_data.py
+coverage run -m unittest discover -s tests && coverage report
+```
+
+Код разделён на пакет `stardew_tracker/` (поиск сейва, XML-парсер, справочники, состояние,
+рендер, HTTP-сервер, CLI). `tracker.py` — совместимая точка входа и реэкспорт публичного API,
+поэтому старые команды и скрипты продолжают работать. Автономный JavaScript шаблона
+проверяется `node --check` (если Node.js установлен).
 
 ## Данные и игровые спрайты
 
@@ -86,14 +137,20 @@ python3 build_data.py --content-dir "/path/to/Stardew Valley/Content (unpacked)"
 ## Файлы проекта
 
 ```text
-tracker.py                 CLI, XML-парсер, подсчёты и HTTP-сервер
+tracker.py                 совместимый CLI-фасад (python tracker.py ...)
+stardew_tracker/           пакет: парсер, состояние, рендер, сервер, CLI
 build_data.py              сборка локальных справочников и атласов спрайтов
 data/*.json                двуязычные данные 1.6.15
 assets/dashboard.html      интерфейс (inline CSS/JS)
 assets/sprites/*.png       игровые пиксельные атласы
-saves/                      необязательная папка для сейвов (игнорируется git)
-goals.json                  локальные цели и задачи (игнорируется git)
-tests/                      unit-тесты и генератор тестового сейва
-docs/index.html             автономная демонстрационная сборка
-TZ.md                       подробное техническое задание и формат сейва
+saves/                     необязательная папка для сейвов (игнорируется git)
+goals.json                 локальные цели и задачи (игнорируется git)
+tests/                     129 тестов и генератор тестового сейва
+docs/index.html            автономная демонстрационная сборка
+docs/AUDIT.md              аудит, находки и AQA-отчёт
+pyproject.toml             настройки ruff/mypy/coverage и метаданные
+requirements-dev.txt       инструменты разработки и CI
+requirements-build.txt     PyInstaller для standalone-сборки
+packaging/                 spec PyInstaller и скрипт сборки приложения
+TZ.md                      подробное техническое задание и формат сейва
 ```

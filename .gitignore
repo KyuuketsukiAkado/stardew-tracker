@@ -13,6 +13,11 @@ __pycache__/
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+*.egg-info/
 .venv/
 venv/
 ENV/
@@ -27,3 +32,8 @@ playwright-report/
 *.zip
 .DS_Store
 Thumbs.db
+
+# Сборка standalone-приложения
+build/
+dist/
+.build-venv/
