@@ -46,8 +46,9 @@ def build_today(
         "birthdays_today": [person for person in upcoming if person["until"] == 0],
         "birthdays_soon": [person for person in upcoming if person["until"] and person["until"] > 0],
         "donate_museum": need_museum,
-        "fish_now": [row for row in fish_rows if not row["done"] and row["now"]],
-        "fish_later": [row for row in fish_rows if not row["done"] and row["later_today"]],
+        # «Легендарные II» клюют только во время задания Ки — не советуем их.
+        "fish_now": [row for row in fish_rows if not row["done"] and row["now"] and not row.get("extended")],
+        "fish_later": [row for row in fish_rows if not row["done"] and row["later_today"] and not row.get("extended")],
         "bundles_close": close_bundles,
         "ready_cook": [row for row in cook_rows if row["known"] and not row["done"]][:16],
         "ready_craft": [row for row in craft_rows if row["known"] and not row["done"]][:16],

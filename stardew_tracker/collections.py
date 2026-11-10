@@ -7,7 +7,30 @@ from typing import Any
 
 from .catalog import item_info, item_row
 from .constants import OBELISKS, SEASONS, SKILLS, STARDROPS
+from .requirements import (
+    SHIPPING_GATES,
+    UnlockContext,
+    evaluate,
+    fish_alternatives,
+    fish_location_groups,
+    is_night_market_only,
+    museum_alternatives,
+    museum_tags,
+    recipe_source,
+)
 from .timeutil import days_until_birthday, time_matches, weather_matches
+
+
+NIGHT_MARKET_TIME = "1700 2600"
+
+
+def _lock_fields(alternatives: list[list[str]], ctx: UnlockContext | None) -> dict[str, Any]:
+    """Поля строки про обязательные условия: ``lock`` и ``req``."""
+
+    if ctx is None:
+        return {"lock": "open", "req": []}
+    state, keys = evaluate(alternatives, ctx)
+    return {"lock": state, "req": keys}
 
 
 def build_fish_rows(
@@ -17,20 +40,37 @@ def build_fish_rows(
     season_now: str,
     current_minutes: int,
     save_weather: str,
+    ctx: UnlockContext | None = None,
 ) -> list[dict[str, Any]]:
-    """74 вида рыбы с сезоном, окнами времени, погодой и доступностью сейчас."""
+    """72 вида рыбы коллекции (+5 «легендарных II») с доступностью сейчас.
+
+    Рыба считается «доступной сейчас», только если открыта локация: смысл
+    подсказки — куда пойти ловить сегодня, а не теоретическая возможность.
+    """
 
     rows: list[dict[str, Any]] = []
+    day_now = int(raw.get("day") or 1)
     for uid, info in fish.items():
         caught = raw["fishCaught"].get(uid, 0) or 0
         seasons = [season for season in (info.get("season") or "").split() if season in SEASONS]
         time_span = info.get("time") or ""
         weather_required = info.get("weather") or "both"
+        night_market = is_night_market_only(info)
+        if night_market:
+            # Data/Fish.json говорит «круглый год», но субмарина работает
+            # только зимой 15–17 числа вечером.
+            seasons = ["winter"]
+            time_span = NIGHT_MARKET_TIME
         in_season = season_now in seasons or not seasons or "all" in (info.get("season") or "")
+        if night_market:
+            in_season = season_now == "winter" and 15 <= day_now <= 17
         time_ok, later_today = time_matches(time_span, current_minutes)
         weather_ok = weather_matches(weather_required, save_weather)
-        now_ok = bool(in_season and time_ok and weather_ok)
-        later_ok = bool(in_season and later_today and weather_ok)
+        alternatives, _common = fish_alternatives(uid, info)
+        lock = _lock_fields(alternatives, ctx)
+        reachable = lock["lock"] != "locked"
+        now_ok = bool(in_season and time_ok and weather_ok and reachable)
+        later_ok = bool(in_season and later_today and weather_ok and reachable)
         rows.append(
             item_row(
                 items,
@@ -51,10 +91,24 @@ def build_fish_rows(
                     "weather_ok": weather_ok,
                     "later_today": later_ok,
                     "now": now_ok,
+                    "groups": fish_location_groups(info),
+                    "night_market": night_market,
+                    "extended": bool(info.get("extended")),
+                    "jelly": bool(info.get("jelly")),
+                    **lock,
                 },
             )
         )
-    rows.sort(key=lambda row: (row["done"], not row["now"], not row["in_season"], row["ru"].lower()))
+    rows.sort(
+        key=lambda row: (
+            row["extended"],
+            row["done"],
+            not row["now"],
+            row["lock"] == "locked",
+            not row["in_season"],
+            row["ru"].lower(),
+        )
+    )
     return rows
 
 
@@ -63,10 +117,16 @@ def build_museum_rows(
     artifact_locations: Mapping[str, Any],
     items: Mapping[str, dict[str, Any]],
     raw: Mapping[str, Any],
+    ctx: UnlockContext | None = None,
 ) -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
     for uid in museum.get("artifacts", []):
         donated = uid in raw["museum"]
+        found = uid in raw["archaeologyFound"]
+        locations = artifact_locations.get(uid, {})
+        sources_en = list(locations.get("en") or [])
+        # Уже найденное не «заблокировано», даже если источник закрыт.
+        lock = {"lock": "open", "req": []} if found or donated else _lock_fields(museum_alternatives(sources_en), ctx)
         rows.append(
             item_row(
                 items,
@@ -74,9 +134,11 @@ def build_museum_rows(
                 donated,
                 {
                     "kind": "artifact",
-                    "found": uid in raw["archaeologyFound"],
+                    "found": found,
                     "donated": donated,
-                    "locations": artifact_locations.get(uid, {}),
+                    "locations": locations,
+                    "tags": museum_tags(sources_en, "artifact"),
+                    **lock,
                 },
             )
         )
@@ -91,6 +153,9 @@ def build_museum_rows(
                     "kind": "mineral",
                     "found": uid in raw["mineralsFound"],
                     "donated": donated,
+                    "tags": museum_tags([], "mineral"),
+                    "lock": "open",
+                    "req": [],
                 },
             )
         )
@@ -103,11 +168,13 @@ def build_shipping_rows(
     items: Mapping[str, dict[str, Any]],
     raw: Mapping[str, Any],
     season_now: str,
+    ctx: UnlockContext | None = None,
 ) -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
     for uid in shipping:
         count = raw["basicShipped"].get(str(uid), 0) or 0
         item_seasons = items.get(str(uid), {}).get("seasons") or []
+        lock = {"lock": "open", "req": []} if count else _lock_fields(SHIPPING_GATES.get(str(uid), []), ctx)
         rows.append(
             item_row(
                 items,
@@ -116,6 +183,7 @@ def build_shipping_rows(
                 {
                     "count": count,
                     "in_season": season_now in item_seasons if item_seasons else False,
+                    **lock,
                 },
             )
         )
@@ -127,6 +195,8 @@ def build_cooking_rows(
     recipes: Mapping[str, Mapping[str, dict[str, Any]]],
     items: Mapping[str, dict[str, Any]],
     raw: Mapping[str, Any],
+    ctx: UnlockContext | None = None,
+    sources: Mapping[str, Any] | None = None,
 ) -> list[dict[str, Any]]:
     """Три состояния: приготовлено / рецепт изучен / не изучен."""
 
@@ -135,7 +205,7 @@ def build_cooking_rows(
         uid = str(recipe.get("item", ""))
         count = raw["recipesCooked"].get(uid, 0) or 0
         known = recipe_name in raw["cookingRecipes"] or recipe.get("unlock") == "default" or count > 0
-        unlock = recipe.get("unlock_info") or {}
+        unlock = _recipe_unlock(recipe_name, recipe, known, ctx, (sources or {}).get(recipe_name))
         rows.append(
             {
                 "id": uid or recipe_name,
@@ -147,18 +217,32 @@ def build_cooking_rows(
                 "known": known,
                 "count": count,
                 "ing": recipe.get("ing") or [],
-                "unlock": unlock.get("ru") or (recipe.get("unlock") or ""),
-                "unlock_ru": unlock.get("ru") or "",
-                "unlock_en": unlock.get("en") or "",
+                "unlock": unlock["unlock_ru"] or (recipe.get("unlock") or ""),
+                **unlock,
             }
         )
-    rows.sort(key=lambda row: (row["done"], not row["known"], row["ru"].lower()))
+    rows.sort(key=lambda row: (row["done"], not row["known"], row["lock"] == "locked", row["ru"].lower()))
     return rows
+
+
+def _recipe_unlock(
+    name: str,
+    recipe: Mapping[str, Any],
+    known: bool,
+    ctx: UnlockContext | None,
+    override: Mapping[str, Any] | None,
+) -> dict[str, Any]:
+    text_ru, text_en, kind, gates = recipe_source(name, recipe, override)
+    # Изученный рецепт уже ничем не заблокирован.
+    lock = {"lock": "open", "req": []} if known else _lock_fields([gates] if gates else [], ctx)
+    return {"unlock_ru": text_ru, "unlock_en": text_en, "src_kind": kind, **lock}
 
 
 def build_crafting_rows(
     recipes: Mapping[str, Mapping[str, dict[str, Any]]],
     raw: Mapping[str, Any],
+    ctx: UnlockContext | None = None,
+    sources: Mapping[str, Any] | None = None,
 ) -> tuple[list[dict[str, Any]], list[str]]:
     """Три состояния крафта и список рецептов, которых нет в сейве."""
 
@@ -171,7 +255,7 @@ def build_crafting_rows(
         if not in_save:
             unmatched.append(recipe_name)
         known = in_save or recipe.get("unlock") == "default" or count > 0
-        unlock = recipe.get("unlock_info") or {}
+        unlock = _recipe_unlock(recipe_name, recipe, known, ctx, (sources or {}).get(recipe_name))
         rows.append(
             {
                 "id": str(recipe.get("item", "")) or recipe_name,
@@ -185,11 +269,10 @@ def build_crafting_rows(
                 "known": known,
                 "count": count,
                 "ing": recipe.get("ing") or [],
-                "unlock_ru": unlock.get("ru") or "",
-                "unlock_en": unlock.get("en") or "",
+                **unlock,
             }
         )
-    rows.sort(key=lambda row: (row["done"], not row["known"], row["ru"].lower()))
+    rows.sort(key=lambda row: (row["done"], not row["known"], row["lock"] == "locked", row["ru"].lower()))
     return rows, unmatched
 
 

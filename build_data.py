@@ -73,7 +73,7 @@ CATEGORY = {
 FISH_FALLBACK_LOC = {
     "158": ("The Mines (20F)", "Шахты (20 эт.)"),
     "161": ("The Mines (60F)", "Шахты (60 эт.)"),
-    "162": ("The Mines (100F) / Caldera", "Шахты (100 эт.) / Кальдера"),
+    "162": ("The Mines (100F)", "Шахты (100 эт.)"),
     "372": ("Crab Pot (Ocean)", "Крабовая ловушка (Океан)"),
     "715": ("Crab Pot (Ocean)", "Крабовая ловушка (Океан)"),
     "716": ("Crab Pot (Freshwater)", "Крабовая ловушка (Пресная)"),
@@ -85,6 +85,22 @@ FISH_FALLBACK_LOC = {
     "722": ("Crab Pot (Freshwater)", "Крабовая ловушка (Пресная)"),
     "723": ("Crab Pot (Ocean)", "Крабовая ловушка (Океан)"),
 }
+
+# Медузы 1.6 входят во вкладку «Рыба» и в перфекцию (72 вида), но в
+# Data/Fish.json их нет — они ловятся как особый улов. Добавляем вручную.
+EXTRA_FISH = {
+    "SeaJelly": ("Ocean (any saltwater)", "Океан (любая солёная вода)"),
+    "RiverJelly": ("Rivers & lakes (any freshwater)", "Реки и озёра (любая пресная вода)"),
+    "CaveJelly": ("The Mines (20F)", "Шахты (20 эт.)"),
+}
+
+# «Легендарные II» ловятся только во время задания Ки «Расширенная семья»
+# и не входят ни в коллекцию, ни в перфекцию.
+EXTENDED_FAMILY = {"898", "899", "900", "901", "902"}
+
+# Лавовый угорь есть в Data/Locations только для Кальдеры, но ловится и
+# в лаве 100-го этажа Шахт.
+EXTRA_FISH_LOC = {"162": [("The Mines (100F)", "Шахты (100 эт.)")]}
 
 SKIP_LOCS = {"Temp", "fishingGame"}
 
@@ -522,7 +538,9 @@ def load(path):
 
 
 def find_file(content_dir, rel):
-    p = os.path.join(content_dir, rel)
+    # "Data/Objects.json" → родные разделители ОС: иначе в Windows получался
+    # смешанный путь "...\Data/Objects.json", не равный обычному os.path.join.
+    p = os.path.join(content_dir, *rel.replace("\\", "/").split("/"))
     if os.path.exists(p):
         return p
     rel_norm = rel.replace("\\", "/").lower()
@@ -1038,6 +1056,26 @@ def main():
         if (not rec.get("loc") or rec.get("trap")) and uid in FISH_FALLBACK_LOC:
             en, ru = FISH_FALLBACK_LOC[uid]
             rec["loc"] = [{"en": en, "ru": ru}]
+        for en, ru in EXTRA_FISH_LOC.get(uid, []):
+            pair = {"ru": ru, "en": en}
+            if pair not in rec["loc"]:
+                rec["loc"].insert(0, pair)
+        if uid in EXTENDED_FAMILY:
+            rec["extended"] = True
+
+    for uid, (en, ru) in EXTRA_FISH.items():
+        if uid in items and uid not in fish:
+            fish[uid] = {
+                "diff": None,
+                "beh": "",
+                "trap": False,
+                "size": None,
+                "time": "600 2600",
+                "season": "spring summer fall winter",
+                "weather": "both",
+                "loc": [{"ru": ru, "en": en}],
+                "jelly": True,
+            }
 
     # ---------- музей ----------
     artifacts, minerals = [], []

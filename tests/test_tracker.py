@@ -53,7 +53,11 @@ class TestData(unittest.TestCase):
     def test_fish(self):
         fish = load_json("fish.json")
         items = load_json("items.json")
-        self.assertEqual(len(fish), 74)
+        # 72 вида коллекции 1.6 (включая 3 медузы) + 5 «легендарных II» вне коллекции.
+        self.assertEqual(len(fish), 77)
+        self.assertEqual(sum(1 for info in fish.values() if not info.get("extended")), 72)
+        self.assertIn("SeaJelly", fish)
+        self.assertIn("The Mines (100F)", [loc["en"] for loc in fish["162"]["loc"]])
         for uid, info in fish.items():
             self.assertIn(uid, items, f"рыба {uid} отсутствует в items.json")
             self.assertIn("season", info)
@@ -90,7 +94,8 @@ class TestData(unittest.TestCase):
     def test_shipping_and_bundles(self):
         shipping = load_json("shipping.json")
         items = load_json("items.json")
-        self.assertEqual(len(shipping), 155)
+        self.assertEqual(len(shipping), 154)
+        self.assertNotIn("372", [str(uid) for uid in shipping])  # Гребешок в 1.6 — рыба
         for uid in shipping:
             self.assertIn(str(uid), items)
         rooms = load_json("bundles.json")["rooms"]
@@ -166,10 +171,10 @@ class TestSaveParsing(unittest.TestCase):
 
     def test_counts(self):
         counts = self.state["counts"]
-        self.assertEqual(counts["fish"], [8, 74])  # 701 поймана 0 раз — не считается
+        self.assertEqual(counts["fish"], [8, 72])  # 701 поймана 0 раз — не считается
         self.assertEqual(counts["museum"], [4, 95])  # сдано
         self.assertEqual(counts["museum_found"], [8, 95])  # найдено (археология + минералы)
-        self.assertEqual(counts["shipped"], [5, 155])
+        self.assertEqual(counts["shipped"], [5, 154])
         self.assertEqual(counts["cooking"], [3, 81])
         self.assertEqual(counts["crafting"], [6, 150])
 
@@ -521,11 +526,12 @@ class TestHTTPAPI(unittest.TestCase):
         self.assertEqual(payload["saves"], [])
         self.assertEqual(payload["error"]["kind"], "io_error")
 
-    def test_goals_disk_error_returns_400(self):
+    def test_goals_disk_error_returns_500(self):
+        # Ошибка диска — сбой сервера, а не «плохой запрос» клиента.
         payload = {"goals": [], "tasks": []}
         with mock.patch("stardew_tracker.server.save_goals", side_effect=OSError("disk full")):
             response, body = self.request("/api/goals", payload)
-        self.assertEqual(response.status, 400)
+        self.assertEqual(response.status, 500)
         self.assertIn("disk full", json.loads(body)["error"])
 
     def test_missing_template_returns_500(self):

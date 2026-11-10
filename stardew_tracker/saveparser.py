@@ -220,7 +220,11 @@ def _parse_stats(host: ET.Element, root: ET.Element) -> tuple[dict[str, int], di
     monsters_killed: dict[str, int] = {}
     stats_values: dict[str, int] = {}
     total_monsters_killed = 0
-    stats_el = xml.kid(host, "stats") or xml.kid(root, "stats")
+    # Нельзя писать ``kid(...) or kid(...)``: Element без детей ложен, и пустой
+    # ``<stats/>`` фермера молча подменялся бы чужим блоком.
+    stats_el = xml.kid(host, "stats")
+    if stats_el is None:
+        stats_el = xml.kid(root, "stats")
     if stats_el is not None:
         for monster, value in xml.dict_pairs(xml.kid(stats_el, "specificMonstersKilled")):
             count = xml.first_int(value) or 0
@@ -244,6 +248,38 @@ def _parse_mail(host: ET.Element) -> set[str]:
             if text:
                 mail.add(text)
     return mail
+
+
+def _flag(host: ET.Element, name: str) -> bool:
+    return xml.txt(xml.kid(host, name)).lower() == "true"
+
+
+def _parse_axe_level(host: ET.Element) -> int | None:
+    """Уровень топора из инвентаря; ``None``, если топора в рюкзаке нет.
+
+    Топор может лежать в сундуке — тогда честно возвращаем «неизвестно».
+    """
+
+    items = xml.kid(host, "items")
+    for item in items if items is not None else []:
+        if (xml.lattr(item, "type") or "") == "Axe":
+            level = xml.first_int(xml.kid(item, "upgradeLevel"))
+            if level is None:
+                level = xml.first_int(xml.kid(item, "UpgradeLevel"))
+            return level or 0
+    return None
+
+
+def _parse_special_orders(root: ET.Element) -> set[str]:
+    orders: set[str] = set()
+    element = xml.kid(root, "completedSpecialOrders")
+    if element is None:
+        element = xml.deep(root, "completedSpecialOrders")
+    for sub in element.iter() if element is not None else []:
+        text = xml.txt(sub)
+        if text and sub is not element:
+            orders.add(text)
+    return orders
 
 
 def _parse_mine_chests(host: ET.Element) -> set[int]:
@@ -392,8 +428,13 @@ def _parse_uncached(signature: tuple[str, int, int]) -> dict[str, Any]:
     mine_chests = _parse_mine_chests(host)
 
     deepest_mine = xml.first_int(xml.kid(host, "deepestMineLevel")) or 0
-    if xml.txt(xml.kid(host, "hasSkullKey")).lower() == "true":
+    has_skull_key = _flag(host, "hasSkullKey")
+    if has_skull_key:
         deepest_mine = max(120, deepest_mine)
+    farm_type_el = xml.kid(root, "whichFarm")
+    if farm_type_el is None:
+        farm_type_el = xml.deep(root, "whichFarm", limit=5000)
+    farm_type = xml.first_int(farm_type_el)
     max_stamina = xml.first_int(xml.kid(host, "maxStamina")) or 270
 
     museum: dict[str, int] = {}
@@ -442,6 +483,16 @@ def _parse_uncached(signature: tuple[str, int, int]) -> dict[str, Any]:
         "mail_received": mail_received,
         "mine_chests": mine_chests,
         "max_stamina": max_stamina,
+        # Флаги доступа к локациям: из них считаются «обязательные условия».
+        "has_skull_key": has_skull_key,
+        "has_rusty_key": _flag(host, "hasRustyKey"),
+        "has_dark_talisman": _flag(host, "hasDarkTalisman"),
+        "has_magic_ink": _flag(host, "hasMagicInk"),
+        "has_club_card": _flag(host, "hasClubCard"),
+        "house_level": xml.first_int(xml.kid(host, "houseUpgradeLevel")) or 0,
+        "axe_level": _parse_axe_level(host),
+        "farm_type": farm_type,
+        "special_orders": _parse_special_orders(root),
         "game_version": xml.deep_text(root, "gameVersion", "") or xml.deep_text(root, "gameVersionLabel", ""),
     }
 

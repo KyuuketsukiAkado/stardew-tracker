@@ -8,25 +8,57 @@
     />
     <title>Stardew Трекер — прогресс фермы</title>
     <style>
+      /* ===== Тема: все цвета — только через переменные ===== */
       :root {
-        --bg: #11150f;
-        --panel: #1b2118;
-        --panel2: #252d21;
-        --line: #364130;
-        --text: #f1efdf;
-        --muted: #a3ad98;
-        --faint: #76816e;
-        --green: #9bd276;
-        --gold: #f0c966;
-        --red: #e88779;
-        --blue: #83bde2;
-        --purple: #c3a5e5;
-        --state-done: #9bd276;
-        --state-progress: #f0c966;
-        --state-action: #e88779;
-        --state-idle: #a3ad98;
-        --state-info: #83bde2;
-        --shadow: 0 8px 28px #0004;
+        color-scheme: light;
+        --bg: #f7f2e6;
+        --bg-top: #e3f0fa;
+        --surface: #fffdf8;
+        --surface-2: #f5eedd;
+        --surface-3: #ece2ca;
+        --side-bg: #fbf6ea;
+        --header-bg: #fffdf8e6;
+        --line: #e4d8bf;
+        --line-strong: #cbb995;
+        --text: #3a3125;
+        --muted: #6d6150;
+        --faint: #94886f;
+        --accent: #4f9b3d;
+        --accent-strong: #3a7f2a;
+        --accent-soft: #e4f2d9;
+        --on-accent: #ffffff;
+        --green: #3f8f2f;
+        --gold: #b97d0c;
+        --red: #c2493a;
+        --blue: #2f7cbf;
+        --purple: #7a55c7;
+        --state-done: #3f8f2f;
+        --state-progress: #b97d0c;
+        --state-action: #c2493a;
+        --state-idle: #8a7f6c;
+        --state-info: #2f7cbf;
+        --state-lock: #7a55c7;
+        --done-soft: #e5f3dc;
+        --done-line: #a9d397;
+        --progress-soft: #fcf0d2;
+        --progress-line: #ecc66f;
+        --action-soft: #fde6e0;
+        --action-line: #eba596;
+        --idle-soft: #f1ece1;
+        --idle-line: #d8cdb7;
+        --info-soft: #e3effa;
+        --info-line: #9fc5e8;
+        --lock-soft: #efe8fc;
+        --lock-line: #c4b1ee;
+        --danger: #b3261e;
+        --danger-soft: #fff1ec;
+        --danger-line: #f0a493;
+        --track: #ebe3d1;
+        --tip-bg: #fffdf8;
+        --overlay: #2a22184d;
+        --shadow: 0 1px 2px #5a40140d, 0 6px 18px #5a401414;
+        --shadow-hover: 0 2px 4px #5a401414, 0 10px 26px #5a40141f;
+        --radius: 14px;
         --spr-obj0: url("/assets/sprites/objects.png");
         --spr-obj1: url("/assets/sprites/objects2.png");
         --spr-bc: url("/assets/sprites/craftables.png");
@@ -34,6 +66,56 @@
         --spr-npcs: url("/assets/sprites/npcs.png");
         --spr-monsters: url("/assets/sprites/monsters.png");
         --spr-ui: url("/assets/sprites/ui.png");
+      }
+      :root[data-theme="dark"] {
+        color-scheme: dark;
+        --bg: #161a2b;
+        --bg-top: #232a4a;
+        --surface: #1f2438;
+        --surface-2: #272d45;
+        --surface-3: #30375a;
+        --side-bg: #1a1f33;
+        --header-bg: #161a2be6;
+        --line: #353d5c;
+        --line-strong: #4b5580;
+        --text: #eef0f8;
+        --muted: #b0b6cf;
+        --faint: #858ca8;
+        --accent: #7bcb68;
+        --accent-strong: #95dc84;
+        --accent-soft: #263f2c;
+        --on-accent: #10200c;
+        --green: #8fd67c;
+        --gold: #f2c45c;
+        --red: #f08c7c;
+        --blue: #84bdf2;
+        --purple: #b9a1f7;
+        --state-done: #8fd67c;
+        --state-progress: #f2c45c;
+        --state-action: #f08c7c;
+        --state-idle: #a2a8c0;
+        --state-info: #84bdf2;
+        --state-lock: #b9a1f7;
+        --done-soft: #233a2a;
+        --done-line: #3f6b45;
+        --progress-soft: #3a3322;
+        --progress-line: #7a6430;
+        --action-soft: #432a2c;
+        --action-line: #8a4a45;
+        --idle-soft: #2a2f45;
+        --idle-line: #474f6e;
+        --info-soft: #22344c;
+        --info-line: #3f6593;
+        --lock-soft: #2f2a4c;
+        --lock-line: #5f4f99;
+        --danger: #ff8a7a;
+        --danger-soft: #3d2228;
+        --danger-line: #8f4048;
+        --track: #30375a;
+        --tip-bg: #1b2034;
+        --overlay: #05070fb3;
+        --shadow: 0 1px 2px #0005, 0 8px 22px #0006;
+        --shadow-hover: 0 2px 6px #0006, 0 12px 28px #0008;
       }
       /*__INLINE_SPRITES__*/
       * {
@@ -44,16 +126,14 @@
       }
       body {
         margin: 0;
-        background: radial-gradient(
-          ellipse at 50% -30%,
-          #35412b 0,
-          #11150f 55%
-        );
+        background: linear-gradient(180deg, var(--bg-top) 0, var(--bg) 360px) fixed;
+        background-color: var(--bg);
         color: var(--text);
         font:
-          14px/1.45 system-ui,
+          15px/1.5 system-ui,
           -apple-system,
           "Segoe UI",
+          Roboto,
           sans-serif;
       }
       body.modal-open {
@@ -73,30 +153,38 @@
       }
       button {
         border: 1px solid var(--line);
-        border-radius: 9px;
-        background: var(--panel2);
-        padding: 8px 11px;
+        border-radius: 10px;
+        background: var(--surface);
+        padding: 7px 12px;
         cursor: pointer;
+        box-shadow: 0 1px 0 rgba(0, 0, 0, 0.04);
+        transition:
+          background 0.15s ease,
+          border-color 0.15s ease;
       }
       button:hover:not(:disabled) {
-        border-color: var(--green);
-        filter: brightness(1.12);
+        border-color: var(--accent);
+        background: var(--accent-soft);
       }
       button:disabled {
         cursor: wait;
         opacity: 0.6;
       }
       button.active {
-        background: #31432b;
-        border-color: #739859;
-        color: #e4f2d7;
+        background: var(--accent);
+        border-color: var(--accent);
+        color: var(--on-accent);
+        font-weight: 650;
+      }
+      button.active:hover:not(:disabled) {
+        background: var(--accent-strong);
       }
       input,
       select {
-        background: #151a13;
-        border: 1px solid var(--line);
-        border-radius: 8px;
-        padding: 8px 10px;
+        background: var(--surface);
+        border: 1px solid var(--line-strong);
+        border-radius: 10px;
+        padding: 7px 10px;
         min-width: 0;
       }
       input:focus-visible,
@@ -106,7 +194,7 @@
       a:focus-visible,
       summary:focus-visible,
       [tabindex]:focus-visible {
-        outline: 2px solid var(--green);
+        outline: 3px solid var(--blue);
         outline-offset: 2px;
       }
       :focus:not(:focus-visible) {
@@ -122,9 +210,9 @@
       .sidebar {
         position: fixed;
         inset: 0 auto 0 0;
-        width: 226px;
+        width: 236px;
         padding: 18px 12px;
-        background: #171c15;
+        background: var(--side-bg);
         border-right: 1px solid var(--line);
         z-index: 5;
         display: flex;
@@ -143,56 +231,67 @@
         width: 36px;
         height: 36px;
         flex: none;
-        filter: drop-shadow(0 3px 8px #0005);
+        filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.13));
       }
       .nav {
         display: grid;
         flex: 1;
         min-height: 0;
-        gap: 13px;
+        gap: 14px;
         overflow: auto;
+        align-content: start;
       }
       .nav-group {
         display: grid;
-        gap: 3px;
+        gap: 2px;
       }
       .nav-group-title {
         padding: 2px 10px 4px;
         color: var(--faint);
-        font-size: 10px;
+        font-size: 10.5px;
         font-weight: 750;
         letter-spacing: 0.8px;
         text-transform: uppercase;
       }
       .nav a {
         min-width: 0;
-        padding: 7px 9px;
-        border-radius: 10px;
+        padding: 6px 9px;
+        border-radius: 11px;
         color: var(--muted);
         display: flex;
         align-items: center;
         gap: 9px;
       }
-      .nav a:hover,
+      .nav a:hover {
+        background: var(--surface-2);
+        color: var(--text);
+      }
       .nav a.selected {
-        background: #2b3626;
-        color: #f4f2e4;
+        background: var(--accent-soft);
+        color: var(--text);
+        font-weight: 650;
+        box-shadow: inset 3px 0 0 var(--accent);
       }
       .nav-icon {
-        width: 26px;
-        height: 26px;
+        width: 28px;
+        height: 28px;
         flex: none;
         display: grid;
         place-items: center;
-        border: 1px solid #364130;
-        border-radius: 8px;
-        background: #222a1f;
-        color: var(--green);
+        border-radius: 9px;
+        background: var(--surface);
+        border: 1px solid var(--line);
+        color: var(--accent);
       }
       .nav-icon svg {
-        width: 15px;
-        height: 15px;
-        stroke-width: 1.8;
+        width: 16px;
+        height: 16px;
+        stroke-width: 1.9;
+      }
+      .nav a.danger-link .nav-icon {
+        color: var(--danger);
+        border-color: var(--danger-line);
+        background: var(--danger-soft);
       }
       .nav-label {
         flex: 1;
@@ -202,7 +301,7 @@
       .nav small {
         margin-left: auto;
         color: var(--faint);
-        font-size: 10px;
+        font-size: 10.5px;
         font-variant-numeric: tabular-nums;
         white-space: nowrap;
       }
@@ -213,12 +312,12 @@
       .sidefoot {
         margin-top: auto;
         color: var(--faint);
-        font-size: 11px;
+        font-size: 11.5px;
         padding: 10px 8px;
         line-height: 1.65;
       }
       .main {
-        margin-left: 226px;
+        margin-left: 236px;
         min-height: 100vh;
       }
       header {
@@ -230,8 +329,8 @@
         justify-content: space-between;
         gap: 12px;
         flex-wrap: wrap;
-        padding: 12px 24px;
-        background: #11150fef;
+        padding: 11px 26px;
+        background: var(--header-bg);
         backdrop-filter: blur(12px);
         border-bottom: 1px solid var(--line);
       }
@@ -244,7 +343,7 @@
       }
       .farm div {
         color: var(--muted);
-        font-size: 12px;
+        font-size: 12.5px;
       }
       .header-tools,
       .toolbar,
@@ -259,8 +358,9 @@
         border: 1px solid var(--line);
         border-radius: 999px;
         color: var(--muted);
-        padding: 4px 9px;
-        font-size: 11px;
+        background: var(--surface);
+        padding: 3px 9px;
+        font-size: 11.5px;
         white-space: nowrap;
       }
       .pill b {
@@ -269,9 +369,18 @@
       .import-button {
         background: transparent;
       }
+      .theme-toggle {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .theme-toggle svg {
+        width: 16px;
+        height: 16px;
+      }
       .content {
-        max-width: 1540px;
-        padding: 23px;
+        max-width: 1500px;
+        padding: 24px 26px 40px;
         margin: auto;
       }
       .title-row {
@@ -283,26 +392,27 @@
         margin-bottom: 16px;
       }
       .title-row h1 {
-        font-size: 25px;
+        font-size: 26px;
         margin: 0 0 2px;
+        letter-spacing: -0.2px;
       }
       .sub {
         color: var(--muted);
-        font-size: 12px;
+        font-size: 12.5px;
       }
       .grid {
         display: grid;
         gap: 12px;
       }
       .stats {
-        grid-template-columns: repeat(auto-fit, minmax(166px, 1fr));
+        grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
         margin: 15px 0;
       }
       .card {
-        background: linear-gradient(145deg, #20271d, #191f17);
+        background: var(--surface);
         border: 1px solid var(--line);
-        border-radius: 13px;
-        padding: 14px;
+        border-radius: var(--radius);
+        padding: 15px;
         box-shadow: var(--shadow);
       }
       .stat {
@@ -316,24 +426,27 @@
         cursor: pointer;
         transition:
           border-color 0.15s ease,
-          transform 0.15s ease;
+          transform 0.15s ease,
+          box-shadow 0.15s ease;
       }
       .stat[data-go]:hover {
-        border-color: #739859;
-        transform: translateY(-1px);
+        border-color: var(--accent);
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-hover);
       }
       .stat[data-go]:focus-visible {
-        outline: 2px solid var(--green);
+        outline: 3px solid var(--blue);
         outline-offset: 3px;
       }
       .stat-label {
-        font-size: 11px;
+        font-size: 11.5px;
         color: var(--muted);
         text-transform: uppercase;
         letter-spacing: 0.6px;
+        font-weight: 650;
       }
       .stat-number {
-        font-size: 23px;
+        font-size: 25px;
         font-weight: 800;
         font-variant-numeric: tabular-nums;
       }
@@ -343,12 +456,12 @@
         font-weight: 500;
       }
       .stat-sub {
-        font-size: 11px;
+        font-size: 11.5px;
         color: var(--faint);
       }
       .ring {
-        width: 47px;
-        height: 47px;
+        width: 50px;
+        height: 50px;
         flex: none;
       }
       .ring text {
@@ -356,9 +469,18 @@
         font-weight: 750;
         font-size: 11px;
       }
+      .ring-track {
+        stroke: var(--track);
+      }
+      .ring-value {
+        stroke: var(--state-progress);
+      }
+      .ring-value.full {
+        stroke: var(--state-done);
+      }
       .today-layout {
         display: grid;
-        gap: 14px;
+        gap: 16px;
         min-width: 0;
       }
       .today-pair {
@@ -427,9 +549,9 @@
         align-items: start;
         gap: 12px;
         min-width: 0;
-        background: linear-gradient(145deg, #20271d, #191f17);
+        background: var(--surface);
         border: 1px solid var(--line);
-        border-radius: 14px;
+        border-radius: var(--radius);
         padding: 15px;
         box-shadow: var(--shadow);
       }
@@ -438,15 +560,14 @@
         height: 42px;
         display: grid;
         place-items: center;
-        border: 1px solid #596c4c;
         border-radius: 12px;
-        background: #293a25;
-        color: var(--green);
+        background: var(--accent-soft);
+        color: var(--accent-strong);
       }
       .feature-icon svg {
         width: 22px;
         height: 22px;
-        stroke-width: 1.7;
+        stroke-width: 1.8;
       }
       .feature-card h3 {
         margin: 1px 0 5px;
@@ -455,7 +576,7 @@
       .feature-card p {
         margin: 0 0 10px;
         color: var(--muted);
-        font-size: 12px;
+        font-size: 12.5px;
       }
       .feature-links {
         display: flex;
@@ -463,16 +584,16 @@
         gap: 6px;
       }
       .feature-links a {
-        padding: 4px 8px;
+        padding: 4px 9px;
         border: 1px solid var(--line);
         border-radius: 999px;
-        background: #151a13;
+        background: var(--surface-2);
         color: var(--text);
-        font-size: 11px;
+        font-size: 12px;
       }
       .feature-links a:hover {
-        border-color: var(--green);
-        background: #2b3626;
+        border-color: var(--accent);
+        background: var(--accent-soft);
       }
       .section-head {
         display: flex;
@@ -480,26 +601,26 @@
         gap: 12px;
         align-items: center;
         flex-wrap: wrap;
-        margin: 20px 0 11px;
+        margin: 22px 0 11px;
       }
       .section-head h2 {
-        font-size: 17px;
+        font-size: 18px;
         margin: 0;
       }
       .color-legend {
         display: flex;
         flex-wrap: wrap;
         align-items: center;
-        gap: 7px 13px;
+        gap: 7px 14px;
         margin: 0 0 15px;
-        padding: 9px 11px;
+        padding: 8px 12px;
         border: 1px solid var(--line);
-        border-radius: 11px;
-        background: #171c15;
+        border-radius: 12px;
+        background: var(--surface);
       }
       .color-legend-title {
         color: var(--muted);
-        font-size: 11px;
+        font-size: 11.5px;
         font-weight: 750;
       }
       .color-key {
@@ -507,7 +628,7 @@
         align-items: center;
         gap: 5px;
         color: var(--muted);
-        font-size: 11px;
+        font-size: 11.5px;
       }
       .color-dot {
         width: 19px;
@@ -519,34 +640,39 @@
         border-radius: 50%;
         font-size: 10px;
         font-weight: 850;
+        font-style: normal;
       }
       .color-dot.done {
         color: var(--state-done);
-        background: #273c24;
+        background: var(--done-soft);
       }
       .color-dot.progress {
         color: var(--state-progress);
-        background: #40351f;
+        background: var(--progress-soft);
       }
       .color-dot.action {
         color: var(--state-action);
-        background: #492a25;
+        background: var(--action-soft);
       }
       .color-dot.idle {
         color: var(--state-idle);
-        background: #282e27;
+        background: var(--idle-soft);
       }
       .color-dot.info {
         color: var(--state-info);
-        background: #243546;
+        background: var(--info-soft);
+      }
+      .color-dot.lock {
+        color: var(--state-lock);
+        background: var(--lock-soft);
       }
       .welcome-row {
         align-items: center;
         margin-bottom: 16px;
-        padding: 14px 17px;
-        border: 1px solid #526a43;
-        border-radius: 14px;
-        background: linear-gradient(115deg, #202b1d, #1b2118 62%, #26331f);
+        padding: 16px 19px;
+        border: 1px solid var(--done-line);
+        border-radius: 16px;
+        background: linear-gradient(115deg, var(--accent-soft), var(--surface) 62%, var(--info-soft));
         box-shadow: var(--shadow);
       }
       .welcome-row > div:first-child {
@@ -554,23 +680,22 @@
       }
       .welcome-eyebrow {
         margin: 0 0 3px;
-        color: var(--state-done);
-        font-size: 10px;
+        color: var(--accent-strong);
+        font-size: 10.5px;
         font-weight: 800;
         letter-spacing: 0.9px;
         text-transform: uppercase;
       }
       .welcome-row h1 {
         margin: 0;
-        font-size: clamp(21px, 2.4vw, 29px);
+        font-size: clamp(22px, 2.4vw, 30px);
         overflow-wrap: anywhere;
       }
       .welcome-ornament {
         width: 44px;
         height: 44px;
         flex: none;
-        color: var(--state-progress);
-        opacity: 0.88;
+        color: var(--gold);
       }
       .welcome-ornament svg {
         display: block;
@@ -578,9 +703,9 @@
         height: 100%;
       }
       .panel-title {
-        font-size: 14px;
+        font-size: 15px;
         font-weight: 750;
-        margin: 0 0 9px;
+        margin: 0 0 10px;
       }
       .rows {
         display: grid;
@@ -591,10 +716,10 @@
         grid-template-columns: 34px minmax(0, 1fr) auto;
         gap: 10px;
         align-items: center;
-        background: var(--panel);
+        background: var(--surface);
         border: 1px solid var(--line);
-        border-radius: 10px;
-        padding: 8px 10px;
+        border-radius: 12px;
+        padding: 8px 11px;
         min-width: 0;
       }
       .right {
@@ -614,25 +739,40 @@
         line-height: 1.25;
       }
       .row.done {
-        background: #192019;
-        border-inline-start: 3px solid var(--state-done);
+        background: var(--done-soft);
+        border-color: var(--done-line);
+        border-inline-start: 4px solid var(--state-done);
       }
       .row.alert,
       .grid-item.alert {
-        border-color: #8b493c;
-        background: #30211f;
+        border-color: var(--action-line);
+        background: var(--action-soft);
       }
       .row.alert {
-        border-inline-start: 3px solid var(--state-action);
+        border-inline-start: 4px solid var(--state-action);
+      }
+      .row.locked,
+      .grid-item.locked {
+        border-style: dashed;
+        border-color: var(--lock-line);
+        background: repeating-linear-gradient(135deg, var(--surface), var(--surface) 10px, var(--lock-soft) 10px, var(--lock-soft) 20px);
+      }
+      .row.locked {
+        border-inline-start: 4px solid var(--state-lock);
+      }
+      .row.locked .item-icon,
+      .grid-item.locked .item-icon {
+        filter: grayscale(0.7);
+        opacity: 0.75;
       }
       .stat.complete {
-        border-top: 3px solid var(--state-done);
+        border-top: 4px solid var(--state-done);
       }
       .stat.progressing {
-        border-top: 3px solid var(--state-progress);
+        border-top: 4px solid var(--state-progress);
       }
       .stat.not-started {
-        border-top: 3px solid var(--state-idle);
+        border-top: 4px solid var(--state-idle);
       }
       .row-main {
         min-width: 0;
@@ -643,7 +783,8 @@
       }
       .en {
         color: var(--faint);
-        font-size: 11px;
+        font-size: 11.5px;
+        font-weight: 400;
       }
       .meta {
         display: flex;
@@ -652,35 +793,44 @@
         flex-wrap: wrap;
         margin-top: 4px;
         color: var(--muted);
-        font-size: 11px;
+        font-size: 11.5px;
       }
       .chip {
-        border: 1px solid #3a4534;
-        background: #252d21;
-        color: #bdc6b2;
-        border-radius: 6px;
-        padding: 1px 6px;
-        font-size: 10px;
+        display: inline-flex;
+        align-items: center;
+        gap: 3px;
+        border: 1px solid var(--line);
+        background: var(--surface-2);
+        color: var(--muted);
+        border-radius: 7px;
+        padding: 1px 7px;
+        font-size: 11px;
       }
       .chip.good {
-        background: #263d26;
-        border-color: #476e40;
-        color: #d1edbd;
+        background: var(--done-soft);
+        border-color: var(--done-line);
+        color: var(--state-done);
       }
       .chip.warn {
-        background: #443721;
-        border-color: #8a6636;
-        color: #f3d997;
+        background: var(--progress-soft);
+        border-color: var(--progress-line);
+        color: var(--state-progress);
       }
       .chip.bad {
-        background: #452b28;
-        border-color: #74433c;
-        color: #f2b0a6;
+        background: var(--action-soft);
+        border-color: var(--action-line);
+        color: var(--state-action);
       }
       .chip.blue {
-        background: #243546;
-        border-color: #416581;
-        color: #bbdef5;
+        background: var(--info-soft);
+        border-color: var(--info-line);
+        color: var(--state-info);
+      }
+      .chip.lock {
+        background: var(--lock-soft);
+        border-color: var(--lock-line);
+        color: var(--state-lock);
+        font-weight: 650;
       }
       .item-icon,
       .portrait,
@@ -735,6 +885,7 @@
         width: 48px;
         height: 48px;
         background-size: 288px 288px;
+        border-radius: 8px;
       }
       .monster-icon {
         width: 32px;
@@ -762,69 +913,76 @@
         background-size: 320px 40px;
       }
       .bar {
-        height: 6px;
+        height: 8px;
         border-radius: 10px;
-        background: #30392c;
+        background: var(--track);
         overflow: hidden;
         margin-top: 8px;
       }
       .bar i {
         display: block;
         height: 100%;
-        background: linear-gradient(90deg, #687364, #9aa48f);
+        background: var(--state-idle);
         border-radius: inherit;
       }
       .bar.done i {
-        background: linear-gradient(90deg, #72aa51, #b6df83);
+        background: linear-gradient(90deg, var(--accent), var(--state-done));
       }
       .bar.progress i {
-        background: linear-gradient(90deg, #bc8b36, #f2d274);
+        background: linear-gradient(90deg, var(--progress-line), var(--state-progress));
       }
       .bar.action i {
-        background: linear-gradient(90deg, #b9554a, #eb8b77);
+        background: var(--state-action);
       }
       .bar.info i {
-        background: linear-gradient(90deg, #4c80a6, #83bde2);
+        background: var(--state-info);
       }
       .badge.ok {
-        color: #d5efbd;
-        background: #273c24;
-        border-color: #486b3c;
+        color: var(--state-done);
+        background: var(--done-soft);
+        border-color: var(--done-line);
       }
       .badge.warn {
-        color: #f3d992;
-        background: #40351f;
-        border-color: #775d2c;
+        color: var(--state-progress);
+        background: var(--progress-soft);
+        border-color: var(--progress-line);
       }
       .badge.no {
-        color: #c1c6bb;
-        background: #292e28;
-        border-color: #4b5547;
+        color: var(--state-idle);
+        background: var(--idle-soft);
+        border-color: var(--idle-line);
       }
       .badge.alert {
-        color: #ffb3a5;
-        background: #492a25;
-        border-color: #8b493c;
+        color: var(--state-action);
+        background: var(--action-soft);
+        border-color: var(--action-line);
+      }
+      .badge.lock {
+        color: var(--state-lock);
+        background: var(--lock-soft);
+        border-color: var(--lock-line);
       }
       .empty {
-        border: 1px dashed var(--line);
-        border-radius: 10px;
+        border: 1px dashed var(--line-strong);
+        border-radius: 12px;
         padding: 20px;
         color: var(--faint);
         text-align: center;
+        background: var(--surface);
       }
       .bundles {
-        grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
+        grid-template-columns: repeat(auto-fill, minmax(275px, 1fr));
       }
       .bundle {
-        background: var(--panel);
+        background: var(--surface);
         border: 1px solid var(--line);
-        border-radius: 11px;
-        padding: 12px;
+        border-radius: var(--radius);
+        padding: 13px;
+        box-shadow: var(--shadow);
       }
       .bundle.complete {
-        border-color: #4c7141;
-        background: #1c281b;
+        border-color: var(--done-line);
+        background: var(--done-soft);
       }
       .bundle-head {
         display: flex;
@@ -845,7 +1003,7 @@
         color: inherit;
       }
       .today-bundle-link:hover b {
-        color: var(--green);
+        color: var(--accent-strong);
       }
       .today-bundle-name {
         display: grid;
@@ -872,7 +1030,7 @@
         transition: border-color 0.15s ease;
       }
       .overview-bundle-card:hover {
-        border-color: #739859;
+        border-color: var(--accent);
       }
       .overview-bundle-link {
         display: block;
@@ -881,7 +1039,7 @@
         color: inherit;
       }
       .overview-bundle-link:hover .overview-bundle-head b {
-        color: var(--green);
+        color: var(--accent-strong);
       }
       .overview-bundle-link:focus-visible {
         outline-offset: 4px;
@@ -894,7 +1052,7 @@
         display: inline-block;
         margin-top: 8px;
         color: var(--blue);
-        font-size: 11px;
+        font-size: 12px;
       }
       .overview-bundle-card > .bundle-tooltip {
         position: absolute;
@@ -909,7 +1067,7 @@
       }
       .bundle-room:focus-visible,
       .bundle[id]:focus-visible {
-        outline: 2px solid var(--green);
+        outline: 3px solid var(--blue);
         outline-offset: 4px;
       }
       .bundle-tooltip .tip-pop {
@@ -926,7 +1084,7 @@
         min-width: 0;
         margin: 3px 0 4px;
         color: var(--muted);
-        font-size: 10px;
+        font-size: 11px;
         line-height: 1.35;
         overflow-wrap: anywhere;
       }
@@ -955,7 +1113,7 @@
         text-decoration: none;
       }
       .bundle-tip-link:hover {
-        color: var(--green);
+        color: var(--accent-strong);
       }
       .bundle-tip-link b {
         flex: none;
@@ -973,19 +1131,20 @@
         max-width: 100%;
         gap: 3px;
         border: 1px solid var(--line);
-        border-radius: 7px;
-        padding: 3px 5px;
-        font-size: 10px;
+        border-radius: 9px;
+        padding: 3px 6px;
+        font-size: 11px;
         color: var(--muted);
+        background: var(--surface-2);
       }
       .bundle-item .name {
         flex: 1 1 88px;
         min-width: 0;
       }
       .bundle-item.have {
-        background: #263b25;
-        border-color: #456d3d;
-        color: #d1e9bb;
+        background: var(--done-soft);
+        border-color: var(--done-line);
+        color: var(--state-done);
       }
       .bundle-room .bundle-items {
         display: grid;
@@ -1035,19 +1194,19 @@
         min-height: 48px;
         margin-top: 12px;
         padding: 7px 10px;
-        border: 1px solid #806b37;
-        border-left: 4px solid #e0b64f;
-        border-radius: 9px;
-        background: linear-gradient(105deg, #3b321f, #292d22);
+        border: 1px solid var(--progress-line);
+        border-left: 4px solid var(--gold);
+        border-radius: 10px;
+        background: linear-gradient(105deg, var(--progress-soft), var(--surface));
         color: var(--text);
-        font-size: 12px;
+        font-size: 12.5px;
       }
       .reward-card-label {
         flex: none;
         padding: 3px 7px;
         border-radius: 6px;
-        background: #58451f;
-        color: #f3d992;
+        background: var(--gold);
+        color: var(--surface);
         font-size: 10px;
         font-weight: 800;
         letter-spacing: 0.35px;
@@ -1062,7 +1221,7 @@
         overflow: hidden;
       }
       .reward-card-icon .item-icon {
-        filter: drop-shadow(0 2px 3px #0008);
+        filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.2));
       }
       .reward-card-icon .item-icon.sheet2 {
         position: relative;
@@ -1071,7 +1230,7 @@
       }
       .reward-card-name {
         min-width: 0;
-        color: #f5f0db;
+        color: var(--text);
         font-weight: 700;
         overflow-wrap: anywhere;
       }
@@ -1081,44 +1240,91 @@
       .tabs {
         display: flex;
         align-items: center;
-        gap: 5px;
+        gap: 6px;
         flex-wrap: wrap;
-        margin: 0 0 17px;
+        margin: 0 0 14px;
       }
       .tabs button {
-        padding: 8px 13px;
-      }
-      button[data-filter="done"].active {
-        color: #e4f2d7;
-        background: #273c24;
-        border-color: #64894f;
-      }
-      button[data-filter="missing"].active {
-        color: #e0e4dc;
-        background: #303830;
-        border-color: #687362;
+        padding: 7px 13px;
       }
       .actions input[type="search"] {
-        width: min(250px, 60vw);
+        width: min(260px, 60vw);
+      }
+      /* ===== Панель фильтров ===== */
+      .filter-bar {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: end;
+        gap: 10px 12px;
+        margin: 0 0 14px;
+        padding: 11px 13px;
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        background: var(--surface);
+        box-shadow: var(--shadow);
+      }
+      .filter-bar-title {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        align-self: center;
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 750;
+      }
+      .filter-bar-title svg {
+        width: 15px;
+        height: 15px;
+      }
+      .filter {
+        display: grid;
+        gap: 3px;
+        min-width: 0;
+      }
+      .filter > span {
+        color: var(--faint);
+        font-size: 11px;
+        font-weight: 650;
+        text-transform: uppercase;
+        letter-spacing: 0.4px;
+      }
+      .filter select {
+        min-width: 150px;
+        max-width: 100%;
+      }
+      .filter-count {
+        margin-left: auto;
+        align-self: center;
+        color: var(--muted);
+        font-size: 12px;
+        font-variant-numeric: tabular-nums;
+      }
+      .filter-reset {
+        align-self: end;
       }
       .icon-grid {
-        grid-template-columns: repeat(auto-fill, minmax(132px, 1fr));
+        grid-template-columns: repeat(auto-fill, minmax(136px, 1fr));
       }
       .grid-item {
         min-width: 0;
         min-height: 112px;
         text-align: center;
-        background: var(--panel);
+        background: var(--surface);
         border: 1px solid var(--line);
-        border-radius: 11px;
+        border-radius: 12px;
         padding: 10px 7px;
         position: relative;
+        box-shadow: var(--shadow);
+      }
+      .grid-item.done {
+        background: var(--done-soft);
+        border-color: var(--done-line);
       }
       .grid-item .item-icon {
         margin: 0 auto 4px;
       }
       .grid-item .name {
-        font-size: 11px;
+        font-size: 12px;
         display: block;
       }
       .grid-item .badge {
@@ -1130,11 +1336,12 @@
         display: flex;
         align-items: center;
         justify-content: center;
+        flex-wrap: wrap;
         gap: 5px;
         margin-top: 5px;
       }
       .people {
-        grid-template-columns: repeat(auto-fill, minmax(245px, 1fr));
+        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
       }
       .person {
         display: grid;
@@ -1157,6 +1364,80 @@
         gap: 1px;
         vertical-align: middle;
         line-height: 1;
+      }
+      /* ===== Ключи и доступы ===== */
+      .unlock-list {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+        gap: 8px;
+      }
+      .unlock-item {
+        display: grid;
+        grid-template-columns: 26px minmax(0, 1fr) auto;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 10px;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        background: var(--surface);
+      }
+      .unlock-item.met {
+        background: var(--done-soft);
+        border-color: var(--done-line);
+      }
+      .unlock-item.locked {
+        border-style: dashed;
+        border-color: var(--lock-line);
+        background: var(--lock-soft);
+      }
+      .unlock-mark {
+        width: 24px;
+        height: 24px;
+        display: grid;
+        place-items: center;
+        border-radius: 50%;
+        font-weight: 850;
+        font-size: 12px;
+        color: var(--state-idle);
+        background: var(--idle-soft);
+      }
+      .unlock-item.met .unlock-mark {
+        color: var(--on-accent);
+        background: var(--state-done);
+      }
+      .unlock-item.locked .unlock-mark {
+        color: var(--state-lock);
+        background: var(--surface);
+      }
+      .unlock-mark svg {
+        width: 13px;
+        height: 13px;
+      }
+      .unlock-item small {
+        display: block;
+        color: var(--muted);
+        font-size: 11px;
+      }
+      .req-note {
+        display: block;
+        margin-top: 5px;
+        padding: 6px 9px;
+        border: 1px solid var(--lock-line);
+        border-radius: 9px;
+        background: var(--lock-soft);
+        color: var(--text);
+        font-size: 12px;
+      }
+      .req-note b {
+        color: var(--state-lock);
+      }
+      .tip-req {
+        margin-top: 6px;
+        padding-top: 6px;
+        border-top: 1px dashed var(--lock-line);
+      }
+      .tip-req strong {
+        color: var(--state-lock);
       }
       .goal {
         margin: 8px 0;
@@ -1187,15 +1468,19 @@
         display: flex;
         gap: 8px;
         align-items: center;
-        padding: 7px;
-        border-bottom: 1px solid #30382c;
+        padding: 8px;
+        border-bottom: 1px solid var(--line);
       }
       .task.done {
-        background: #192019;
-        border-bottom-color: #3f5c37;
+        background: var(--done-soft);
+        border-bottom-color: var(--done-line);
       }
       .task input {
-        accent-color: #8fbe6c;
+        accent-color: var(--accent);
+      }
+      .task.done span {
+        text-decoration: line-through;
+        color: var(--state-done);
       }
       .toast {
         position: fixed;
@@ -1206,28 +1491,30 @@
         transform: translateX(-50%);
         overflow-wrap: anywhere;
         text-align: center;
-        background: #293a25;
-        border: 1px solid var(--green);
-        padding: 9px 14px;
-        border-radius: 9px;
+        background: var(--text);
+        color: var(--surface);
+        padding: 10px 16px;
+        border-radius: 12px;
+        box-shadow: var(--shadow-hover);
         opacity: 0;
         transition: 0.2s;
         z-index: 10;
+        pointer-events: none;
       }
       .toast.show {
         opacity: 1;
       }
       .error {
-        border: 1px solid var(--red);
-        background: #38221f;
+        border: 1px solid var(--action-line);
+        background: var(--action-soft);
         padding: 18px;
-        border-radius: 12px;
+        border-radius: var(--radius);
       }
       .error h2 {
-        color: #ffb3a5;
+        color: var(--state-action);
       }
       .footer-note {
-        font-size: 11px;
+        font-size: 11.5px;
         color: var(--faint);
         margin-top: 16px;
         overflow-wrap: anywhere;
@@ -1242,23 +1529,23 @@
       }
       .annotation-actions button {
         padding: 3px 7px;
-        min-width: 29px;
-        font-size: 12px;
+        min-width: 30px;
+        font-size: 13px;
         color: var(--muted);
       }
       .annotation-actions button.marked {
         color: var(--gold);
-        border-color: #806b37;
-        background: #382f1d;
+        border-color: var(--progress-line);
+        background: var(--progress-soft);
       }
       .annotation-actions button.has-note {
         color: var(--blue);
-        border-color: #416581;
+        border-color: var(--info-line);
       }
       .note-preview {
         display: block;
-        color: #e5cc88;
-        font-size: 11px;
+        color: var(--gold);
+        font-size: 12px;
         margin-top: 4px;
         overflow-wrap: anywhere;
       }
@@ -1274,15 +1561,14 @@
         list-style: none;
         width: 26px;
         height: 26px;
-        border: 1px solid #5689a7;
+        border: 1px solid var(--info-line);
         border-radius: 50%;
         display: grid;
         place-items: center;
-        background: #203442;
-        color: #b8def3;
+        background: var(--info-soft);
+        color: var(--state-info);
         font-size: 13px;
         font-weight: 850;
-        box-shadow: 0 0 0 1px #83bde21c;
         transition:
           background 0.15s ease,
           border-color 0.15s ease,
@@ -1292,14 +1578,25 @@
       .acq-tip summary:hover {
         transform: translateY(-1px);
         border-color: var(--blue);
-        background: #2d5061;
-        color: #fff;
-        box-shadow: 0 0 0 3px #83bde22b;
+        background: var(--blue);
+        color: var(--surface);
+        box-shadow: 0 0 0 3px var(--info-soft);
       }
       .acq-tip[open] > summary {
         border-color: var(--blue);
-        background: #315568;
-        color: #fff;
+        background: var(--blue);
+        color: var(--surface);
+      }
+      .acq-tip.req-tip summary {
+        border-color: var(--lock-line);
+        background: var(--lock-soft);
+        color: var(--state-lock);
+      }
+      .acq-tip.req-tip summary:hover,
+      .acq-tip.req-tip[open] > summary {
+        border-color: var(--state-lock);
+        background: var(--state-lock);
+        color: var(--surface);
       }
       .museum-source-tip summary {
         display: flex;
@@ -1308,10 +1605,10 @@
         width: auto;
         min-width: 28px;
         height: 28px;
-        padding: 0 8px;
-        border-radius: 8px;
+        padding: 0 9px;
+        border-radius: 9px;
         white-space: nowrap;
-        font-size: 11px;
+        font-size: 11.5px;
       }
       .museum-source-tip summary span {
         font-size: 14px;
@@ -1323,16 +1620,17 @@
       .tip-pop {
         position: absolute;
         right: 0;
-        top: 27px;
+        top: 30px;
         z-index: 8;
-        width: min(300px, 78vw);
-        padding: 10px 12px;
-        background: #11170f;
-        border: 1px solid #596c4c;
-        border-radius: 9px;
-        box-shadow: var(--shadow);
+        width: min(310px, 78vw);
+        padding: 11px 13px;
+        background: var(--tip-bg);
+        border: 1px solid var(--line-strong);
+        border-radius: 12px;
+        box-shadow: var(--shadow-hover);
         color: var(--muted);
-        font-size: 11px;
+        font-size: 12px;
+        text-align: left;
       }
       .tip-pop b {
         display: block;
@@ -1351,11 +1649,384 @@
         min-width: 19px;
         font-size: 10px;
       }
+      /* ===== Danger zone: спойлеры ===== */
+      .danger-banner {
+        display: grid;
+        grid-template-columns: 48px minmax(0, 1fr);
+        gap: 14px;
+        align-items: start;
+        margin-bottom: 16px;
+        padding: 16px 18px;
+        border: 2px solid var(--danger-line);
+        border-radius: 16px;
+        background: repeating-linear-gradient(135deg, var(--danger-soft), var(--danger-soft) 14px, var(--surface) 14px, var(--surface) 28px);
+        box-shadow: var(--shadow);
+      }
+      .danger-banner svg {
+        width: 46px;
+        height: 46px;
+        color: var(--danger);
+      }
+      .danger-banner h2 {
+        margin: 0 0 6px;
+        color: var(--danger);
+        font-size: 20px;
+      }
+      .danger-banner ul {
+        margin: 6px 0 0;
+        padding-left: 18px;
+        color: var(--text);
+      }
+      .danger-gate {
+        display: grid;
+        gap: 12px;
+        max-width: 640px;
+      }
+      .danger-gate label {
+        display: flex;
+        gap: 9px;
+        align-items: flex-start;
+        font-weight: 650;
+      }
+      .danger-gate input {
+        width: 18px;
+        height: 18px;
+        margin-top: 2px;
+        accent-color: var(--danger);
+      }
+      .danger-gate button.danger,
+      button.danger {
+        justify-self: start;
+        background: var(--danger);
+        border-color: var(--danger);
+        color: var(--surface);
+        font-weight: 700;
+      }
+      button.danger:disabled {
+        cursor: not-allowed;
+      }
+      .secret-section {
+        margin-bottom: 22px;
+      }
+      .secret-section > .sub {
+        margin: -4px 0 10px;
+      }
+      .spoiler {
+        margin: 0 0 8px;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        background: var(--surface);
+        box-shadow: var(--shadow);
+      }
+      .spoiler > summary {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 11px 13px;
+        cursor: pointer;
+        list-style: none;
+        font-weight: 650;
+      }
+      .spoiler > summary::-webkit-details-marker {
+        display: none;
+      }
+      .spoiler > summary::after {
+        content: "▸";
+        margin-left: auto;
+        color: var(--faint);
+      }
+      .spoiler[open] > summary::after {
+        content: "▾";
+      }
+      .spoiler-body {
+        padding: 0 13px 13px;
+        display: grid;
+        gap: 8px;
+      }
+      .spoiler-label {
+        flex: none;
+        padding: 2px 7px;
+        border-radius: 6px;
+        background: var(--danger-soft);
+        border: 1px solid var(--danger-line);
+        color: var(--danger);
+        font-size: 10.5px;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.4px;
+      }
+      .spoiler-text {
+        position: relative;
+        padding: 9px 11px;
+        border-radius: 10px;
+        background: var(--surface-2);
+      }
+      .spoiler-text.blurred {
+        cursor: pointer;
+        user-select: none;
+      }
+      .spoiler-text.blurred > p {
+        filter: blur(6px);
+      }
+      .spoiler-text.blurred::after {
+        content: attr(data-reveal);
+        position: absolute;
+        inset: 0;
+        display: grid;
+        place-items: center;
+        color: var(--danger);
+        font-weight: 750;
+        font-size: 12.5px;
+      }
+      .spoiler-text p {
+        margin: 0;
+      }
+      .spoiler-text h4 {
+        margin: 0 0 4px;
+        font-size: 11.5px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: var(--muted);
+      }
+      /* ===== Визуал к решениям: предметы, схемы, ссылки на вики ===== */
+      .spoiler-extra {
+        display: grid;
+        gap: 10px;
+        margin-top: 10px;
+      }
+      .spoiler-item-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+      }
+      .spoiler-item-list .chip {
+        padding: 2px 8px 2px 3px;
+        font-size: 12px;
+        color: var(--text);
+        background: var(--surface);
+      }
+      .scheme {
+        margin: 0;
+        padding: 10px;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        background: var(--surface);
+      }
+      .scheme figcaption {
+        margin-bottom: 8px;
+        color: var(--muted);
+        font-size: 11.5px;
+      }
+      .scheme-svg {
+        display: block;
+        width: 100%;
+        max-width: 520px;
+        height: auto;
+      }
+      .sc-ground {
+        fill: var(--done-soft);
+      }
+      .sc-water,
+      .sc-water-band {
+        fill: var(--info-soft);
+        stroke: var(--info-line);
+      }
+      .sc-shore,
+      .sc-feature {
+        fill: var(--progress-soft);
+        stroke: var(--progress-line);
+      }
+      .sc-building,
+      .sc-truck {
+        fill: var(--surface-3);
+        stroke: var(--line-strong);
+        stroke-width: 1.5;
+      }
+      .sc-roof {
+        fill: var(--action-soft);
+        stroke: var(--action-line);
+        stroke-width: 1.5;
+      }
+      .sc-path,
+      .sc-bridge {
+        fill: var(--surface-2);
+        stroke: var(--line-strong);
+      }
+      .sc-bush {
+        fill: var(--accent);
+        opacity: 0.55;
+      }
+      .sc-boulder,
+      .sc-rock,
+      .sc-stone {
+        fill: var(--line-strong);
+      }
+      .sc-wheel {
+        fill: var(--text);
+      }
+      .sc-rail {
+        stroke: var(--muted);
+        stroke-width: 3;
+        fill: none;
+      }
+      .sc-sleepers {
+        stroke: var(--line-strong);
+        stroke-width: 4;
+      }
+      .sc-dune {
+        fill: none;
+        stroke: var(--progress-line);
+        stroke-width: 2;
+      }
+      .sc-fence {
+        fill: none;
+        stroke: var(--gold);
+        stroke-width: 3;
+        stroke-dasharray: 6 4;
+      }
+      .sc-hidden-zone {
+        fill: var(--lock-soft);
+        stroke: var(--state-lock);
+        stroke-dasharray: 4 3;
+      }
+      .sc-tile {
+        fill: none;
+        stroke: var(--danger);
+        stroke-width: 2;
+        stroke-dasharray: 4 3;
+      }
+      .sc-target {
+        fill: var(--danger);
+      }
+      .sc-target-ring {
+        fill: none;
+        stroke: var(--danger);
+        stroke-width: 2.5;
+      }
+      .sc-label {
+        fill: var(--text);
+        font-size: 11px;
+      }
+      .sc-strong {
+        font-weight: 750;
+      }
+      .sc-compass {
+        fill: var(--muted);
+      }
+      .sc-shell {
+        fill: var(--progress-soft);
+        stroke: var(--gold);
+        stroke-width: 2;
+      }
+      .sc-shell-line {
+        stroke: var(--gold);
+        fill: none;
+      }
+      .sc-step {
+        fill: var(--accent);
+      }
+      .sc-step-text {
+        fill: var(--on-accent);
+        font-size: 13px;
+        font-weight: 800;
+      }
+      .sc-block {
+        fill: var(--state-lock);
+      }
+      .sc-arrow {
+        stroke: var(--muted);
+        stroke-width: 2;
+      }
+      .sc-arrow-head {
+        fill: var(--muted);
+      }
+      .scheme-route {
+        display: grid;
+        gap: 6px;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+      }
+      .scheme-route li,
+      .scheme-row,
+      .scheme-color {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 8px;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: var(--surface-2);
+      }
+      .scheme-route em {
+        color: var(--accent-strong);
+        font-style: normal;
+        font-weight: 800;
+      }
+      .scheme-step {
+        width: 22px;
+        height: 22px;
+        flex: none;
+        display: grid;
+        place-items: center;
+        border-radius: 50%;
+        background: var(--accent);
+        color: var(--on-accent);
+        font-size: 12px;
+        font-weight: 800;
+      }
+      .scheme-goal {
+        width: 28px;
+        text-align: center;
+        color: var(--gold);
+        font-size: 18px;
+      }
+      .scheme-rows,
+      .scheme-colors {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+        gap: 6px;
+      }
+      .scheme-row span,
+      .scheme-color span {
+        margin-left: auto;
+        color: var(--muted);
+        font-size: 12px;
+        text-align: right;
+      }
+      .scheme-color i {
+        width: 14px;
+        height: 28px;
+        flex: none;
+        border-radius: 4px;
+      }
+      .spoiler-links {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 6px 10px;
+      }
+      .wiki-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 4px 10px;
+        border: 1px solid var(--info-line);
+        border-radius: 999px;
+        background: var(--info-soft);
+        color: var(--blue);
+        font-size: 12px;
+        font-weight: 650;
+      }
+      .wiki-link:hover {
+        background: var(--blue);
+        color: var(--surface);
+      }
       .note-modal {
         position: fixed;
         inset: 0;
         z-index: 20;
-        background: #070a07c9;
+        background: var(--overlay);
         display: grid;
         place-items: center;
         overflow-y: auto;
@@ -1369,11 +2040,11 @@
         max-height: calc(100vh - 30px);
         max-height: calc(100dvh - 30px);
         overflow-y: auto;
-        background: var(--panel);
-        border: 1px solid #566748;
-        border-radius: 14px;
-        padding: 17px;
-        box-shadow: var(--shadow);
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        padding: 18px;
+        box-shadow: var(--shadow-hover);
       }
       .note-dialog h2 {
         font-size: 17px;
@@ -1385,9 +2056,9 @@
         min-height: 100px;
         resize: vertical;
         margin: 12px 0;
-        background: #11170f;
-        border: 1px solid var(--line);
-        border-radius: 9px;
+        background: var(--surface-2);
+        border: 1px solid var(--line-strong);
+        border-radius: 10px;
         color: var(--text);
         padding: 10px;
         font: inherit;
@@ -1420,8 +2091,8 @@
         .mobile-nav {
           display: block;
           min-height: 40px;
-          background: #151a13;
-          border-color: #596c4c;
+          background: var(--surface);
+          border-color: var(--line-strong);
         }
         .sidefoot {
           display: none;
@@ -1441,7 +2112,7 @@
           grid-template-columns: repeat(2, minmax(0, 1fr));
         }
         .title-row h1 {
-          font-size: 21px;
+          font-size: 22px;
         }
       }
       @media (max-width: 600px) {
@@ -1476,6 +2147,18 @@
         }
         .right {
           justify-content: flex-start;
+        }
+        .filter,
+        .filter select {
+          flex: 1 1 140px;
+          min-width: 0;
+          width: 100%;
+        }
+        .filter-count {
+          margin-left: 0;
+        }
+        .danger-banner {
+          grid-template-columns: 1fr;
         }
         .note-dialog {
           max-height: calc(100vh - 24px);
@@ -1894,6 +2577,88 @@
           d="M19.414 14.414C21 12.828 22 11.5 22 9.5a5.5 5.5 0 0 0-9.591-3.676.6.6 0 0 1-.818.001A5.5 5.5 0 0 0 2 9.5c0 2.3 1.5 4 3 5.5l5.535 5.362a2 2 0 0 0 2.879.052 2.12 2.12 0 0 0-.004-3 2.124 2.124 0 1 0 3-3 2.124 2.124 0 0 0 3.004 0 2 2 0 0 0 0-2.828l-1.881-1.882a2.41 2.41 0 0 0-3.409 0l-1.71 1.71a2 2 0 0 1-2.828 0 2 2 0 0 1 0-2.828l2.823-2.762"
         />
       </symbol>
+      <symbol
+        id="icon-lock"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <rect width="18" height="11" x="3" y="11" rx="2" ry="2" />
+        <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+      </symbol>
+      <symbol
+        id="icon-triangle-alert"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <path
+          d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"
+        />
+        <path d="M12 9v4" />
+        <path d="M12 17h.01" />
+      </symbol>
+      <symbol
+        id="icon-sun"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <circle cx="12" cy="12" r="4" />
+        <path d="M12 2v2" />
+        <path d="M12 20v2" />
+        <path d="m4.93 4.93 1.41 1.41" />
+        <path d="m17.66 17.66 1.41 1.41" />
+        <path d="M2 12h2" />
+        <path d="M20 12h2" />
+        <path d="m6.34 17.66-1.41 1.41" />
+        <path d="m19.07 4.93-1.41 1.41" />
+      </symbol>
+      <symbol
+        id="icon-moon"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
+      </symbol>
+      <symbol
+        id="icon-funnel"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
+      </symbol>
+      <symbol
+        id="icon-key-round"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <path
+          d="M2.586 17.414A2 2 0 0 0 2 18.828V21a1 1 0 0 0 1 1h3a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h1a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h.172a2 2 0 0 0 1.414-.586l.814-.814a6.5 6.5 0 1 0-4-4z"
+        />
+        <circle cx="16.5" cy="7.5" r=".5" fill="currentColor" />
+      </symbol>
     </svg>
     <div class="shell">
       <aside class="sidebar">
@@ -1910,36 +2675,36 @@
               width="38"
               height="38"
               rx="12"
-              fill="#233522"
-              stroke="#617b50"
+              fill="#8fd0f0"
+              stroke="#4f9fcb"
             />
-            <circle cx="29" cy="10" r="3" fill="#f0c966" />
+            <circle cx="29" cy="10" r="3.4" fill="#ffd34d" />
             <path
               d="m8 21 11-9 11 9"
               fill="none"
-              stroke="#f1efdf"
-              stroke-width="2.2"
+              stroke="#c2493a"
+              stroke-width="2.4"
               stroke-linecap="round"
               stroke-linejoin="round"
             />
             <path
               d="M11.5 19.5V29h15v-9.5"
-              fill="#34492f"
-              stroke="#9bd276"
+              fill="#fff6e0"
+              stroke="#8a5a2b"
               stroke-width="2"
               stroke-linejoin="round"
             />
             <path
               d="M17.5 29v-6h4v6"
-              fill="#1b2118"
-              stroke="#f0c966"
+              fill="#c2493a"
+              stroke="#8a5a2b"
               stroke-width="1.6"
               stroke-linejoin="round"
             />
             <path
               d="M7 33c4-2 7-2 11 0s7 2 11 0 4-2 5-2"
               fill="none"
-              stroke="#9bd276"
+              stroke="#4f9b3d"
               stroke-width="1.5"
               stroke-linecap="round"
             />
@@ -2036,8 +2801,21 @@
       const prefs = {
         lang: LS.get("lang", "ru") === "en" ? "en" : "ru",
         view: LS.get("view", "list") === "grid" ? "grid" : "list",
-        hideDone: LS.get("hideDone", false) === true,
+        theme: ["light", "dark", "auto"].includes(LS.get("theme", "light"))
+          ? LS.get("theme", "light")
+          : "light",
       };
+      const darkQuery = window.matchMedia?.("(prefers-color-scheme: dark)");
+      function applyTheme() {
+        const dark =
+          prefs.theme === "dark" ||
+          (prefs.theme === "auto" && !!darkQuery?.matches);
+        document.documentElement.dataset.theme = dark ? "dark" : "light";
+      }
+      applyTheme();
+      darkQuery?.addEventListener?.("change", () => {
+        if (prefs.theme === "auto") applyTheme();
+      });
       let S = window.__STATE__,
         ERR = window.__ERROR__;
       if (S) {
@@ -2390,6 +3168,154 @@
         groupHint: "Category",
         priceHint: "Sell price",
       });
+      Object.assign(labels.ru, {
+        secrets: "Секреты · danger zone",
+        statusLock: "Требует открытия",
+        lockedBadge: "Закрыто",
+        waitBadge: "Ждать дат",
+        waitFor: "Ждите",
+        unknownBadge: "Проверьте сами",
+        requires: "Нужно открыть",
+        requiresUnknown: "Возможно, нужно открыть",
+        howToUnlock: "Как открыть",
+        unlocks: "Ключи и доступы",
+        unlocksHint:
+          "Что уже открыто в вашей игре. Закрытые пункты блокируют часть предметов — в списках они помечены 🔒.",
+        blockedItems: "закрыто предметов",
+        filters: "Фильтры",
+        filterPlace: "Где",
+        filterTime: "Время",
+        filterSeason: "Сезон",
+        filterWeather: "Погода",
+        filterGear: "Снасть",
+        filterAccess: "Доступ",
+        filterSource: "Источник",
+        filterCategory: "Категория",
+        anyOption: "Любое",
+        anyPlace: "Любое место",
+        anySeason: "Любой сезон",
+        currentSeason: "Текущий сезон",
+        gameNow: "Сейчас в игре",
+        morning: "Утро (6–12)",
+        day: "День (12–17)",
+        evening: "Вечер (17–20)",
+        night: "Ночь (20–2)",
+        sunny: "Солнце",
+        rainy: "Дождь",
+        rod: "Удочка",
+        crabPot: "Крабовая ловушка",
+        accessAll: "Всё",
+        accessOpen: "Доступно мне",
+        accessLocked: "Требует открытия",
+        resetFilters: "Сбросить",
+        shown: "показано",
+        extendedFish: "Только в задании Ки — не входит в коллекцию",
+        nightMarketOnly: "Только Ночной рынок: зима 15–17, 17:00–02:00",
+        themeLight: "Светлая тема",
+        themeDark: "Тёмная тема",
+        themeAuto: "Как в системе",
+        theme: "Тема",
+        noBirthday: "нет данных",
+        searchPeople: "Поиск жителя…",
+        dangerTitle: "Danger zone: спойлеры!",
+        dangerLead:
+          "Здесь решения заданий мистера Ки, секретных записок и тайн долины. Это лишает игру самой приятной части — догадаться самой.",
+        dangerPoints: [
+          "Всё скрыто: каждая подсказка и решение открываются отдельно по клику.",
+          "Сначала идёт мягкая подсказка, полное решение — вторым шагом.",
+          "Разделы для ещё не открытых мест помечены — там спойлеры о будущем прохождении.",
+        ],
+        dangerConsent: "Я понимаю, что дальше спойлеры, и хочу их увидеть",
+        dangerEnter: "Войти в danger zone",
+        dangerLeave: "Скрыть снова и выйти",
+        dangerSectionLocked:
+          "⚠ Вы ещё не открыли это место — раздел раскрывает будущее прохождение.",
+        hint: "Подсказка",
+        solution: "Полное решение",
+        clickToReveal: "Нажмите, чтобы показать спойлер",
+        qiDone: "Заданий Ки выполнено (по сейву)",
+        neededItems: "Что понадобится",
+        scheme: "Схема",
+        schemeNote: "Схема по описанию, не в масштабе",
+        wikiLink: "Скриншоты на вики (англ.)",
+        wikiSection: "Все решения раздела на вики (англ.)",
+        wikiWarning:
+          "Откроется внешний сайт — там спойлеры без защиты и много других тайн",
+      });
+      Object.assign(labels.en, {
+        secrets: "Secrets · danger zone",
+        statusLock: "Needs unlocking",
+        lockedBadge: "Locked",
+        waitBadge: "Wait for dates",
+        waitFor: "Wait for",
+        unknownBadge: "Check yourself",
+        requires: "Requires",
+        requiresUnknown: "May require",
+        howToUnlock: "How to unlock",
+        unlocks: "Keys & access",
+        unlocksHint:
+          "What is already unlocked in your game. Locked entries block some items — they are marked 🔒 in lists.",
+        blockedItems: "items locked",
+        filters: "Filters",
+        filterPlace: "Where",
+        filterTime: "Time",
+        filterSeason: "Season",
+        filterWeather: "Weather",
+        filterGear: "Gear",
+        filterAccess: "Access",
+        filterSource: "Source",
+        filterCategory: "Category",
+        anyOption: "Any",
+        anyPlace: "Anywhere",
+        anySeason: "Any season",
+        currentSeason: "Current season",
+        gameNow: "In-game now",
+        morning: "Morning (6–12)",
+        day: "Day (12–17)",
+        evening: "Evening (17–20)",
+        night: "Night (20–2)",
+        sunny: "Sun",
+        rainy: "Rain",
+        rod: "Fishing rod",
+        crabPot: "Crab pot",
+        accessAll: "All",
+        accessOpen: "Available to me",
+        accessLocked: "Needs unlocking",
+        resetFilters: "Reset",
+        shown: "shown",
+        extendedFish: "Qi quest only — not part of the collection",
+        nightMarketOnly: "Night Market only: Winter 15–17, 5 pm – 2 am",
+        themeLight: "Light theme",
+        themeDark: "Dark theme",
+        themeAuto: "System theme",
+        theme: "Theme",
+        noBirthday: "no data",
+        searchPeople: "Find a villager…",
+        dangerTitle: "Danger zone: spoilers!",
+        dangerLead:
+          "Solutions for Mr. Qi's orders, secret notes and valley mysteries. They take away the best part — figuring it out yourself.",
+        dangerPoints: [
+          "Everything is hidden: each hint and solution is revealed separately on click.",
+          "A gentle hint comes first; the full solution is a second step.",
+          "Sections for places you haven't unlocked are marked — they spoil future progress.",
+        ],
+        dangerConsent: "I understand there are spoilers ahead and want to see them",
+        dangerEnter: "Enter the danger zone",
+        dangerLeave: "Hide again and leave",
+        dangerSectionLocked:
+          "⚠ You haven't unlocked this place yet — this section spoils future progress.",
+        hint: "Hint",
+        solution: "Full solution",
+        clickToReveal: "Click to reveal the spoiler",
+        qiDone: "Qi orders completed (from save)",
+        neededItems: "You will need",
+        scheme: "Scheme",
+        schemeNote: "Drawn from the description, not to scale",
+        wikiLink: "Screenshots on the wiki",
+        wikiSection: "All solutions of this section on the wiki",
+        wikiWarning:
+          "Opens an external site — spoilers there are unprotected",
+      });
       const sections = [
         "overview",
         "today",
@@ -2404,6 +3330,7 @@
         "guild",
         "saved",
         "goals",
+        "secrets",
       ];
       const initialHash = (location.hash || "#overview").slice(1).split("/");
       let route = initialHash.shift(),
@@ -2415,7 +3342,29 @@
       let search = "",
         stateFilter = "missing",
         kindFilter = "",
-        nowOnly = false;
+        nowOnly = false,
+        peopleSearch = "",
+        dangerConsent = false,
+        savesCache = null,
+        pendingSaves = 0;
+      // Фильтры коллекций запоминаются между визитами (localStorage).
+      const FILTER_DEFAULTS = {
+        place: "",
+        time: "",
+        season: "",
+        weather: "",
+        gear: "",
+        access: "",
+        tag: "",
+        source: "",
+        category: "",
+      };
+      const filters = Object.assign(
+        {},
+        FILTER_DEFAULTS,
+        LS.get("filters", {}) || {},
+      );
+      const revealed = new Set();
       const sprVars = ["--spr-obj0", "--spr-obj1", "--spr-bc"];
       function itemIcon(sp, small = false) {
         if (!sp)
@@ -2474,18 +3423,88 @@
         let a = annotation(key);
         return `<span class="annotation-actions"><button type="button" data-mark="${esc(key)}" class="${a.marked ? "marked" : ""}" aria-pressed="${!!a.marked}" aria-label="${a.marked ? t("unmark") : t("mark")}" title="${a.marked ? t("unmark") : t("mark")}">${a.marked ? "★" : "☆"}</button><button type="button" data-note="${esc(key)}" class="${a.note ? "has-note" : ""}" aria-label="${t("note")}" title="${t("note")}">✎</button></span>${a.note ? `<span class="note-preview">${esc(a.note)}</span>` : ""}`;
       }
+      // "600 1100 1800 2600" -> [[360, 660], [1080, 1560]] (минуты от полуночи;
+      // время после полуночи в игре идёт как 25:00, 26:00).
+      function fishWindows(value) {
+        const nums = String(value || "")
+          .split(/\s+/)
+          .filter((v) => /^\d+$/.test(v))
+          .map(Number),
+          out = [];
+        for (let i = 0; i + 1 < nums.length; i += 2)
+          out.push([
+            Math.floor(nums[i] / 100) * 60 + (nums[i] % 100),
+            Math.floor(nums[i + 1] / 100) * 60 + (nums[i + 1] % 100),
+          ]);
+        return out;
+      }
+      function clockText(minutes) {
+        const h = Math.floor(minutes / 60) % 24,
+          m = minutes % 60;
+        return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+      }
       function fishTime(value) {
-        return (value || "")
-          .split(" ")
-          .map((v) => {
-            let n = +v;
-            return `${String(Math.floor(n / 100)).padStart(2, "0")}:${String(n % 100).padStart(2, "0")}`;
+        return fishWindows(value)
+          .map(([a, b]) => `${clockText(a)}–${clockText(b)}`)
+          .join(", ");
+      }
+      function gameMinutes(clock) {
+        const [h, m] = String(clock || "06:00")
+          .split(":")
+          .map(Number);
+        return (h || 0) * 60 + (m || 0);
+      }
+      function svgIcon(name, cls = "") {
+        return `<svg class="${cls}" viewBox="0 0 24 24" width="13" height="13" aria-hidden="true" focusable="false"><use href="#icon-${name}"></use></svg>`;
+      }
+      function gateInfo(key) {
+        return (
+          S?.unlocks?.gates?.[key] || {
+            ru: key,
+            en: key,
+            how_ru: "",
+            how_en: "",
+            met: null,
+          }
+        );
+      }
+      function gateName(key) {
+        const g = gateInfo(key);
+        return EN ? g.en : g.ru;
+      }
+      // Условия, которые ещё не выполнены (по ним предмет закрыт).
+      function pendingReq(r) {
+        if (!r || !r.lock || r.lock === "open" || r.done) return [];
+        return (r.req || []).filter((key) => gateInfo(key).met !== true);
+      }
+      // Ночной рынок и т. п. — не замок, а расписание: просто ждём нужных дней.
+      function onlySchedule(keys) {
+        return keys.length > 0 && keys.every((key) => gateInfo(key).kind === "schedule");
+      }
+      function reqChip(r) {
+        const keys = pendingReq(r);
+        if (!keys.length) return "";
+        const label = onlySchedule(keys)
+          ? t("waitFor")
+          : t(r.lock === "locked" ? "requires" : "requiresUnknown");
+        return `<span class="chip lock" title="${esc(label)}">${svgIcon("lock")} ${esc(label)}: ${esc(keys.map(gateName).join(" + "))}</span>`;
+      }
+      function reqTip(r) {
+        const keys = pendingReq(r);
+        if (!keys.length) return "";
+        return `<div class="tip-req"><strong>${svgIcon("lock")} ${t("howToUnlock")}:</strong>${keys
+          .map((key) => {
+            const g = gateInfo(key);
+            return `<div class="tip-line"><b>${esc(gateName(key))}</b>${esc(EN ? g.how_en : g.how_ru)}</div>`;
           })
-          .join("–");
+          .join("")}</div>`;
       }
       function acquisitionDetails(r, type) {
         let lines = [];
+        const req = reqTip(r);
         if (type === "fish") {
+          if (r.extended) lines.push([t("acquisition"), t("extendedFish")]);
+          if (r.night_market) lines.push([t("seasonHint"), t("nightMarketOnly")]);
           if (r.seasons?.length)
             lines.push([
               t("seasonHint"),
@@ -2515,7 +3534,7 @@
           if (r.kind === "artifact") {
             const sources = r.locations?.[EN ? "en" : "ru"] || [];
             if (sources.length)
-              return `<details class="acq-tip museum-source-tip"><summary class="museum-source-toggle" aria-label="${t("artifactSources")}" title="${t("artifactSources")}"><span aria-hidden="true">?</span>${t("artifactSources")}</summary><div class="tip-pop"><b>${t("artifactSources")}</b>${sources.map((source) => `<div class="tip-line">${esc(source)}</div>`).join("")}</div></details>`;
+              return `<details class="acq-tip museum-source-tip${req ? " req-tip" : ""}"><summary class="museum-source-toggle" aria-label="${t("artifactSources")}" title="${t("artifactSources")}"><span aria-hidden="true">?</span>${t("artifactSources")}</summary><div class="tip-pop"><b>${t("artifactSources")}</b>${sources.map((source) => `<div class="tip-line">${esc(source)}</div>`).join("")}${req}</div></details>`;
             lines.push([t("artifactSources"), t("artifactHint")]);
           } else {
             lines.push([t("acquisition"), t("mineralHint")]);
@@ -2539,8 +3558,8 @@
               r.ing.map((i) => `${EN ? i[1] : i[0]} ×${i[2]}`).join(", "),
             ]);
         }
-        if (!lines.length) return "";
-        return `<details class="acq-tip"><summary aria-label="${t("howToGet")}" title="${t("howToGet")}">i</summary><div class="tip-pop"><b>${t("howToGet")}</b>${lines.map(([k, v]) => `<div class="tip-line"><strong>${esc(k)}:</strong> ${typeof v === "string" ? esc(v) : v}</div>`).join("")}</div></details>`;
+        if (!lines.length && !req) return "";
+        return `<details class="acq-tip${req ? " req-tip" : ""}"><summary aria-label="${t("howToGet")}" title="${t("howToGet")}">${req ? "🔒" : "i"}</summary><div class="tip-pop"><b>${t("howToGet")}</b>${lines.map(([k, v]) => `<div class="tip-line"><strong>${esc(k)}:</strong> ${typeof v === "string" ? esc(v) : v}</div>`).join("")}${req}</div></details>`;
       }
       function allSavedEntries() {
         let out = [];
@@ -2575,7 +3594,7 @@
       function ring(a, b) {
         let p = b ? Math.max(0, Math.min(1, a / b)) : 0,
           c = 2 * Math.PI * 18;
-        return `<svg class="ring" role="img" aria-label="${Math.round(p * 100)}% ${t("score")}" viewBox="0 0 44 44"><circle cx="22" cy="22" r="18" fill="none" stroke="#30392c" stroke-width="4"/><circle cx="22" cy="22" r="18" fill="none" stroke="${p >= 1 ? "#9bd276" : "#f0c966"}" stroke-width="4" stroke-linecap="round" stroke-dasharray="${c}" stroke-dashoffset="${c * (1 - p)}" transform="rotate(-90 22 22)"/><text x="22" y="24" text-anchor="middle">${Math.round(p * 100)}%</text></svg>`;
+        return `<svg class="ring" role="img" aria-label="${Math.round(p * 100)}% ${t("score")}" viewBox="0 0 44 44"><circle class="ring-track" cx="22" cy="22" r="18" fill="none" stroke-width="4"/><circle class="ring-value${p >= 1 ? " full" : ""}" cx="22" cy="22" r="18" fill="none" stroke-width="4" stroke-linecap="round" stroke-dasharray="${c}" stroke-dashoffset="${c * (1 - p)}" transform="rotate(-90 22 22)"/><text x="22" y="24" text-anchor="middle">${Math.round(p * 100)}%</text></svg>`;
       }
       function meter(a, b, color = "") {
         const percent = b ? Math.max(0, Math.min(100, (a / b) * 100)) : 0,
@@ -2585,7 +3604,7 @@
         return `<div class="bar ${state}" role="progressbar" aria-label="${t("progress")}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(percent)}"><i style="width:${percent}%"></i></div>`;
       }
       function colorLegend() {
-        return `<div class="color-legend" role="note" aria-label="${t("colorCode")}"><strong class="color-legend-title">${t("colorCode")}:</strong><span class="color-key"><i class="color-dot done" aria-hidden="true">✓</i>${t("statusDone")}</span><span class="color-key"><i class="color-dot progress" aria-hidden="true">◒</i>${t("statusProgress")}</span><span class="color-key"><i class="color-dot action" aria-hidden="true">!</i>${t("statusAction")}</span><span class="color-key"><i class="color-dot idle" aria-hidden="true">–</i>${t("statusIdle")}</span><span class="color-key"><i class="color-dot info" aria-hidden="true">i</i>${t("statusInfo")}</span></div>`;
+        return `<div class="color-legend" role="note" aria-label="${t("colorCode")}"><strong class="color-legend-title">${t("colorCode")}:</strong><span class="color-key"><i class="color-dot done" aria-hidden="true">✓</i>${t("statusDone")}</span><span class="color-key"><i class="color-dot progress" aria-hidden="true">◒</i>${t("statusProgress")}</span><span class="color-key"><i class="color-dot action" aria-hidden="true">!</i>${t("statusAction")}</span><span class="color-key"><i class="color-dot idle" aria-hidden="true">–</i>${t("statusIdle")}</span><span class="color-key"><i class="color-dot info" aria-hidden="true">i</i>${t("statusInfo")}</span><span class="color-key"><i class="color-dot lock" aria-hidden="true">🔒</i>${t("statusLock")}</span></div>`;
       }
       function rowStatus(row, type) {
         if (row.done) return { className: "ok", label: t("done"), marker: "✓" };
@@ -2595,6 +3614,10 @@
             label: t("foundAlert"),
             marker: "!",
           };
+        if (row.lock === "locked" && pendingReq(row).length)
+          return onlySchedule(pendingReq(row))
+            ? { className: "lock", label: t("waitBadge"), marker: "⏳" }
+            : { className: "lock", label: t("lockedBadge"), marker: "🔒" };
         if (type === "recipe" && row.known)
           return {
             className: "warn",
@@ -2661,9 +3684,23 @@
         let opts = "";
         if (MODE === "live")
           opts = `<select id="saveSelect" aria-label="${t("save")}"><option>${t("save")}: ${esc(m.save_name || "…")}</option></select><button id="refresh">↻ ${t("refresh")}</button>`;
+        const themeNext = { light: "dark", dark: "auto", auto: "light" },
+          themeIcon = { light: "sun", dark: "moon", auto: "sun" },
+          themeLabel = {
+            light: t("themeLight"),
+            dark: t("themeDark"),
+            auto: t("themeAuto"),
+          };
         $("#hdrRight").innerHTML =
           opts +
-          `<span class="pill">${esc(m.mtime_str || "")}</span><button id="language">${t("language")}</button>`;
+          `<span class="pill">${esc(m.mtime_str || "")}</span><button type="button" id="themeToggle" class="theme-toggle" title="${t("theme")}: ${themeLabel[prefs.theme]}" aria-label="${t("theme")}: ${themeLabel[prefs.theme]}">${svgIcon(themeIcon[prefs.theme])}<span>${themeLabel[prefs.theme]}</span></button><button id="language">${t("language")}</button>`;
+        $("#themeToggle").onclick = () => {
+          prefs.theme = themeNext[prefs.theme];
+          LS.set("theme", prefs.theme);
+          applyTheme();
+          header();
+          $("#themeToggle")?.focus();
+        };
         $("#language").onclick = () => {
           prefs.lang = EN ? "ru" : "en";
           EN = prefs.lang === "en";
@@ -2712,9 +3749,15 @@
       }
       async function loadSaves(sel, active) {
         try {
-          const response = await fetch("/api/saves");
-          if (!response.ok) throw new Error("Save list unavailable");
-          let j = await response.json();
+          // Список сейвов кэшируется: header() вызывается на каждый рендер
+          // (включая ввод в поиске), а /api/saves разбирает все сейвы.
+          if (!savesCache) {
+            const response = await fetch("/api/saves");
+            if (!response.ok) throw new Error("Save list unavailable");
+            savesCache = await response.json();
+          }
+          let j = savesCache;
+          if (!sel.isConnected) return;
           sel.innerHTML = "";
           for (let s of j.saves || []) {
             let o = document.createElement("option");
@@ -2734,9 +3777,15 @@
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ path: sel.value }),
             });
-            let x = await r.json();
+            let x = {};
+            try {
+              x = await r.json();
+            } catch (e) {
+              x = {};
+            }
             if (r.ok) {
               S = x;
+              savesCache = null;
               render();
               $("#saveSelect")?.focus();
               toast(t("updated"));
@@ -2768,8 +3817,10 @@
               label: t("navPersonal"),
               routes: ["people", "saved", "goals"],
             },
+            { label: "Danger zone", routes: ["secrets"] },
           ],
           icons = {
+            secrets: "triangle-alert",
             overview: "house",
             today: "calendar-days",
             perfection: "sparkles",
@@ -2804,7 +3855,7 @@
                     key === "saved"
                       ? savedCount || ""
                       : labelsBadges[key]?.join("/") || "";
-                  return `<a href="#${key}" class="${route === key ? "selected" : ""}" ${route === key ? 'aria-current="page"' : ""}><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><use href="#icon-${icons[key]}"></use></svg></span><span class="nav-label">${t(key)}</span><small aria-hidden="true">${badge}</small></a>`;
+                  return `<a href="#${key}" class="${route === key ? "selected" : ""}${key === "secrets" ? " danger-link" : ""}" ${route === key ? 'aria-current="page"' : ""}><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><use href="#icon-${icons[key]}"></use></svg></span><span class="nav-label">${t(key)}</span><small aria-hidden="true">${badge}</small></a>`;
                 })
                 .join("")}</div>`,
           )
@@ -2847,8 +3898,135 @@
         if (target) target.focus();
         else focusViewHeading();
       }
+      // Кнопка «Скрыть готовое» убрана: она дублировала фильтр «Не выполнено»
+      // и вместе с «Готово» давала заведомо пустой список.
       function controls(extra = "") {
-        return `<div class="actions"><input type="search" id="search" aria-label="${t("search")}" placeholder="${t("search")}" value="${esc(search)}"><button type="button" data-filter="missing" aria-pressed="${stateFilter === "missing"}" class="${stateFilter === "missing" ? "active" : ""}">${t("missing")}</button><button type="button" data-filter="done" aria-pressed="${stateFilter === "done"}" class="${stateFilter === "done" ? "active" : ""}">${t("done")}</button><button type="button" data-filter="all" aria-pressed="${stateFilter === "all"}" class="${stateFilter === "all" ? "active" : ""}">${t("all")}</button><button type="button" id="viewToggle">${prefs.view === "grid" ? t("showList") : t("showGrid")}</button><button type="button" data-hide="1" aria-pressed="${!!prefs.hideDone}" class="${prefs.hideDone ? "active" : ""}">${t("hideDone")}</button>${extra}</div>`;
+        return `<div class="actions"><input type="search" id="search" aria-label="${t("search")}" placeholder="${t("search")}" value="${esc(search)}"><button type="button" data-filter="missing" aria-pressed="${stateFilter === "missing"}" class="${stateFilter === "missing" ? "active" : ""}">${t("missing")}</button><button type="button" data-filter="done" aria-pressed="${stateFilter === "done"}" class="${stateFilter === "done" ? "active" : ""}">${t("done")}</button><button type="button" data-filter="all" aria-pressed="${stateFilter === "all"}" class="${stateFilter === "all" ? "active" : ""}">${t("all")}</button><button type="button" id="viewToggle">${prefs.view === "grid" ? t("showList") : t("showGrid")}</button>${extra}</div>`;
+      }
+      function selectFilter(key, label, options, value) {
+        return `<label class="filter"><span>${esc(label)}</span><select data-fkey="${key}" aria-label="${esc(label)}">${options
+          .map(
+            ([v, text]) =>
+              `<option value="${esc(v)}"${String(v) === String(value) ? " selected" : ""}>${esc(text)}</option>`,
+          )
+          .join("")}</select></label>`;
+      }
+      function seasonOptions(anyLabel) {
+        return [
+          ["", anyLabel],
+          ["current", `${t("currentSeason")} (${(seasons[S.meta.season] || [S.meta.season, S.meta.season])[EN ? 1 : 0]})`],
+          ...Object.entries(seasons).map(([k, v]) => [k, v[EN ? 1 : 0]]),
+        ];
+      }
+      function accessFilter() {
+        return selectFilter("access", t("filterAccess"), [
+          ["", t("accessAll")],
+          ["open", t("accessOpen")],
+          ["locked", t("accessLocked")],
+        ], filters.access);
+      }
+      // Панель фильтров для конкретного раздела.
+      function filterBar(type, shown, total) {
+        let fields = [];
+        if (type === "fish") {
+          const places = [["", t("anyPlace")]].concat(
+            (S.filters?.fish_locations || []).map((o) => [o.key, EN ? o.en : o.ru]),
+          );
+          fields.push(selectFilter("place", t("filterPlace"), places, filters.place));
+          fields.push(
+            selectFilter("time", t("filterTime"), [
+              ["", t("anyOption")],
+              ["now", `${t("gameNow")} (${S.meta.clock})`],
+              ["morning", t("morning")],
+              ["day", t("day")],
+              ["evening", t("evening")],
+              ["night", t("night")],
+            ], filters.time),
+          );
+          fields.push(selectFilter("season", t("filterSeason"), seasonOptions(t("anySeason")), filters.season));
+          fields.push(
+            selectFilter("weather", t("filterWeather"), [
+              ["", t("anyOption")],
+              ["sunny", t("sunny")],
+              ["rainy", t("rainy")],
+            ], filters.weather),
+          );
+          fields.push(
+            selectFilter("gear", t("filterGear"), [
+              ["", t("anyOption")],
+              ["rod", t("rod")],
+              ["trap", t("crabPot")],
+            ], filters.gear),
+          );
+        } else if (type === "museum") {
+          const tags = [["", t("anyPlace")]].concat(
+            (S.filters?.museum_tags || []).map((o) => [o.key, EN ? o.en : o.ru]),
+          );
+          fields.push(selectFilter("tag", t("filterPlace"), tags, filters.tag));
+        } else if (type === "recipe") {
+          const kinds = [["", t("anyOption")]].concat(
+            (S.filters?.recipe_kinds || []).map((o) => [o.key, EN ? o.en : o.ru]),
+          );
+          fields.push(selectFilter("source", t("filterSource"), kinds, filters.source));
+        } else if (type === "normal") {
+          fields.push(selectFilter("season", t("filterSeason"), seasonOptions(t("anySeason")), filters.season));
+          const groups = [...new Set(S.shipped.map((r) => r.grp).filter(Boolean))].sort();
+          fields.push(
+            selectFilter("category", t("filterCategory"), [["", t("anyOption")]].concat(groups.map((g) => [g, g])), filters.category),
+          );
+        }
+        fields.push(accessFilter());
+        return `<div class="filter-bar" role="group" aria-label="${t("filters")}"><span class="filter-bar-title">${svgIcon("funnel")} ${t("filters")}</span>${fields.join("")}<button type="button" class="filter-reset" id="resetFilters">${t("resetFilters")}</button><span class="filter-count" aria-live="polite">${shown} / ${total} ${t("shown")}</span></div>`;
+      }
+      const TIME_BUCKETS = {
+        morning: [360, 720],
+        day: [720, 1020],
+        evening: [1020, 1200],
+        night: [1200, 1560],
+      };
+      function overlaps(windows, a, b) {
+        return windows.some(([s, e]) => s < b && e > a);
+      }
+      // Применяет фильтры раздела к строкам (поиск и «готово» — отдельно).
+      function applyFilters(rows, type) {
+        const seasonKey =
+          filters.season === "current" ? S.meta.season : filters.season;
+        return rows.filter((r) => {
+          if (filters.access === "open" && r.lock === "locked" && !r.done)
+            return false;
+          if (filters.access === "locked" && (r.done || r.lock === "open"))
+            return false;
+          if (type === "fish") {
+            if (filters.place && !(r.groups || []).includes(filters.place))
+              return false;
+            if (filters.gear === "rod" && r.trap) return false;
+            if (filters.gear === "trap" && !r.trap) return false;
+            if (seasonKey && r.seasons?.length && !r.seasons.includes(seasonKey))
+              return false;
+            if (filters.weather && r.weather && r.weather !== "both" && r.weather !== filters.weather)
+              return false;
+            if (filters.time && r.time) {
+              const w = fishWindows(r.time);
+              if (filters.time === "now") {
+                const now = gameMinutes(S.meta.clock);
+                if (!w.some(([s, e]) => s <= now && now <= e)) return false;
+              } else if (TIME_BUCKETS[filters.time]) {
+                const [a, b] = TIME_BUCKETS[filters.time];
+                if (!overlaps(w, a, b)) return false;
+              }
+            }
+          } else if (type === "museum") {
+            if (filters.tag && !(r.tags || []).includes(filters.tag)) return false;
+          } else if (type === "recipe") {
+            if (filters.source && r.src_kind !== filters.source) return false;
+          } else if (type === "normal") {
+            // Без сезонов — круглогодичные (продукты животных, ресурсы).
+            if (seasonKey && r.seasons?.length && !r.seasons.includes(seasonKey))
+              return false;
+            if (filters.category && r.grp !== filters.category) return false;
+          }
+          return true;
+        });
       }
       function bindControls() {
         let q = $("#search");
@@ -2891,15 +4069,26 @@
               }
             };
         });
-        document.querySelectorAll("[data-hide]").forEach(
-          (e) =>
-            (e.onclick = () => {
-              prefs.hideDone = !prefs.hideDone;
-              LS.set("hideDone", prefs.hideDone);
+        document.querySelectorAll("[data-fkey]").forEach(
+          (sel) =>
+            (sel.onchange = () => {
+              filters[sel.dataset.fkey] = sel.value;
+              LS.set("filters", filters);
+              const y = scrollY;
               render();
-              document.querySelector("[data-hide]")?.focus();
+              window.scrollTo(0, y);
+              focusDataControl("data-fkey", sel.dataset.fkey);
             }),
         );
+        const reset = $("#resetFilters");
+        if (reset)
+          reset.onclick = () => {
+            Object.assign(filters, FILTER_DEFAULTS);
+            LS.set("filters", filters);
+            nowOnly = false;
+            render();
+            $("#resetFilters")?.focus();
+          };
       }
       function museumSourcePreview(item) {
         if (item.kind !== "artifact") return "";
@@ -2909,15 +4098,20 @@
           remaining = sources.length - shown.length;
         return `<div class="museum-source-preview"><b>${t("artifactSources")}:</b> ${shown.map(esc).join(" · ")}${remaining ? ` <span class="museum-source-more">+${remaining}</span>` : ""}</div>`;
       }
+      function rowStateClass(r, status) {
+        if (r.done) return "done";
+        if (status.className === "alert") return "alert";
+        if (status.className === "lock") return "locked";
+        return "";
+      }
       function rowsView(rows, type = "normal", section = "") {
-        if (prefs.hideDone) rows = rows.filter((x) => !x.done);
         if (prefs.view === "grid")
           return `<div class="grid icon-grid">${
             rows
               .map((r) => {
                 const key = markKey(r, section),
                   status = rowStatus(r, type);
-                return `<div class="grid-item ${status.className === "alert" ? "alert" : ""}">${itemIcon(r.sp)}<span class="name">${nm(r)}</span>${museumSourcePreview(r)}<span class="badge ${status.className}" aria-label="${status.label}" title="${status.label}">${status.marker}</span><div class="item-footer">${annotationTools(key)}${acquisitionDetails(r, type)}</div></div>`;
+                return `<div class="grid-item ${rowStateClass(r, status)}">${itemIcon(r.sp)}<span class="name">${nm(r)}</span>${museumSourcePreview(r)}<span class="badge ${status.className}" aria-label="${status.label}" title="${status.label}">${status.marker}</span><div class="item-footer">${annotationTools(key)}${acquisitionDetails(r, type)}</div></div>`;
               })
               .join("") || `<div class="empty">${t("noResults")}</div>`
           }</div>`;
@@ -2964,8 +4158,14 @@
                 key = markKey(r, section),
                 a = annotation(key);
               if (type === "fish" && r.now && !r.done)
-                meta.push(`<span class="chip blue">${t("now")}</span>`);
-              return `<div class="row ${r.done ? "done" : ""} ${status.className === "alert" ? "alert" : ""} ${a.marked ? "is-marked" : ""}">${itemIcon(r.sp)}<div class="row-main"><div class="name">${nm(r)}</div>${museumSourcePreview(r)}<div class="meta">${meta.join("")}</div></div><div class="right"><span class="badge status-badge ${status.className}" aria-label="${status.label}">${status.marker} ${status.label}</span>${annotationTools(key)}${acquisitionDetails(r, type)}</div></div>`;
+                meta.push(`<span class="chip good">${t("now")}</span>`);
+              if (type === "fish" && r.extended)
+                meta.push(`<span class="chip warn">${esc(t("extendedFish"))}</span>`);
+              if (type === "fish" && r.night_market)
+                meta.push(`<span class="chip blue">${esc(t("nightMarketOnly"))}</span>`);
+              const lockChip = reqChip(r);
+              if (lockChip) meta.unshift(lockChip);
+              return `<div class="row ${rowStateClass(r, status)} ${a.marked ? "is-marked" : ""}">${itemIcon(r.sp)}<div class="row-main"><div class="name">${nm(r)}</div>${museumSourcePreview(r)}<div class="meta">${meta.join("")}</div></div><div class="right"><span class="badge status-badge ${status.className}" aria-label="${status.label}">${status.marker} ${status.label}</span>${annotationTools(key)}${acquisitionDetails(r, type)}</div></div>`;
             })
             .join("") || `<div class="empty">${t("noResults")}</div>`
         }</div>`;
@@ -3129,7 +4329,7 @@
         const x = S.today,
           meta = S.meta,
           todayDate = `${esc((seasons[meta.season] || [meta.season, meta.season])[EN ? 1 : 0])} ${esc(meta.day)}, ${yearText(meta.year)} · ${esc(meta.clock)} · ${weatherLabel(meta.weather || "")}`;
-        return `${title(t("todayPlan"), todayDate)}${colorLegend()}<div class="today-layout">
+        return `${title(t("todayPlan"), todayDate)}${colorLegend()}<div class="today-layout">${unlocksPanel()}
           <div class="grid two today-pair">
             <section class="card today-card">
               <h2 class="panel-title">${t("birthday")}</h2>
@@ -3164,20 +4364,27 @@
       }
       function listPage(key, label, rows, type = "normal", extra = "") {
         let c = S.counts[key] || [0, 0],
-          filteredRows = filtered(rows);
+          filteredRows = applyFilters(filtered(rows), type);
         if (key === "fish" && nowOnly)
           filteredRows = filteredRows.filter((r) => r.now && !r.done);
-        return `${title(label, `${c[0]} / ${c[1]} · ${c[1] - c[0]} ${t("left")}`, controls(extra))}${colorLegend()}${type === "museum" ? `<div class="tabs"><button type="button" data-kind="all" aria-pressed="${kindFilter === ""}" class="${kindFilter === "" ? "active" : ""}">${t("all")}</button><button type="button" data-kind="artifact" aria-pressed="${kindFilter === "artifact"}" class="${kindFilter === "artifact" ? "active" : ""}">${itemIcon([0, 96], true)} ${EN ? "Artifacts" : "Артефакты"}</button><button type="button" data-kind="mineral" aria-pressed="${kindFilter === "mineral"}" class="${kindFilter === "mineral" ? "active" : ""}">${itemIcon([0, 72], true)} ${EN ? "Minerals" : "Минералы"}</button><span class="badge alert">${t("foundAlert")}: ${S.alerts.museum_found_not_donated.length}</span></div>` : ""}${rowsView(type === "museum" && kindFilter ? filteredRows.filter((r) => r.kind === kindFilter) : filteredRows, type, key)}`;
+        if (type === "museum" && kindFilter)
+          filteredRows = filteredRows.filter((r) => r.kind === kindFilter);
+        return `${title(label, `${c[0]} / ${c[1]} · ${c[1] - c[0]} ${t("left")}`, controls(extra))}${colorLegend()}${filterBar(type, filteredRows.length, rows.length)}${type === "museum" ? `<div class="tabs"><button type="button" data-kind="all" aria-pressed="${kindFilter === ""}" class="${kindFilter === "" ? "active" : ""}">${t("all")}</button><button type="button" data-kind="artifact" aria-pressed="${kindFilter === "artifact"}" class="${kindFilter === "artifact" ? "active" : ""}">${itemIcon([0, 96], true)} ${EN ? "Artifacts" : "Артефакты"}</button><button type="button" data-kind="mineral" aria-pressed="${kindFilter === "mineral"}" class="${kindFilter === "mineral" ? "active" : ""}">${itemIcon([0, 72], true)} ${EN ? "Minerals" : "Минералы"}</button><span class="badge alert">${t("foundAlert")}: ${S.alerts.museum_found_not_donated.length}</span></div>` : ""}${rowsView(filteredRows, type, key)}`;
       }
       function perfection() {
         let p = S.perfection;
         return `${title(t("perfection"), `${t("score")}: ${p.pct}%${p.waivers ? ` · ${t("waivers")}: +${p.waivers}%` : ""}`)}${colorLegend()}<div class="card perfection-summary">${ring(p.pct, 100)}<div class="perfection-copy"><b>${p.pct}% ${t("score")}</b><div class="sub">${t("officialCriteria")} · ${t("rawScore")} ${p.raw_pct}% ${p.waivers ? `· ${p.waivers} ${t("waivers")}` : ""}</div>${meter(p.pct, 100)}</div></div><div class="grid two">${p.categories.map((c) => `<div class="card"><div class="row" style="border:0;padding:0;background:transparent;grid-template-columns:34px 1fr auto">${itemIcon(c.sp)}<div class="row-main"><b>${esc(EN ? c.en : c.ru)}</b><div class="meta">${c.have} / ${c.total} · ${c.weight}% ${t("weight")}</div>${meter(c.have, c.total)}</div><span class="badge ${c.done ? "ok" : c.have > 0 ? "warn" : "no"}">${c.earned}%</span></div></div>`).join("")}</div><div class="section-head"><h2>${EN ? "Farm obelisks" : "Обелиски и Золотые часы"}</h2></div><div class="grid two">${p.obelisks.map((o) => `<div class="card"><span class="badge ${o.done ? "ok" : "no"}">${o.done ? "✓" : "○"}</span> ${esc(EN ? o.en : o.ru)}</div>`).join("")}<div class="card">${p.gold_clock ? itemIcon([1, 79], true) : uiIcon(23)} ${EN ? "Golden Clock" : "Золотые часы"}</div></div><div class="section-head"><h2>${t("stardrops")}</h2></div><div class="grid two">${p.stardrops.map((s) => `<div class="card"><span class="badge ${s.done ? "ok" : "no"}">${s.done ? "✓" : "○"}</span> ${esc(EN ? s.en : s.ru)}</div>`).join("")}</div><div class="section-head"><h2>${t("skills")}</h2><span class="badge">${t("farmerLevel")} ${S.skills.farmer_level}/25</span></div><div class="grid three">${S.skills.list.map((s) => `<div class="card">${uiIcon(s.ui_idx)} <b>${esc(EN ? s.en : s.ru)}</b><div class="stat-number">${s.level}<small> / 10</small></div>${meter(s.level, 10)}</div>`).join("")}</div>`;
       }
       function people() {
-        return `${title(t("people"), EN ? `${S.alerts.birthdays_week.length} ${t("birthdaysUpcoming")}` : `${t("birthdaysUpcoming")}: ${S.alerts.birthdays_week.length}`)}<div class="grid people">${S.people
+        const q = peopleSearch.toLowerCase().trim(),
+          list = S.people.filter(
+            (p) => !q || `${p.ru} ${p.en}`.toLowerCase().includes(q),
+          );
+        return `${title(t("people"), EN ? `${S.alerts.birthdays_week.length} ${t("birthdaysUpcoming")}` : `${t("birthdaysUpcoming")}: ${S.alerts.birthdays_week.length}`, `<div class="actions"><input type="search" id="peopleSearch" aria-label="${t("searchPeople")}" placeholder="${t("searchPeople")}" value="${esc(peopleSearch)}"></div>`)}<div class="grid people">${
+          list
           .map(
             (p) =>
-              `<div class="card person">${portrait(p.p_idx)}<div class="person-content"><b>${esc(EN ? p.en : p.ru)}</b><div class="meta">${(seasons[p.birth[0]] || [p.birth[0]])[EN ? 1 : 0]} ${p.birth[1]}${p.until <= 7 ? ` · <span class="chip warn">${p.until === 0 ? t("today") : `${p.until} ${t("daysShort")}`}</span>` : ""}<span class="chip">${uiIcon(2)} ${p.gifts_week}/2</span></div>${
+              `<div class="card person">${portrait(p.p_idx)}<div class="person-content"><b>${esc(EN ? p.en : p.ru)}</b><div class="meta">${p.birth?.[0] ? `${esc((seasons[p.birth[0]] || [p.birth[0], p.birth[0]])[EN ? 1 : 0])} ${esc(p.birth[1])}` : t("noBirthday")}${typeof p.until === "number" && p.until <= 7 ? ` · <span class="chip warn">${p.until === 0 ? t("today") : dayCount(p.until)}</span>` : ""}<span class="chip">${uiIcon(2)} ${p.gifts_week}/2</span></div>${
                 p.loved?.length
                   ? `<div class="meta">${p.loved
                       .slice(0, 4)
@@ -3189,7 +4396,8 @@
                   : ""
               }</div><div class="person-hearts">${heartsBar(p.hearts, 10)}</div></div>`,
           )
-          .join("")}</div>`;
+          .join("") || `<div class="empty">${t("noResults")}</div>`
+        }</div>`;
       }
       function rewardCard(reward) {
         const name = EN ? reward.en : reward.ru;
@@ -3243,7 +4451,233 @@
         let e = ERR || {};
         return `<div class="error"><h2>${esc(e.title || t("noSave"))}</h2><p>${esc(e.detail || "")}</p>${(e.steps || []).map((s) => `<div>• ${esc(s)}</div>`).join("")}<button id="retry" style="margin-top:12px">${t("restore")}</button></div>`;
       }
+      function blockedText(n) {
+        if (EN) return `${n} ${n === 1 ? "item" : "items"} locked`;
+        const two = n % 100,
+          one = n % 10,
+          form =
+            two >= 11 && two <= 14
+              ? ["закрыто", "предметов"]
+              : one === 1
+                ? ["закрыт", "предмет"]
+                : one >= 2 && one <= 4
+                  ? ["закрыто", "предмета"]
+                  : ["закрыто", "предметов"];
+        return `${form[0]} ${n} ${form[1]}`;
+      }
+      // «Ключи и доступы»: какие локации/условия уже открыты в этой игре.
+      function unlocksPanel() {
+        const items = S.unlocks?.milestones || [];
+        if (!items.length) return "";
+        const open = items.filter((m) => m.met === true).length;
+        return `<section class="card today-card unlocks-card"><div class="section-head" style="margin-top:0"><h2>${svgIcon("key-round")} ${t("unlocks")}</h2><span class="badge ${open === items.length ? "ok" : "lock"}">${open}/${items.length}</span></div><p class="sub" style="margin:-4px 0 10px">${t("unlocksHint")}</p><div class="unlock-list">${items
+          .map((m) => {
+            const g = gateInfo(m.key),
+              cls = m.met === true ? "met" : m.met === false ? "locked" : "",
+              mark = m.met === true ? "✓" : m.met === false ? svgIcon("lock") : "?",
+              blocked = m.met !== true && m.blocked ? `<small>${blockedText(m.blocked)}</small>` : "",
+              how = m.met === true ? "" : esc(EN ? g.how_en : g.how_ru);
+            return `<div class="unlock-item ${cls}" title="${how}"><span class="unlock-mark" aria-hidden="true">${mark}</span><div><b>${esc(gateName(m.key))}</b>${blocked}${m.met === null ? `<small>${t("unknownBadge")}</small>` : ""}</div>${m.met === true ? "" : `<details class="acq-tip req-tip"><summary aria-label="${t("howToUnlock")}: ${esc(gateName(m.key))}" title="${t("howToUnlock")}">?</summary><div class="tip-pop"><b>${esc(gateName(m.key))}</b>${how}</div></details>`}</div>`;
+          })
+          .join("")}</div></section>`;
+      }
+      // ===== Схемы для спойлеров: собственная графика (не скриншоты игры) =====
+      const L = (ru, en) => esc(EN ? en : ru);
+      function scLabel(x, y, ru, en, anchor = "middle", cls = "sc-label") {
+        return `<text class="${cls}" x="${x}" y="${y}" text-anchor="${anchor}">${L(ru, en)}</text>`;
+      }
+      function scTarget(x, y) {
+        return `<g class="sc-target"><circle cx="${x}" cy="${y}" r="13" class="sc-target-ring"/><circle cx="${x}" cy="${y}" r="5"/><path d="M${x - 5} ${y - 21}h10l-5 7z"/></g>`;
+      }
+      function scCompass(x = 298, y = 22) {
+        return `<g class="sc-compass"><path d="M${x} ${y - 13}l5 11h-10z"/><text class="sc-label" x="${x}" y="${y + 12}" text-anchor="middle">${EN ? "N" : "С"}</text></g>`;
+      }
+      function scSvg(titleRu, titleEn, body) {
+        return `<svg class="scheme-svg" viewBox="0 0 320 190" role="img" aria-label="${L(titleRu, titleEn)}"><rect class="sc-ground" x="0" y="0" width="320" height="190" rx="12"/>${body}</svg>`;
+      }
+      function scRows(rows) {
+        return `<div class="scheme-rows">${rows
+          .map(
+            ([sp, ru, en, extra]) =>
+              `<div class="scheme-row">${itemIcon(sp, true)}<b>${L(ru, en)}</b>${extra ? `<span>${extra}</span>` : ""}</div>`,
+          )
+          .join("")}</div>`;
+      }
+      const SCHEMES = {
+        junimo_plush: () =>
+          scSvg(
+            "Куст над детской площадкой",
+            "Bush above the playground",
+            `<rect class="sc-building" x="196" y="22" width="104" height="62" rx="6"/>${scLabel(248, 58, "Общественный центр", "Community Center")}<rect class="sc-path" x="20" y="96" width="290" height="16" rx="6"/><rect class="sc-feature" x="56" y="122" width="112" height="52" rx="8"/>${scLabel(112, 152, "Детская площадка", "Playground")}<circle class="sc-bush" cx="112" cy="70" r="20"/>${scTarget(112, 70)}${scLabel(150, 46, "12:00 · 28-й день", "12:00 · day 28", "start", "sc-label sc-strong")}`,
+          ),
+        stone_junimo: () =>
+          scSvg(
+            "За Общественным центром",
+            "Behind the Community Center",
+            `<path class="sc-fence" d="M40 18H286V170"/><rect class="sc-building" x="60" y="70" width="190" height="96" rx="6"/><path class="sc-roof" d="M50 74 155 34 260 74z"/>${scLabel(155, 126, "Общественный центр", "Community Center")}<rect class="sc-hidden-zone" x="226" y="22" width="56" height="48" rx="6"/>${scTarget(262, 44)}${scLabel(224, 18, "под крышей, у забора", "under the roof, by the fence", "end", "sc-label sc-strong")}${scCompass(26, 34)}`,
+          ),
+        mermaid_show: () => {
+          // Порядок нажатий 1-5-4-2-3: ракушка №1 — 1-й шаг, №5 — 2-й и т. д.
+          const step = { 1: 1, 2: 4, 3: 5, 4: 3, 5: 2 };
+          let shells = "";
+          for (let i = 1; i <= 5; i++) {
+            const x = 32 + (i - 1) * 64;
+            shells += `<path class="sc-shell" d="M${x - 20} 108q20-46 40 0z"/><path class="sc-shell-line" d="M${x} 72v36M${x - 10} 78l6 30M${x + 10} 78l-6 30"/><text class="sc-label" x="${x}" y="128" text-anchor="middle">${EN ? "shell" : "ракушка"} ${i}</text><circle class="sc-step" cx="${x}" cy="152" r="14"/><text class="sc-step-text" x="${x}" y="157" text-anchor="middle">${step[i]}</text>`;
+          }
+          return scSvg(
+            "Порядок нажатия ракушек",
+            "Shell click order",
+            `${scLabel(160, 30, "Шоу русалки: нажимайте по номерам в кружках", "Mermaid show: click in the circled order", "middle", "sc-label sc-strong")}${scLabel(160, 50, "1 → 5 → 4 → 2 → 3 (слева направо)", "1 → 5 → 4 → 2 → 3 (left to right)")}${shells}<text class="sc-label" x="160" y="182" text-anchor="middle">${L("цифра в кружке — какой по счёту нажимать", "circled number = click order")}</text>`,
+          );
+        },
+        mermaid_flutes: () => {
+          const clicks = [2, 11, 9, 5, 7],
+            alt = [1, 10, 8, 4, 6];
+          let blocks = "";
+          clicks.forEach((c, i) => {
+            const x = 40 + i * 60;
+            blocks += `<circle class="sc-stone" cx="${x - 7}" cy="120" r="6"/><circle class="sc-stone" cx="${x + 7}" cy="122" r="4"/><rect class="sc-block" x="${x - 14}" y="132" width="28" height="24" rx="5"/><text class="sc-step-text" x="${x}" y="149" text-anchor="middle">${c}</text><text class="sc-label" x="${x}" y="172" text-anchor="middle">${EN ? "or" : "или"} ${alt[i]}</text>`;
+          });
+          return scSvg(
+            "Настройка флейта-блоков",
+            "Flute Block tuning",
+            `<rect class="sc-water" x="0" y="0" width="320" height="86" rx="12"/><path class="sc-shore" d="M0 86q80 14 160 0t160 0v8H0z"/><circle class="sc-rock" cx="270" cy="52" r="20"/>${scLabel(270, 26, "русалка (в дождь)", "mermaid (rain)")}${scLabel(110, 40, "Флейта-блок у каждой группы камней,", "A Flute Block at each stone group,", "middle", "sc-label sc-strong")}${scLabel(110, 58, "число — сколько раз нажать", "number = how many clicks")}${blocks}<path class="sc-arrow" d="M30 184H290"/><path class="sc-arrow-head" d="M290 184l-8-5v10z"/>`,
+          );
+        },
+        railroad_chest: () =>
+          scSvg(
+            "Клад у Железной дороги",
+            "Railroad treasure",
+            `<path class="sc-rail" d="M0 138H320M0 156H320"/><path class="sc-sleepers" d="${Array.from({ length: 16 }, (_, i) => `M${10 + i * 20} 132v30`).join("")}"/>${scLabel(160, 182, "Пути Железной дороги", "Railroad tracks")}<ellipse class="sc-boulder" cx="140" cy="80" rx="34" ry="24"/>${scLabel(140, 120, "большой валун", "large boulder")}<rect class="sc-tile" x="178" y="66" width="28" height="28" rx="4"/>${scTarget(192, 80)}${scLabel(214, 74, "копать справа", "dig to the right", "start", "sc-label sc-strong")}${scLabel(214, 90, "от валуна", "of the boulder", "start", "sc-label sc-strong")}${scCompass()}`,
+          ),
+        joja_river: () =>
+          scSvg(
+            "Река к северу от JojaMart",
+            "River north of JojaMart",
+            `<path class="sc-water-band" d="M150 0h46v190h-46z"/><rect class="sc-building" x="30" y="128" width="104" height="50" rx="6"/>${scLabel(82, 158, "JojaMart", "JojaMart")}<rect class="sc-tile" x="198" y="10" width="26" height="26" rx="4"/>${scTarget(211, 23)}${scLabel(232, 58, "самая северная", "northernmost", "start", "sc-label sc-strong")}${scLabel(232, 74, "клетка", "tile on the", "start", "sc-label sc-strong")}${scLabel(232, 90, "восточного", "east bank", "start", "sc-label sc-strong")}${scLabel(232, 106, "берега", "", "start", "sc-label sc-strong")}${scLabel(173, 110, "река", "river")}${scCompass(298, 150)}`,
+          ),
+        desert_doll: () =>
+          scSvg(
+            "Клад в пустыне",
+            "Desert treasure",
+            `<path class="sc-dune" d="M0 60q60-24 120 0t120 0 80-8"/><path class="sc-dune" d="M0 110q70-20 150 0t170-6"/><rect class="sc-feature" x="232" y="130" width="54" height="16" rx="4"/>${scLabel(259, 162, "скамейка (юго-восток)", "bench (south-east)")}<rect class="sc-tile" x="196" y="148" width="26" height="26" rx="4"/>${scTarget(209, 161)}${scLabel(188, 132, "юго-западнее скамейки", "south-west of the bench", "end", "sc-label sc-strong")}${scLabel(80, 34, "Пустыня Калико", "Calico Desert")}${scCompass()}`,
+          ),
+        gold_lewis: () =>
+          scSvg(
+            "Тайник за домом Льюиса",
+            "Behind Lewis's house",
+            `<rect class="sc-building" x="90" y="82" width="140" height="80" rx="6"/><path class="sc-roof" d="M80 86 160 48 240 86z"/>${scLabel(160, 132, "Дом мэра Льюиса", "Mayor Lewis's house")}<rect class="sc-tile" x="146" y="14" width="28" height="28" rx="4"/>${scTarget(160, 28)}${scLabel(184, 26, "за домом (с севера)", "behind the house (north)", "start", "sc-label sc-strong")}${scLabel(160, 178, "сюда ведут стрелки от дома 1 по Ивовой ул.", "the note's arrows lead here from 1 Willow Lane")}${scCompass(30, 30)}`,
+          ),
+        joja_truck: () =>
+          scSvg(
+            "Грузовик у JojaMart",
+            "Truck by JojaMart",
+            `<rect class="sc-building" x="40" y="40" width="150" height="90" rx="6"/>${scLabel(115, 90, "JojaMart", "JojaMart")}<rect class="sc-truck" x="206" y="86" width="72" height="34" rx="5"/><rect class="sc-truck" x="278" y="96" width="24" height="24" rx="4"/><circle class="sc-wheel" cx="226" cy="124" r="7"/><circle class="sc-wheel" cx="286" cy="124" r="7"/>${scTarget(250, 70)}${scLabel(160, 160, "Поговорите с водителем, держа кроличью лапку", "Talk to the driver holding a Rabbit's Foot", "middle", "sc-label sc-strong")}${scLabel(160, 178, "→ особый талисман (+удача навсегда)", "→ Special Charm (permanent luck)")}`,
+          ),
+        beach_bush: () =>
+          scSvg(
+            "Куст у моста на пляж",
+            "Bush by the beach bridge",
+            `<rect class="sc-water" x="0" y="140" width="320" height="50" rx="0"/>${scLabel(250, 172, "пляж", "beach")}<rect class="sc-bridge" x="176" y="100" width="34" height="56" rx="4"/>${scLabel(226, 124, "мост", "bridge", "start")}<circle class="sc-bush" cx="140" cy="70" r="24"/>${scTarget(140, 70)}${scLabel(140, 30, "северо-западнее моста, ровно в 00:40", "north-west of the bridge, exactly 12:40 am", "middle", "sc-label sc-strong")}${scLabel(60, 120, "город", "town")}${scCompass()}`,
+          ),
+        qi_route: () => {
+          const steps = [
+            [[0, 787], "Ящик в туннеле у автобусной остановки", "Box in the tunnel by the Bus Stop", "×1"],
+            [[0, 394], "Ящик на платформе Железной дороги", "Box on the Railroad platform", "×1"],
+            [[0, 284], "Холодильник мэра Льюиса", "Mayor Lewis's fridge", "×10"],
+            [[0, 768], "Пасть скелета дракона в пустыне", "Sand dragon's mouth in the Desert", "×1"],
+            [null, "Поленница у вашего дома → клубная карта", "Lumber pile by your house → Club Card", ""],
+          ];
+          return `<ol class="scheme-route">${steps
+            .map(
+              ([sp, ru, en, qty], i) =>
+                `<li><span class="scheme-step">${i + 1}</span>${sp ? itemIcon(sp, true) : `<span class="scheme-goal">★</span>`}<span><b>${L(ru, en)}</b>${qty ? ` <em>${qty}</em>` : ""}</span></li>`,
+            )
+            .join("")}</ol>`;
+        },
+        qi_grange: () =>
+          `<div class="scheme-colors">${[
+            ["#d9473b", [0, 224], "Красное: спагетти", "Red: Spaghetti", "Салун, 240g", "Saloon, 240g"],
+            ["#e8892c", [0, 378], "Оранжевое: медная руда", "Orange: Copper Ore", "Клинт, 150g", "Clint, 150g"],
+            ["#e9c53a", [0, 178], "Жёлтое: сено", "Yellow: Hay", "Марни, 50g", "Marnie, 50g"],
+            ["#5aa84a", [0, 196], "Зелёное: салат", "Green: Salad", "Салун, 220g", "Saloon, 220g"],
+            ["#3d7fd1", [0, 167], "Синее: Джоджа-кола", "Blue: Joja Cola", "автомат, 75g", "vending machine, 75g"],
+            ["#8a55c4", [0, 769], "Фиолетовое: эссенция пустоты", "Purple: Void Essence", "Кробус, 100g (10 в день)", "Krobus, 100g (10/day)"],
+          ]
+            .map(
+              ([c, sp, ru, en, wru, wen]) =>
+                `<div class="scheme-color"><i style="background:${c}"></i>${itemIcon(sp, true)}<b>${L(ru, en)}</b><span>${L(wru, wen)} · ×100</span></div>`,
+            )
+            .join("")}</div>`,
+        forge_gems: () =>
+          scRows([
+            [[0, 68], "Топаз", "Topaz", L("защита", "defense")],
+            [[0, 60], "Изумруд", "Emerald", L("скорость", "speed")],
+            [[0, 70], "Нефрит", "Jade", L("сила крит. удара", "crit power")],
+            [[0, 62], "Аквамарин", "Aquamarine", L("шанс крит. удара", "crit chance")],
+            [[0, 66], "Аметист", "Amethyst", L("отбрасывание", "knockback")],
+            [[0, 64], "Рубин", "Ruby", L("урон", "damage")],
+            [[0, 74], "Радужный осколок", "Prismatic Shard", L("зачарование", "enchantment")],
+          ]),
+      };
+      function wikiLink(url, label) {
+        if (!url) return "";
+        return `<a class="wiki-link" href="${esc(url)}" target="_blank" rel="noopener noreferrer" title="${esc(t("wikiWarning"))}">↗ ${esc(label)}</a>`;
+      }
+      // Визуал к решению: предметы с иконками и схема. Показывается только
+      // вместе с раскрытым полным решением, чтобы не подсказывать раньше времени.
+      function spoilerExtras(entry) {
+        if (!entry) return "";
+        const items = entry.items?.length
+          ? `<div class="spoiler-items"><h4>${t("neededItems")}</h4><div class="spoiler-item-list">${entry.items
+              .map((item) => `<span class="chip">${itemIcon(item.sp, true)} ${esc(EN ? item.en : item.ru)}</span>`)
+              .join("")}</div></div>`
+          : "";
+        const scheme =
+          entry.scheme && SCHEMES[entry.scheme]
+            ? `<figure class="scheme"><figcaption><b>${t("scheme")}</b> · ${t("schemeNote")}</figcaption>${SCHEMES[entry.scheme]()}</figure>`
+            : "";
+        return items || scheme ? `<div class="spoiler-extra">${items}${scheme}</div>` : "";
+      }
+      function spoilerBlock(id, kind, text) {
+        if (!text) return "";
+        const key = `${id}:${kind}`,
+          open = revealed.has(key),
+          extras = open && kind === "solution" ? spoilerExtras(findSecret(id)) : "";
+        return `<div class="spoiler-text${open ? "" : " blurred"}" data-reveal-key="${esc(key)}" data-reveal="${esc(t("clickToReveal"))}" ${open ? "" : `role="button" tabindex="0" aria-label="${esc(t(kind))}: ${esc(t("clickToReveal"))}"`}><h4>${t(kind)}</h4><p>${open ? esc(text) : esc(text.replace(/\S/g, "•"))}</p>${extras}</div>`;
+      }
+      function secretsPage() {
+        const banner = `<div class="danger-banner" role="alert">${svgIcon("triangle-alert")}<div><h2>${t("dangerTitle")}</h2><div>${t("dangerLead")}</div><ul>${t("dangerPoints")
+          .map((p) => `<li>${esc(p)}</li>`)
+          .join("")}</ul></div></div>`;
+        if (!dangerConsent)
+          return `${title(t("secrets"), "")}${banner}<div class="card danger-gate"><label><input type="checkbox" id="dangerConsent"> ${t("dangerConsent")}</label><button type="button" class="danger" id="dangerEnter" disabled>${svgIcon("triangle-alert")} ${t("dangerEnter")}</button></div>`;
+        const sec = S.secrets || { sections: [] },
+          qiDone = (sec.qi_orders_completed || []).length;
+        return `${title(t("secrets"), "", `<button type="button" id="dangerLeave">${t("dangerLeave")}</button>`)}${banner}${(
+          sec.sections || []
+        )
+          .map((s) => {
+            const gate = s.gate ? gateInfo(s.gate) : null,
+              warn =
+                gate && gate.met !== true
+                  ? `<div class="req-note"><b>${svgIcon("lock")} ${esc(gateName(s.gate))}.</b> ${t("dangerSectionLocked")}</div>`
+                  : "",
+              extra =
+                s.key === "qi_orders"
+                  ? `<span class="badge ${qiDone ? "ok" : "no"}">${t("qiDone")}: ${qiDone}</span>`
+                  : "";
+            return `<section class="secret-section"><div class="section-head"><h2>${esc(EN ? s.en : s.ru)}</h2><div class="actions">${extra}${wikiLink(s.wiki_url, t("wikiSection"))}</div></div><p class="sub">${esc(EN ? s.intro_en : s.intro_ru)}</p>${warn}${(s.entries || [])
+              .map(
+                (e) =>
+                  `<details class="spoiler"><summary><span class="spoiler-label">spoiler</span><span>${esc(EN ? e.en : e.ru)}</span>${e.meta_ru ? `<span class="sub">· ${esc(EN ? e.meta_en : e.meta_ru)}</span>` : ""}</summary><div class="spoiler-body">${spoilerBlock(e.id, "hint", EN ? e.hint_en : e.hint_ru)}${spoilerBlock(e.id, "solution", EN ? e.sol_en : e.sol_ru)}${e.wiki_url ? `<div class="spoiler-links">${wikiLink(e.wiki_url, t("wikiLink"))}<span class="sub">${t("wikiWarning")}</span></div>` : ""}</div></details>`,
+              )
+              .join("")}</section>`;
+          })
+          .join("")}`;
+      }
       const views = {
+        secrets: secretsPage,
         overview,
         today,
         perfection,
@@ -3277,6 +4711,9 @@
       async function persist() {
         S.goals.annotations = S.goals.annotations || {};
         if (MODE === "live") {
+          // Пока запрос в полёте, автообновление не должно затирать локальные
+          // правки старой версией goals с сервера.
+          pendingSaves++;
           try {
             const response = await fetch("/api/goals", {
               method: "POST",
@@ -3288,6 +4725,8 @@
           } catch (e) {
             toast(t("saveFailed"));
             return false;
+          } finally {
+            pendingSaves--;
           }
         }
         const saved = LS.set("annotations", S.goals.annotations);
@@ -3354,8 +4793,81 @@
         }
         toast(t("savedSuccessfully"));
       }
+      function findSecret(id) {
+        for (const s of S?.secrets?.sections || [])
+          for (const e of s.entries || []) if (e.id === id) return e;
+        return null;
+      }
+      function revealSpoiler(el) {
+        const key = el.dataset.revealKey,
+          [id, kind] = key.split(":"),
+          entry = findSecret(id);
+        if (!entry) return;
+        const text =
+          kind === "hint"
+            ? EN
+              ? entry.hint_en
+              : entry.hint_ru
+            : EN
+              ? entry.sol_en
+              : entry.sol_ru;
+        revealed.add(key);
+        el.classList.remove("blurred");
+        el.removeAttribute("role");
+        el.removeAttribute("tabindex");
+        el.removeAttribute("aria-label");
+        const p = el.querySelector("p");
+        if (p) p.textContent = text || "";
+        if (kind === "solution") el.insertAdjacentHTML("beforeend", spoilerExtras(entry));
+      }
+      function bindSecrets() {
+        const consent = $("#dangerConsent"),
+          enter = $("#dangerEnter"),
+          leave = $("#dangerLeave");
+        if (consent && enter)
+          consent.onchange = () => {
+            enter.disabled = !consent.checked;
+          };
+        if (enter)
+          enter.onclick = () => {
+            if (!consent?.checked) return;
+            dangerConsent = true;
+            render();
+            focusViewHeading();
+          };
+        if (leave)
+          leave.onclick = () => {
+            dangerConsent = false;
+            revealed.clear();
+            render();
+            focusViewHeading();
+          };
+        document.querySelectorAll("[data-reveal-key]").forEach((el) => {
+          if (!el.classList.contains("blurred")) return;
+          el.onclick = () => revealSpoiler(el);
+          el.onkeydown = (event) => {
+            if (event.key === "Enter" || event.key === " ") {
+              event.preventDefault();
+              revealSpoiler(el);
+            }
+          };
+        });
+      }
       function bind() {
         bindControls();
+        bindSecrets();
+        const ps = $("#peopleSearch");
+        if (ps)
+          ps.oninput = () => {
+            const pos = ps.selectionStart;
+            peopleSearch = ps.value;
+            render();
+            const next = $("#peopleSearch");
+            if (next) {
+              next.focus();
+              next.setSelectionRange(pos, pos);
+            }
+          };
         document.querySelectorAll("details.acq-tip").forEach((tip) => {
           tip.addEventListener("pointerleave", () => {
             tip.open = false;
@@ -3589,15 +5101,26 @@
             return;
           }
           let n = await r.json();
+          if (pendingSaves > 0 && S) n.goals = S.goals;
+          const saveChanged = !S || n.meta.save_mtime !== S.meta.save_mtime;
           if (
             force ||
-            !S ||
-            n.meta.save_mtime !== S.meta.save_mtime ||
+            saveChanged ||
             JSON.stringify(n.goals) !== JSON.stringify(S.goals)
           ) {
+            if (force || saveChanged) savesCache = null;
+            // Не перерисовываем страницу, пока пользователь печатает в поиске.
+            const typing =
+              !force &&
+              !saveChanged &&
+              document.activeElement?.matches?.("input, textarea, select");
             S = n;
             ERR = null;
-            render();
+            if (!typing) {
+              const y = scrollY;
+              render();
+              window.scrollTo(0, y);
+            }
           }
         } catch (e) {
           if (force) toast(t("apiError"));
@@ -3609,6 +5132,12 @@
         route = sections.includes(requested) ? requested : "overview";
         routeTarget = route === "bundles" ? hashParts.join("/") : "";
         search = "";
+        peopleSearch = "";
+        // Danger zone требует подтверждения при каждом входе.
+        if (route !== "secrets") {
+          dangerConsent = false;
+          revealed.clear();
+        }
         render();
         scrollTo(0, 0);
         if (!focusBundleTarget()) focusViewHeading();
