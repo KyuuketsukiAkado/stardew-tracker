@@ -62,7 +62,10 @@ jobs:
           items = json.loads((d / "items.json").read_text(encoding="utf-8"))
           assert len(items) > 700
           fish = json.loads((d / "fish.json").read_text(encoding="utf-8"))
-          assert len(fish) == 74
+          # 72 вида коллекции 1.6 + 5 «легендарных II» (extended, не в коллекции)
+          extended = [k for k, v in fish.items() if v.get("extended")]
+          assert len(extended) == 5, len(extended)
+          assert len(fish) - len(extended) == 72, len(fish) - len(extended)
           print("OK")
           EOF
 

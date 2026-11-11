@@ -8,57 +8,111 @@
     />
     <title>Stardew Трекер — прогресс фермы</title>
     <style>
-      /* ===== Тема: все цвета — только через переменные ===== */
+      /* ===== Дизайн-система «Холодный Bento» =====
+         Утверждена по A/B-тесту: светлая — B2 · Frost Deco («Иней»), тёмная — B1 · Night Run («Ночь»).
+         Все цвета — только через переменные; hex-значения допустимы лишь в этих двух блоках. */
       :root {
         color-scheme: light;
-        --bg: #f7f2e6;
-        --bg-top: #e3f0fa;
-        --surface: #fffdf8;
-        --surface-2: #f5eedd;
-        --surface-3: #ece2ca;
-        --side-bg: #fbf6ea;
-        --header-bg: #fffdf8e6;
-        --line: #e4d8bf;
-        --line-strong: #cbb995;
-        --text: #3a3125;
-        --muted: #6d6150;
-        --faint: #94886f;
-        --accent: #4f9b3d;
-        --accent-strong: #3a7f2a;
-        --accent-soft: #e4f2d9;
+        /* B2 · Frost Deco */
+        --bg: #e8eef4;
+        --bg-top: #d6e4f2;
+        --surface: #fbfcfe;
+        --surface-2: #eef3f8;
+        --surface-3: #dde6ef;
+        --side-bg: #f4f7fb;
+        --header-bg: #f4f7fbe6;
+        --line: #d3dde8;
+        --line-strong: #b5c4d4;
+        --text: #0f1b2b;
+        --muted: #465c78;
+        --faint: #566883;
+        --accent: #2f6fb3;
+        --accent-strong: #1f5590;
+        --accent-soft: #dbe9f7;
         --on-accent: #ffffff;
-        --green: #3f8f2f;
-        --gold: #b97d0c;
-        --red: #c2493a;
-        --blue: #2f7cbf;
-        --purple: #7a55c7;
-        --state-done: #3f8f2f;
-        --state-progress: #b97d0c;
-        --state-action: #c2493a;
-        --state-idle: #8a7f6c;
-        --state-info: #2f7cbf;
-        --state-lock: #7a55c7;
-        --done-soft: #e5f3dc;
-        --done-line: #a9d397;
-        --progress-soft: #fcf0d2;
-        --progress-line: #ecc66f;
-        --action-soft: #fde6e0;
-        --action-line: #eba596;
-        --idle-soft: #f1ece1;
-        --idle-line: #d8cdb7;
-        --info-soft: #e3effa;
-        --info-line: #9fc5e8;
-        --lock-soft: #efe8fc;
-        --lock-line: #c4b1ee;
+        --green: #1d734d;
+        --gold: #8a5d09;
+        --red: #b63628;
+        --blue: #2b66a4;
+        --purple: #4b3fa0;
+        --state-done: #1d734d;
+        --state-progress: #8a5d09;
+        --state-action: #b63628;
+        --state-idle: #58697c;
+        --state-info: #2b66a4;
+        --state-lock: #4b3fa0;
+        --done-soft: #d9efe5;
+        --done-line: #8cc8aa;
+        --progress-soft: #f6ead0;
+        --progress-line: #dfbd70;
+        --action-soft: #fbe3e0;
+        --action-line: #e8a49d;
+        --idle-soft: #e9eff5;
+        --idle-line: #c5d2df;
+        --info-soft: #dbe9f7;
+        --info-line: #9bbfe3;
+        --lock-soft: #e6e4f7;
+        --lock-line: #bdb6e6;
         --danger: #b3261e;
-        --danger-soft: #fff1ec;
-        --danger-line: #f0a493;
-        --track: #ebe3d1;
-        --tip-bg: #fffdf8;
-        --overlay: #2a22184d;
-        --shadow: 0 1px 2px #5a40140d, 0 6px 18px #5a401414;
-        --shadow-hover: 0 2px 4px #5a401414, 0 10px 26px #5a40141f;
-        --radius: 14px;
+        --on-danger: #ffffff;
+        --danger-soft: #fdeeee;
+        --danger-line: #eba5a0;
+        --track: #d3dde8;
+        --tip-bg: #fbfcfe;
+        --overlay: #0f1b2b59;
+        --shadow: 0 1px 2px #2a4a700d, 0 18px 36px -26px #2a4a7066;
+        --shadow-hover: 0 2px 4px #2a4a701a, 0 22px 40px -24px #2a4a7080;
+        --radius: 20px;
+        /* Типографика: DIN-гротеск (Bahnschrift есть в Windows) и шкала ×1.25 */
+        --font-display: "Bahnschrift", "DIN Pro", "DIN Alternate", "Roboto Condensed", "Arial Narrow", system-ui, sans-serif;
+        --font-text: "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, Roboto, "Helvetica Neue", Arial, sans-serif;
+        --t0: 13px;
+        --t1: 15px;
+        --t2: 18.75px;
+        --t3: 23.4px;
+        --t4: 29.3px;
+        --t5: 36.6px;
+        --t6: 45.8px;
+        --t7: 57.2px;
+        --t8: 71.5px;
+        --t9: 89.4px;
+        --gap: 22px;
+        --pad: 28px;
+        --tile-radius: 28px;
+        --page-x: clamp(16px, 2.4vw, 44px);
+        /* Bento-плитки */
+        --tile-bg: #fbfcfe;
+        --tile-line: #d3dde8;
+        --tile-shadow: 0 0 0 1px var(--tile-line), 0 24px 48px -32px #2a4a7055;
+        --tile-hero-bg: linear-gradient(160deg, #0f1b2b, #1c3352);
+        --tile-hero-fg: #e8eef4;
+        --tile-hero-muted: #a9bdd6;
+        --tile-hero-frame: #3d5b80;
+        --tile-hero-track: #ffffff1f;
+        --tile-hero-fill: #9fd0ff;
+        --hero-stripe: transparent;
+        --tile-ice: #d6e8f8;
+        --tile-violet: #dfe0f7;
+        --tile-mint: #d5eeea;
+        --tile-tone-fg: #0f1b2b;
+        --tile-tone-muted: #33506f;
+        --tile-tone-track: #0f1b2b1f;
+        --tile-tone-fill: #0f1b2b;
+        --frame: #c3d1e0;
+        --bar-track: #0f1b2b14;
+        --bar-fill: #0f1b2b;
+        /* Переключатели-пилюли */
+        --seg-bg: #ffffff;
+        --seg-line: #c9d5e2;
+        --seg-fg: #465c78;
+        --seg-on-bg: #0f1b2b;
+        --seg-on-fg: #e8eef4;
+        /* Фон страницы и акценты заголовков */
+        --glow-a: #cfe0f2;
+        --glow-b: #dde3f6;
+        --stripe: transparent;
+        --kicker: #4a6888;
+        --em: #2f6fb3;
         --spr-obj0: url("/assets/sprites/objects.png");
         --spr-obj1: url("/assets/sprites/objects2.png");
         --spr-bc: url("/assets/sprites/craftables.png");
@@ -67,55 +121,87 @@
         --spr-monsters: url("/assets/sprites/monsters.png");
         --spr-ui: url("/assets/sprites/ui.png");
       }
+      /* B1 · Night Run */
       :root[data-theme="dark"] {
         color-scheme: dark;
-        --bg: #161a2b;
-        --bg-top: #232a4a;
-        --surface: #1f2438;
-        --surface-2: #272d45;
-        --surface-3: #30375a;
-        --side-bg: #1a1f33;
-        --header-bg: #161a2be6;
-        --line: #353d5c;
-        --line-strong: #4b5580;
-        --text: #eef0f8;
-        --muted: #b0b6cf;
-        --faint: #858ca8;
-        --accent: #7bcb68;
-        --accent-strong: #95dc84;
-        --accent-soft: #263f2c;
-        --on-accent: #10200c;
-        --green: #8fd67c;
+        --bg: #070b14;
+        --bg-top: #0d1424;
+        --surface: #0f1626;
+        --surface-2: #141d31;
+        --surface-3: #1b2640;
+        --side-bg: #0b101c;
+        --header-bg: #070b14e6;
+        --line: #1c2740;
+        --line-strong: #2a3654;
+        --text: #e8f1ff;
+        --muted: #a3aec6;
+        --faint: #8590ab;
+        --accent: #4de1ff;
+        --accent-strong: #8aeaff;
+        --accent-soft: #10283f;
+        --on-accent: #04101f;
+        --green: #5ff2c4;
         --gold: #f2c45c;
-        --red: #f08c7c;
-        --blue: #84bdf2;
-        --purple: #b9a1f7;
-        --state-done: #8fd67c;
+        --red: #ff8a7a;
+        --blue: #7fbfff;
+        --purple: #a99bff;
+        --state-done: #5ff2c4;
         --state-progress: #f2c45c;
-        --state-action: #f08c7c;
-        --state-idle: #a2a8c0;
-        --state-info: #84bdf2;
-        --state-lock: #b9a1f7;
-        --done-soft: #233a2a;
-        --done-line: #3f6b45;
-        --progress-soft: #3a3322;
-        --progress-line: #7a6430;
-        --action-soft: #432a2c;
-        --action-line: #8a4a45;
-        --idle-soft: #2a2f45;
-        --idle-line: #474f6e;
-        --info-soft: #22344c;
-        --info-line: #3f6593;
-        --lock-soft: #2f2a4c;
-        --lock-line: #5f4f99;
+        --state-action: #ff8a7a;
+        --state-idle: #98a3bd;
+        --state-info: #7fbfff;
+        --state-lock: #a99bff;
+        --done-soft: #0e2b27;
+        --done-line: #1f6b5b;
+        --progress-soft: #2a2410;
+        --progress-line: #6b5a1f;
+        --action-soft: #34171b;
+        --action-line: #7a3a40;
+        --idle-soft: #141d31;
+        --idle-line: #2a3654;
+        --info-soft: #10283f;
+        --info-line: #2a5a85;
+        --lock-soft: #1c1840;
+        --lock-line: #4a3f99;
         --danger: #ff8a7a;
-        --danger-soft: #3d2228;
+        --on-danger: #1a0707;
+        --danger-soft: #34171b;
         --danger-line: #8f4048;
-        --track: #30375a;
-        --tip-bg: #1b2034;
-        --overlay: #05070fb3;
-        --shadow: 0 1px 2px #0005, 0 8px 22px #0006;
-        --shadow-hover: 0 2px 6px #0006, 0 12px 28px #0008;
+        --track: #1c2740;
+        --tip-bg: #0f1626;
+        --overlay: #02050cb3;
+        --shadow: 0 0 0 1px #1c2740, 0 20px 40px -28px #000000aa;
+        --shadow-hover: 0 0 0 1px #4de1ff66, 0 24px 44px -26px #000000cc;
+        --tile-bg: #0f1626;
+        --tile-line: #1c2740;
+        --tile-shadow: inset 0 0 0 1px var(--tile-line);
+        --tile-hero-bg: linear-gradient(135deg, #4a85ff 0%, #4de1ff 120%);
+        --tile-hero-fg: #04101f;
+        --tile-hero-muted: #04101fb3;
+        --tile-hero-frame: transparent;
+        --tile-hero-track: #00000026;
+        --tile-hero-fill: #04101f;
+        --hero-stripe: #ffffff30;
+        --tile-ice: #b9e6ff;
+        --tile-violet: #8f7cff;
+        --tile-mint: #5ff2c4;
+        --tile-tone-fg: #04101f;
+        --tile-tone-muted: #04101fb3;
+        --tile-tone-track: #00000026;
+        --tile-tone-fill: #04101f;
+        --frame: transparent;
+        --bar-track: #ffffff1f;
+        --bar-fill: #4de1ff;
+        --seg-bg: #111a2c;
+        --seg-line: #1f2b45;
+        --seg-fg: #8f9bb5;
+        --seg-on-bg: #4de1ff;
+        --seg-on-fg: #05121d;
+        --glow-a: #1f3d8a55;
+        --glow-b: #00e0ff22;
+        --stripe: #ffffff05;
+        --kicker: #4de1ff;
+        --em: #4de1ff;
       }
       /*__INLINE_SPRITES__*/
       * {
@@ -126,15 +212,21 @@
       }
       body {
         margin: 0;
-        background: linear-gradient(180deg, var(--bg-top) 0, var(--bg) 360px) fixed;
-        background-color: var(--bg);
+        background: var(--bg);
         color: var(--text);
-        font:
-          15px/1.5 system-ui,
-          -apple-system,
-          "Segoe UI",
-          Roboto,
-          sans-serif;
+        font: 15px/1.55 var(--font-text);
+        -webkit-font-smoothing: antialiased;
+      }
+      body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        z-index: -1;
+        pointer-events: none;
+        background:
+          radial-gradient(1000px 600px at 100% 0, var(--glow-a), transparent 60%),
+          radial-gradient(800px 500px at 0 100%, var(--glow-b), transparent 60%),
+          repeating-linear-gradient(115deg, transparent 0 46px, var(--stripe) 46px 47px);
       }
       body.modal-open {
         overflow: hidden;
@@ -207,25 +299,39 @@
       .shell {
         min-height: 100vh;
       }
-      .sidebar {
-        position: fixed;
-        inset: 0 auto 0 0;
-        width: 236px;
-        padding: 18px 12px;
-        background: var(--side-bg);
-        border-right: 1px solid var(--line);
-        z-index: 5;
+      /* ===== Каркас: верхняя панель с группами разделов ===== */
+      .topbar {
+        position: sticky;
+        top: 0;
+        z-index: 20;
+        background: var(--header-bg);
+        backdrop-filter: blur(14px);
+        border-bottom: 1px solid var(--line);
+      }
+      .topbar-row,
+      .subnav {
+        max-width: 1840px;
+        margin: 0 auto;
+        padding-left: var(--page-x);
+        padding-right: var(--page-x);
+      }
+      .topbar-row {
         display: flex;
-        flex-direction: column;
+        align-items: center;
+        gap: 18px;
+        padding-top: 12px;
+        padding-bottom: 10px;
       }
       .brand {
-        font-size: 17px;
-        font-weight: 850;
-        letter-spacing: 0.2px;
-        padding: 4px 8px 16px;
         display: flex;
         align-items: center;
         gap: 10px;
+        flex: none;
+        color: inherit;
+        font: 700 var(--t2) / 1 var(--font-display);
+        font-variation-settings: "wdth" 80;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
       }
       .brand-mark {
         width: 36px;
@@ -233,54 +339,82 @@
         flex: none;
         filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.13));
       }
-      .nav {
-        display: grid;
-        flex: 1;
-        min-height: 0;
-        gap: 14px;
-        overflow: auto;
-        align-content: start;
-      }
-      .nav-group {
-        display: grid;
-        gap: 2px;
-      }
-      .nav-group-title {
-        padding: 2px 10px 4px;
-        color: var(--faint);
-        font-size: 10.5px;
-        font-weight: 750;
-        letter-spacing: 0.8px;
-        text-transform: uppercase;
-      }
-      .nav a {
+      .groups {
+        display: flex;
+        gap: 4px;
         min-width: 0;
-        padding: 6px 9px;
-        border-radius: 11px;
-        color: var(--muted);
+        max-width: 100%;
+        margin: 0 auto;
+        padding: 5px;
+        border-radius: 999px;
+        background: var(--seg-bg);
+        box-shadow: inset 0 0 0 1px var(--seg-line);
+        overflow-x: auto;
+        scrollbar-width: none;
+      }
+      .groups a {
+        padding: 9px 18px;
+        border-radius: 999px;
+        color: var(--seg-fg);
+        font: 600 var(--t0) / 1 var(--font-display);
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        white-space: nowrap;
+      }
+      .groups a:hover {
+        color: var(--text);
+      }
+      .groups a.selected {
+        background: var(--seg-on-bg);
+        color: var(--seg-on-fg);
+      }
+      .groups a.danger-link {
+        color: var(--danger);
+      }
+      .groups a.danger-link.selected {
+        background: var(--danger);
+        color: var(--on-danger);
+      }
+      .subnav {
         display: flex;
         align-items: center;
-        gap: 9px;
+        flex-wrap: wrap;
+        gap: 6px 18px;
+        padding-top: 0;
+        padding-bottom: 10px;
       }
-      .nav a:hover {
+      .subnav-links {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+        min-width: 0;
+      }
+      .subnav-links a {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        padding: 6px 13px 6px 9px;
+        border-radius: 999px;
+        color: var(--muted);
+        font-size: 13.5px;
+        font-weight: 600;
+      }
+      .subnav-links a:hover {
         background: var(--surface-2);
         color: var(--text);
       }
-      .nav a.selected {
+      .subnav-links a.selected {
         background: var(--accent-soft);
         color: var(--text);
-        font-weight: 650;
-        box-shadow: inset 3px 0 0 var(--accent);
+        box-shadow: inset 0 0 0 1px var(--accent);
+      }
+      .subnav-links a.danger-link .nav-icon {
+        color: var(--danger);
       }
       .nav-icon {
-        width: 28px;
-        height: 28px;
-        flex: none;
         display: grid;
         place-items: center;
-        border-radius: 9px;
-        background: var(--surface);
-        border: 1px solid var(--line);
+        flex: none;
         color: var(--accent);
       }
       .nav-icon svg {
@@ -288,51 +422,54 @@
         height: 16px;
         stroke-width: 1.9;
       }
-      .nav a.danger-link .nav-icon {
-        color: var(--danger);
-        border-color: var(--danger-line);
-        background: var(--danger-soft);
-      }
       .nav-label {
-        flex: 1;
         min-width: 0;
         overflow-wrap: anywhere;
       }
-      .nav small {
-        margin-left: auto;
+      .subnav-links small {
         color: var(--faint);
-        font-size: 10.5px;
+        font-size: 11px;
         font-variant-numeric: tabular-nums;
         white-space: nowrap;
       }
+      .subnav .farm {
+        margin-left: auto;
+        text-align: right;
+      }
+      .save-tools {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 7px;
+        min-width: 0;
+      }
+      .save-tools select {
+        max-width: 100%;
+      }
+      .topbar .header-tools {
+        flex: none;
+      }
+      /* Тесная верхняя строка: подпись темы и название бренда уступают место группам. */
+      @media (max-width: 1399px) {
+        .theme-toggle span {
+          display: none;
+        }
+      }
+      @media (max-width: 1199px) {
+        #brandTitle {
+          display: none;
+        }
+        .groups a {
+          padding: 9px 14px;
+        }
+      }
       .mobile-nav {
         display: none;
-        width: 100%;
-      }
-      .sidefoot {
-        margin-top: auto;
-        color: var(--faint);
-        font-size: 11.5px;
-        padding: 10px 8px;
-        line-height: 1.65;
+        width: calc(100% - 2 * var(--page-x));
+        margin: 0 var(--page-x) 10px;
       }
       .main {
-        margin-left: 236px;
         min-height: 100vh;
-      }
-      header {
-        position: sticky;
-        top: 0;
-        z-index: 4;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 12px;
-        flex-wrap: wrap;
-        padding: 11px 26px;
-        background: var(--header-bg);
-        backdrop-filter: blur(12px);
-        border-bottom: 1px solid var(--line);
       }
       .farm {
         min-width: 0;
@@ -379,8 +516,8 @@
         height: 16px;
       }
       .content {
-        max-width: 1500px;
-        padding: 24px 26px 40px;
+        max-width: 1840px;
+        padding: 24px var(--page-x) 48px;
         margin: auto;
       }
       .title-row {
@@ -391,11 +528,6 @@
         flex-wrap: wrap;
         margin-bottom: 16px;
       }
-      .title-row h1 {
-        font-size: 26px;
-        margin: 0 0 2px;
-        letter-spacing: -0.2px;
-      }
       .sub {
         color: var(--muted);
         font-size: 12.5px;
@@ -404,10 +536,6 @@
         display: grid;
         gap: 12px;
       }
-      .stats {
-        grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
-        margin: 15px 0;
-      }
       .card {
         background: var(--surface);
         border: 1px solid var(--line);
@@ -415,36 +543,7 @@
         padding: 15px;
         box-shadow: var(--shadow);
       }
-      .stat {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 10px;
-        min-height: 100px;
-      }
-      .stat[data-go] {
-        cursor: pointer;
-        transition:
-          border-color 0.15s ease,
-          transform 0.15s ease,
-          box-shadow 0.15s ease;
-      }
-      .stat[data-go]:hover {
-        border-color: var(--accent);
-        transform: translateY(-2px);
-        box-shadow: var(--shadow-hover);
-      }
-      .stat[data-go]:focus-visible {
-        outline: 3px solid var(--blue);
-        outline-offset: 3px;
-      }
-      .stat-label {
-        font-size: 11.5px;
-        color: var(--muted);
-        text-transform: uppercase;
-        letter-spacing: 0.6px;
-        font-weight: 650;
-      }
+      /* Иконка в фиксированной рамке: высокие спрайты (крафт) не сдвигают заголовки соседних плиток. */
       .stat-number {
         font-size: 25px;
         font-weight: 800;
@@ -665,42 +764,6 @@
       .color-dot.lock {
         color: var(--state-lock);
         background: var(--lock-soft);
-      }
-      .welcome-row {
-        align-items: center;
-        margin-bottom: 16px;
-        padding: 16px 19px;
-        border: 1px solid var(--done-line);
-        border-radius: 16px;
-        background: linear-gradient(115deg, var(--accent-soft), var(--surface) 62%, var(--info-soft));
-        box-shadow: var(--shadow);
-      }
-      .welcome-row > div:first-child {
-        min-width: 0;
-      }
-      .welcome-eyebrow {
-        margin: 0 0 3px;
-        color: var(--accent-strong);
-        font-size: 10.5px;
-        font-weight: 800;
-        letter-spacing: 0.9px;
-        text-transform: uppercase;
-      }
-      .welcome-row h1 {
-        margin: 0;
-        font-size: clamp(22px, 2.4vw, 30px);
-        overflow-wrap: anywhere;
-      }
-      .welcome-ornament {
-        width: 44px;
-        height: 44px;
-        flex: none;
-        color: var(--gold);
-      }
-      .welcome-ornament svg {
-        display: block;
-        width: 100%;
-        height: 100%;
       }
       .panel-title {
         font-size: 15px;
@@ -2066,26 +2129,442 @@
       .note-dialog .actions {
         justify-content: flex-end;
       }
+      /* ===== Bento-плитки и заголовки страниц ===== */
+      .display,
+      .page-head h1,
+      .big,
+      .tile h3 {
+        font-family: var(--font-display);
+        font-variation-settings: "wdth" 75;
+        font-stretch: condensed;
+        text-transform: uppercase;
+      }
+      .kicker {
+        margin: 0 0 12px;
+        color: var(--kicker);
+        font: 600 var(--t0) / 1 var(--font-display);
+        letter-spacing: 0.22em;
+        text-transform: uppercase;
+      }
+      :root[data-theme="light"] .kicker::before,
+      :root[data-theme="light"] .kicker::after {
+        content: "◆";
+        margin: 0 10px;
+        font-size: 8px;
+        vertical-align: 2px;
+        opacity: 0.6;
+      }
+      :root[data-theme="light"] .kicker::before {
+        margin-left: 0;
+      }
+      .page-head {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: end;
+        justify-content: space-between;
+        gap: 16px 24px;
+        margin: 6px 0 28px;
+      }
+      .page-head > div:first-child {
+        min-width: 0;
+      }
+      .page-head h1 {
+        margin: 0;
+        font-size: clamp(var(--t5), 4.6vw, var(--t7));
+        font-weight: 700;
+        line-height: 0.98;
+        letter-spacing: -0.01em;
+        overflow-wrap: anywhere;
+      }
+      .page-head h1 em {
+        color: var(--em);
+        font-style: normal;
+      }
+      .page-head .sub {
+        margin-top: 14px;
+        color: var(--muted);
+        font-size: var(--t1);
+      }
+      .welcome-row {
+        margin-bottom: 36px;
+      }
+      .welcome-row h1 {
+        font-size: clamp(40px, 6.2vw, var(--t8));
+        overflow-wrap: anywhere;
+      }
+      .welcome-row > div:first-child {
+        min-width: 0;
+      }
+      :root[data-theme="dark"] .big,
+      :root[data-theme="dark"] .page-head h1,
+      :root[data-theme="dark"] .page-head h1 em {
+        font-style: italic;
+      }
+      .bento {
+        display: grid;
+        grid-template-columns: repeat(12, minmax(0, 1fr));
+        gap: var(--gap);
+        margin-bottom: var(--gap);
+      }
+      .tile {
+        position: relative;
+        grid-column: span 12;
+        min-width: 0;
+        padding: var(--pad);
+        border-radius: var(--tile-radius);
+        background: var(--tile-bg);
+        box-shadow: var(--tile-shadow);
+        color: var(--text);
+        overflow: hidden;
+      }
+      /* Ар-деко: внутренняя тонкая рамка со срезанными углами (в тёмной теме прозрачна). */
+      .tile::before {
+        content: "";
+        position: absolute;
+        inset: 12px;
+        border: 1px solid var(--frame);
+        border-radius: 20px;
+        pointer-events: none;
+        clip-path: polygon(
+          18px 0,
+          calc(100% - 18px) 0,
+          100% 18px,
+          100% calc(100% - 18px),
+          calc(100% - 18px) 100%,
+          18px 100%,
+          0 calc(100% - 18px),
+          0 18px
+        );
+      }
+      .tile > * {
+        position: relative;
+      }
+      .tile.hero {
+        background: var(--tile-hero-bg);
+        color: var(--tile-hero-fg);
+        box-shadow: none;
+      }
+      .tile.hero::before {
+        border-color: var(--tile-hero-frame);
+      }
+      .tile.hero::after {
+        content: "";
+        position: absolute;
+        right: -40px;
+        top: -30px;
+        width: 260px;
+        height: 260px;
+        background: repeating-linear-gradient(115deg, var(--hero-stripe) 0 10px, transparent 10px 24px);
+        transform: skewX(-12deg);
+        pointer-events: none;
+      }
+      .tile.ice,
+      .tile.violet,
+      .tile.mint {
+        color: var(--tile-tone-fg);
+        box-shadow: none;
+      }
+      .tile.ice {
+        background: var(--tile-ice);
+      }
+      .tile.violet {
+        background: var(--tile-violet);
+      }
+      .tile.mint {
+        background: var(--tile-mint);
+      }
+      .tile[data-go] {
+        cursor: pointer;
+        transition: transform 0.15s ease;
+      }
+      .tile[data-go]:hover {
+        transform: translateY(-3px);
+      }
+      .tile[data-go]:focus-visible {
+        outline: 3px solid var(--blue);
+        outline-offset: 3px;
+      }
+      .t-label {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        color: var(--kicker);
+        font: 600 var(--t0) / 1 var(--font-display);
+        letter-spacing: 0.2em;
+        text-transform: uppercase;
+      }
+      .tile.hero .t-label,
+      .tile.ice .t-label,
+      .tile.violet .t-label,
+      .tile.mint .t-label {
+        color: inherit;
+        opacity: 0.9;
+      }
+      .t-name {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        min-width: 0;
+      }
+      /* Иконка в фиксированной рамке: высокие спрайты (крафт) не сдвигают заголовки соседних плиток. */
+      .stat-icon {
+        width: 28px;
+        height: 28px;
+        flex: none;
+        display: grid;
+        place-items: center;
+      }
+      .stat-icon .item-icon.sheet2 {
+        transform: scale(0.5);
+      }
+      .big {
+        margin-top: 30px;
+        font-size: clamp(48px, 5.2vw, var(--t9));
+        font-weight: 700;
+        line-height: 0.85;
+        letter-spacing: -0.02em;
+        font-variant-numeric: tabular-nums;
+      }
+      .big sup {
+        margin-left: 8px;
+        font: 600 var(--t3) var(--font-display);
+        letter-spacing: 0;
+        vertical-align: top;
+        opacity: 0.55;
+      }
+      .tile .bar {
+        height: 6px;
+        margin-top: 26px;
+        border-radius: 99px;
+        background: var(--bar-track);
+        overflow: hidden;
+      }
+      .tile .bar i {
+        display: block;
+        height: 100%;
+        border-radius: inherit;
+        background: var(--bar-fill);
+      }
+      .tile.hero .bar {
+        background: var(--tile-hero-track);
+      }
+      .tile.hero .bar i {
+        background: var(--tile-hero-fill);
+      }
+      .tile.ice .bar,
+      .tile.violet .bar,
+      .tile.mint .bar {
+        background: var(--tile-tone-track);
+      }
+      .tile.ice .bar i,
+      .tile.violet .bar i,
+      .tile.mint .bar i {
+        background: var(--tile-tone-fill);
+      }
+      .tile .stat-sub {
+        margin-top: 12px;
+        color: inherit;
+        font-size: var(--t0);
+        opacity: 0.85;
+      }
+      .tile h3 {
+        margin: 0 0 22px;
+        font-size: var(--t5);
+        font-weight: 700;
+        line-height: 1;
+        letter-spacing: 0.01em;
+      }
+      .tile-head {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 12px;
+        flex-wrap: wrap;
+      }
+      .tile-head h3 {
+        margin-bottom: 22px;
+      }
+      .tile-head + .sub {
+        margin: -10px 0 14px;
+      }
+      .tile h3 .badge {
+        vertical-align: middle;
+        font-family: var(--font-text);
+        letter-spacing: 0;
+        text-transform: none;
+      }
+      .tile > .sub {
+        margin: -10px 0 14px;
+      }
+      .item {
+        display: grid;
+        grid-template-columns: 44px minmax(0, 1fr) auto;
+        gap: 16px;
+        align-items: center;
+        padding: 15px 0;
+      }
+      .item + .item {
+        border-top: 1px solid var(--line);
+      }
+      .item > :first-child {
+        justify-self: center;
+      }
+      .item b {
+        display: block;
+        font-size: var(--t2);
+        font-weight: 600;
+        line-height: 1.35;
+        overflow-wrap: anywhere;
+      }
+      .item small {
+        display: block;
+        margin-top: 3px;
+        color: var(--muted);
+        font-size: var(--t1);
+        line-height: 1.5;
+      }
+      .tag {
+        padding: 6px 13px;
+        border-radius: 999px;
+        background: var(--surface-2);
+        box-shadow: inset 0 0 0 1px var(--line);
+        color: var(--muted);
+        font: 600 var(--t0) / 1 var(--font-display);
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        white-space: nowrap;
+      }
+      .tag.ok {
+        background: var(--done-soft);
+        box-shadow: inset 0 0 0 1px var(--done-line);
+        color: var(--state-done);
+      }
+      .tag.warn {
+        background: var(--progress-soft);
+        box-shadow: inset 0 0 0 1px var(--progress-line);
+        color: var(--state-progress);
+      }
+      .tag.alert {
+        background: var(--action-soft);
+        box-shadow: inset 0 0 0 1px var(--action-line);
+        color: var(--state-action);
+      }
+      .tile .empty {
+        padding: 10px 0;
+      }
+      .tile .today-list .row,
+      .tile .overview-items .row {
+        background: transparent;
+        box-shadow: none;
+      }
+      /* Пилюли-переключатели (фильтры, вкладки) */
+      .seg {
+        display: inline-flex;
+        flex-wrap: wrap;
+        gap: 4px;
+        max-width: 100%;
+        padding: 5px;
+        border-radius: 999px;
+        background: var(--seg-bg);
+        box-shadow: inset 0 0 0 1px var(--seg-line);
+      }
+      .seg button {
+        padding: 9px 18px;
+        border: 0;
+        border-radius: 999px;
+        background: transparent;
+        box-shadow: none;
+        color: var(--seg-fg);
+        font: 600 var(--t0) / 1 var(--font-display);
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        white-space: nowrap;
+      }
+      .seg button:hover:not(:disabled) {
+        background: var(--surface-2);
+        color: var(--text);
+      }
+      .seg button.on {
+        background: var(--seg-on-bg);
+        color: var(--seg-on-fg);
+      }
+      /* Ключи и доступы: пилюли, замок у закрытого */
+      .tile .unlock-list {
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      }
+      .legend-line {
+        margin: 0 0 var(--gap);
+      }
+      /* Сетки: двенадцать колонок на десктопе, без «сирот» на средних ширинах */
+      @media (min-width: 1100px) {
+        .tile.s3 {
+          grid-column: span 3;
+        }
+        .tile.s4 {
+          grid-column: span 4;
+        }
+        .tile.s5 {
+          grid-column: span 5;
+        }
+        .tile.s6 {
+          grid-column: span 6;
+        }
+        .tile.s7 {
+          grid-column: span 7;
+        }
+        .tile.s8 {
+          grid-column: span 8;
+        }
+      }
+      @media (min-width: 600px) and (max-width: 1099px) {
+        .tile.m {
+          grid-column: span 4;
+        }
+        .tile.half {
+          grid-column: span 6;
+        }
+      }
+      @media (min-width: 1360px) {
+        .feature-grid {
+          grid-template-columns: repeat(4, minmax(0, 1fr));
+        }
+      }
+      @media (min-width: 560px) and (max-width: 1359px) {
+        .feature-grid {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+      }
       @media (max-width: 900px) {
-        .sidebar {
-          position: sticky;
-          top: 0;
-          width: 100%;
-          height: auto;
-          padding: 7px 8px;
-          display: block;
-          border-right: 0;
-          border-bottom: 1px solid var(--line);
+        :root {
+          --gap: 16px;
+          --pad: 22px;
+          --tile-radius: 24px;
+          --t7: 44px;
+          --t8: 52px;
+          --t9: 68px;
+        }
+        .topbar-row {
+          flex-wrap: wrap;
+          gap: 10px;
+          padding-top: 10px;
+          padding-bottom: 8px;
         }
         .brand {
-          padding: 1px 4px 7px;
-          font-size: 14px;
+          font-size: var(--t1);
+        }
+        .topbar {
+          position: static;
+        }
+        #brandTitle {
+          display: inline;
         }
         .brand-mark {
           width: 28px;
           height: 28px;
         }
-        .nav {
+        .groups,
+        .subnav-links {
           display: none;
         }
         .mobile-nav {
@@ -2094,37 +2573,27 @@
           background: var(--surface);
           border-color: var(--line-strong);
         }
-        .sidefoot {
-          display: none;
+        .header-tools {
+          margin-left: auto;
         }
-        .main {
+        .subnav {
+          padding-bottom: 8px;
+        }
+        .subnav .farm {
           margin-left: 0;
-        }
-        header {
-          position: static;
-          padding: 10px 13px;
+          text-align: left;
         }
         .content {
-          padding: 14px;
+          padding: 14px var(--page-x) 40px;
         }
         .two,
         .three {
           grid-template-columns: repeat(2, minmax(0, 1fr));
         }
-        .title-row h1 {
-          font-size: 22px;
-        }
       }
       @media (max-width: 600px) {
         .content {
           padding: 12px;
-        }
-        .welcome-row {
-          padding: 12px;
-        }
-        .welcome-ornament {
-          width: 34px;
-          height: 34px;
         }
         .today-layout {
           gap: 12px;
@@ -2177,10 +2646,6 @@
           min-height: 28px;
           min-width: 24px;
         }
-        .nav a {
-          min-height: 38px;
-          align-items: center;
-        }
         .acq-tip summary {
           width: 32px;
           height: 32px;
@@ -2189,9 +2654,6 @@
           width: auto;
           min-height: 32px;
           height: 32px;
-        }
-        header {
-          align-items: flex-start;
         }
         .farm {
           width: 100%;
@@ -2209,14 +2671,6 @@
         }
         .content {
           padding: 11px;
-        }
-        .stats {
-          grid-template-columns: repeat(2, minmax(0, 1fr));
-          gap: 8px;
-        }
-        .stat {
-          padding: 10px;
-          min-height: 80px;
         }
         .stat-number {
           font-size: 20px;
@@ -2270,9 +2724,6 @@
       @media (max-width: 360px) {
         .content {
           padding: 8px;
-        }
-        .stats {
-          grid-template-columns: 1fr;
         }
         .pill {
           white-space: normal;
@@ -2661,72 +3112,75 @@
       </symbol>
     </svg>
     <div class="shell">
-      <aside class="sidebar">
-        <div class="brand">
-          <svg
-            class="brand-mark"
-            viewBox="0 0 40 40"
-            aria-hidden="true"
-            focusable="false"
-          >
-            <rect
-              x="1"
-              y="1"
-              width="38"
-              height="38"
-              rx="12"
-              fill="#8fd0f0"
-              stroke="#4f9fcb"
-            />
-            <circle cx="29" cy="10" r="3.4" fill="#ffd34d" />
-            <path
-              d="m8 21 11-9 11 9"
-              fill="none"
-              stroke="#c2493a"
-              stroke-width="2.4"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            />
-            <path
-              d="M11.5 19.5V29h15v-9.5"
-              fill="#fff6e0"
-              stroke="#8a5a2b"
-              stroke-width="2"
-              stroke-linejoin="round"
-            />
-            <path
-              d="M17.5 29v-6h4v6"
-              fill="#c2493a"
-              stroke="#8a5a2b"
-              stroke-width="1.6"
-              stroke-linejoin="round"
-            />
-            <path
-              d="M7 33c4-2 7-2 11 0s7 2 11 0 4-2 5-2"
-              fill="none"
-              stroke="#4f9b3d"
-              stroke-width="1.5"
-              stroke-linecap="round"
-            />
-          </svg>
-          <span id="brandTitle">Stardew Трекер</span>
+      <div class="topbar" role="banner">
+        <div class="topbar-row">
+          <a class="brand" href="#overview">
+        <svg
+          class="brand-mark"
+          viewBox="0 0 40 40"
+          aria-hidden="true"
+          focusable="false"
+        >
+          <rect
+            x="1"
+            y="1"
+            width="38"
+            height="38"
+            rx="12"
+            fill="#8fd0f0"
+            stroke="#4f9fcb"
+          />
+          <circle cx="29" cy="10" r="3.4" fill="#ffd34d" />
+          <path
+            d="m8 21 11-9 11 9"
+            fill="none"
+            stroke="#c2493a"
+            stroke-width="2.4"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+          <path
+            d="M11.5 19.5V29h15v-9.5"
+            fill="#fff6e0"
+            stroke="#8a5a2b"
+            stroke-width="2"
+            stroke-linejoin="round"
+          />
+          <path
+            d="M17.5 29v-6h4v6"
+            fill="#c2493a"
+            stroke="#8a5a2b"
+            stroke-width="1.6"
+            stroke-linejoin="round"
+          />
+          <path
+            d="M7 33c4-2 7-2 11 0s7 2 11 0 4-2 5-2"
+            fill="none"
+            stroke="#4f9b3d"
+            stroke-width="1.5"
+            stroke-linecap="round"
+          />
+        </svg>
+            <span id="brandTitle">Stardew Трекер</span>
+          </a>
+          <nav id="nav" class="groups" aria-label="Разделы"></nav>
+          <div id="hdrRight" class="header-tools"></div>
         </div>
-        <nav id="nav" class="nav"></nav>
+        <div class="subnav">
+          <nav id="subnav" class="subnav-links" aria-label="Подразделы"></nav>
+          <div class="farm">
+            <b id="farmName">Stardew Valley Tracker</b>
+            <div id="farmSub"></div>
+          </div>
+          <div id="saveTools" class="save-tools"></div>
+        </div>
         <select
           id="mobileNav"
           class="mobile-nav"
           aria-label="Навигация"
         ></select>
-        <div id="sidefoot" class="sidefoot"></div>
-      </aside>
+      </div>
       <main class="main">
-        <header>
-          <div class="farm">
-            <b id="farmName">Stardew Valley Tracker</b>
-            <div id="farmSub"></div>
-          </div>
-          <div id="hdrRight" class="header-tools"></div>
-        </header>
         <div id="view" class="content"></div>
       </main>
     </div>
@@ -2798,19 +3252,25 @@
             }
           },
         };
+      // «frost» — прежнее имя светлой темы B2: сохранённый выбор переезжает в «light».
+      function normalizeTheme(value) {
+        if (value === "frost") return "light";
+        return ["light", "dark", "auto"].includes(value) ? value : "light";
+      }
       const prefs = {
         lang: LS.get("lang", "ru") === "en" ? "en" : "ru",
         view: LS.get("view", "list") === "grid" ? "grid" : "list",
-        theme: ["light", "dark", "auto"].includes(LS.get("theme", "light"))
-          ? LS.get("theme", "light")
-          : "light",
+        theme: normalizeTheme(LS.get("theme", "light")),
       };
       const darkQuery = window.matchMedia?.("(prefers-color-scheme: dark)");
       function applyTheme() {
-        const dark =
-          prefs.theme === "dark" ||
-          (prefs.theme === "auto" && !!darkQuery?.matches);
-        document.documentElement.dataset.theme = dark ? "dark" : "light";
+        const theme =
+          prefs.theme === "auto"
+            ? darkQuery?.matches
+              ? "dark"
+              : "light"
+            : prefs.theme;
+        document.documentElement.dataset.theme = theme;
       }
       applyTheme();
       darkQuery?.addEventListener?.("change", () => {
@@ -3211,8 +3671,8 @@
         shown: "показано",
         extendedFish: "Только в задании Ки — не входит в коллекцию",
         nightMarketOnly: "Только Ночной рынок: зима 15–17, 17:00–02:00",
-        themeLight: "Светлая тема",
-        themeDark: "Тёмная тема",
+        themeLight: "Иней · светлая",
+        themeDark: "Ночь · тёмная",
         themeAuto: "Как в системе",
         theme: "Тема",
         noBirthday: "нет данных",
@@ -3285,8 +3745,8 @@
         shown: "shown",
         extendedFish: "Qi quest only — not part of the collection",
         nightMarketOnly: "Night Market only: Winter 15–17, 5 pm – 2 am",
-        themeLight: "Light theme",
-        themeDark: "Dark theme",
+        themeLight: "Frost · light",
+        themeDark: "Night · dark",
         themeAuto: "System theme",
         theme: "Theme",
         noBirthday: "no data",
@@ -3645,10 +4105,11 @@
         });
       }
       function title(title, desc = "", tools = "") {
-        return `<div class="title-row"><div><h1>${title}</h1><div class="sub">${desc}</div></div>${tools}</div>`;
+        return `<div class="page-head"><div><p class="kicker">${esc(groupOf(route).label)}</p><h1>${title}</h1><div class="sub">${desc}</div></div>${tools}</div>`;
       }
-      function countStat(key, label, iconSp, go) {
+      function statTile(key, label, iconSp, go, tone, span) {
         const v = S.counts[key] || [0, 0],
+          percent = v[1] ? Math.round((v[0] / v[1]) * 100) : 0,
           state =
             v[1] > 0 && v[0] >= v[1]
               ? "complete"
@@ -3662,7 +4123,12 @@
                 ? "statusProgress"
                 : "statusIdle",
           );
-        return `<div class="card stat ${state}" ${go ? `data-go="${go}" role="link" tabindex="0" aria-label="${esc(label)}: ${v[0]} / ${v[1]} · ${stateText}"` : ""}><div><div class="stat-label">${itemIcon(iconSp, true)} ${label}</div><div class="stat-number">${v[0]}<small> / ${v[1]}</small></div><div class="stat-sub">${Math.max(0, v[1] - v[0])} ${t("left")}</div></div>${ring(v[0], v[1])}</div>`;
+        return `<section class="tile m ${tone} ${span} ${state}" data-go="${go}" role="link" tabindex="0" aria-label="${esc(label)}: ${v[0]} / ${v[1]} · ${stateText}"><div class="t-label"><span class="t-name"><span class="stat-icon">${itemIcon(iconSp, true)}</span>${label}</span><span>${percent}%</span></div><div class="big">${v[0]}<sup>/${v[1]}</sup></div><div class="bar" role="progressbar" aria-label="${t("progress")}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${percent}"><i style="width:${percent}%"></i></div><div class="stat-sub">${Math.max(0, v[1] - v[0])} ${t("left")}</div></section>`;
+      }
+      function perfectionTile(span) {
+        const p = S.perfection,
+          percent = Math.max(0, Math.min(100, Number(p.pct) || 0));
+        return `<section class="tile hero m ${span}" data-go="perfection" role="link" tabindex="0" aria-label="${t("perfection")}: ${p.pct}%"><div class="t-label"><span class="t-name"><span class="stat-icon">${itemIcon([1, 96], true)}</span>${t("perfection")}</span><span aria-hidden="true">★</span></div><div class="big">${p.pct}<sup>%</sup></div><div class="bar" role="progressbar" aria-label="${t("progress")}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(percent)}"><i style="width:${percent}%"></i></div><div class="stat-sub">${t("officialCriteria")}</div></section>`;
       }
       function header() {
         let m = (S && S.meta) || {};
@@ -3691,9 +4157,10 @@
             dark: t("themeDark"),
             auto: t("themeAuto"),
           };
+        $("#saveTools").innerHTML =
+          opts + `<span class="pill">${esc(m.mtime_str || "")}</span>`;
         $("#hdrRight").innerHTML =
-          opts +
-          `<span class="pill">${esc(m.mtime_str || "")}</span><button type="button" id="themeToggle" class="theme-toggle" title="${t("theme")}: ${themeLabel[prefs.theme]}" aria-label="${t("theme")}: ${themeLabel[prefs.theme]}">${svgIcon(themeIcon[prefs.theme])}<span>${themeLabel[prefs.theme]}</span></button><button id="language">${t("language")}</button>`;
+          `<button type="button" id="themeToggle" class="theme-toggle" title="${t("theme")}: ${themeLabel[prefs.theme]}" aria-label="${t("theme")}: ${themeLabel[prefs.theme]}">${svgIcon(themeIcon[prefs.theme])}<span>${themeLabel[prefs.theme]}</span></button><button id="language">${t("language")}</button>`;
         $("#themeToggle").onclick = () => {
           prefs.theme = themeNext[prefs.theme];
           LS.set("theme", prefs.theme);
@@ -3795,30 +4262,41 @@
           if (sel.isConnected) toast(t("apiError"));
         }
       }
+      function navGroups() {
+        return [
+          { key: "plan", label: t("navPlan"), routes: ["overview", "today"] },
+          {
+            key: "progress",
+            label: t("navProgress"),
+            routes: ["perfection", "bundles", "guild"],
+          },
+          {
+            key: "collections",
+            label: t("navCollections"),
+            routes: ["museum", "fish", "shipped", "cooking", "crafting"],
+          },
+          {
+            key: "personal",
+            label: t("navPersonal"),
+            routes: ["people", "saved", "goals"],
+          },
+          { key: "danger", label: "Danger zone", routes: ["secrets"], danger: true },
+        ];
+      }
+      function groupOf(key) {
+        const groups = navGroups();
+        return groups.find((group) => group.routes.includes(key)) || groups[0];
+      }
       function nav() {
         $("#brandTitle").textContent = t("brand");
         if (!S) {
           $("#nav").innerHTML = "";
+          $("#subnav").innerHTML = "";
           $("#mobileNav").innerHTML = "";
-          $("#sidefoot").textContent = "";
           return;
         }
-        const groups = [
-            { label: t("navPlan"), routes: ["overview", "today"] },
-            {
-              label: t("navProgress"),
-              routes: ["perfection", "bundles", "guild"],
-            },
-            {
-              label: t("navCollections"),
-              routes: ["museum", "fish", "shipped", "cooking", "crafting"],
-            },
-            {
-              label: t("navPersonal"),
-              routes: ["people", "saved", "goals"],
-            },
-            { label: "Danger zone", routes: ["secrets"] },
-          ],
+        const groups = navGroups(),
+          current = groupOf(route),
           icons = {
             secrets: "triangle-alert",
             overview: "house",
@@ -3847,18 +4325,18 @@
           ).length;
         $("#nav").setAttribute("aria-label", t("sections"));
         $("#nav").innerHTML = groups
-          .map(
-            (group) =>
-              `<div class="nav-group"><div class="nav-group-title">${group.label}</div>${group.routes
-                .map((key) => {
-                  const badge =
-                    key === "saved"
-                      ? savedCount || ""
-                      : labelsBadges[key]?.join("/") || "";
-                  return `<a href="#${key}" class="${route === key ? "selected" : ""}${key === "secrets" ? " danger-link" : ""}" ${route === key ? 'aria-current="page"' : ""}><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><use href="#icon-${icons[key]}"></use></svg></span><span class="nav-label">${t(key)}</span><small aria-hidden="true">${badge}</small></a>`;
-                })
-                .join("")}</div>`,
-          )
+          .map((group) => {
+            const selected = group.key === current.key;
+            return `<a href="#${group.routes[0]}" class="${selected ? "selected" : ""}${group.danger ? " danger-link" : ""}" ${selected ? 'aria-current="true"' : ""}>${group.label}</a>`;
+          })
+          .join("");
+        $("#subnav").setAttribute("aria-label", current.label);
+        $("#subnav").innerHTML = current.routes
+          .map((key) => {
+            const badge =
+              key === "saved" ? savedCount || "" : labelsBadges[key]?.join("/") || "";
+            return `<a href="#${key}" class="${route === key ? "selected" : ""}${key === "secrets" ? " danger-link" : ""}" ${route === key ? 'aria-current="page"' : ""}><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><use href="#icon-${icons[key]}"></use></svg></span><span class="nav-label">${t(key)}</span><small aria-hidden="true">${badge}</small></a>`;
+          })
           .join("");
         $("#mobileNav").setAttribute("aria-label", t("sections"));
         $("#mobileNav").innerHTML = groups
@@ -3873,8 +4351,6 @@
         $("#mobileNav").onchange = (event) => {
           location.hash = event.target.value;
         };
-        $("#sidefoot").innerHTML =
-          `${t("score")}: ${S.perfection.pct}%<br>${t("museum")}: ${S.counts.museum.join("/")} · ${t("fish")}: ${S.counts.fish.join("/")}`;
       }
       function focusViewHeading() {
         const heading = $("#view h1");
@@ -4208,8 +4684,13 @@
       }
       function greetingTitle(meta) {
         const farmer = String(meta.farmer || "").trim() || t("farmerFallback"),
-          details = `${esc((seasons[meta.season] || [meta.season, meta.season])[EN ? 1 : 0])} ${esc(meta.day)}, ${yearText(meta.year)} · ${esc(meta.clock)} · ${weatherLabel(meta.weather || "")} · ${t("score")} ${Number(S.perfection.pct)}%`;
-        return `<div class="title-row welcome-row"><div><p class="welcome-eyebrow">${t("overview")}</p><h1 id="welcomeTitle">${t("greeting")}, ${esc(farmer)}!</h1><div class="sub">${details}</div></div><span class="welcome-ornament" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><use href="#icon-sparkles"></use></svg></span></div>`;
+          kicker = [
+            meta.farm ? esc(meta.farm) : t("overview"),
+            `${esc((seasons[meta.season] || [meta.season, meta.season])[EN ? 1 : 0])} ${esc(meta.day)}`,
+            yearText(meta.year),
+          ].join(" · "),
+          details = `${esc(meta.clock)} · ${weatherLabel(meta.weather || "")} · ${Number(meta.money || 0).toLocaleString(EN ? "en-US" : "ru-RU")}g`;
+        return `<div class="page-head welcome-row"><div><p class="kicker welcome-eyebrow">${kicker}</p><h1 id="welcomeTitle">${t("greeting")}, <em>${esc(farmer)}</em>!</h1><div class="sub">${details}</div></div></div>`;
       }
       function bundleRoomAnchor(room) {
         const key = String(room.key || room.en || room.ru)
@@ -4259,108 +4740,100 @@
         return `<article class="card overview-bundle-card"><a class="overview-bundle-link" href="#bundles/${bundleRoomAnchor(room)}" aria-label="${t("openBundleRoom")}: ${esc(label)}"><div class="overview-bundle-head"><span class="overview-bundle-icon">${bundleIcon(room.list[0]?.slot)}</span><b>${esc(label)}</b><span class="badge ${state}">${room.done}/${room.total}</span></div>${meter(room.done, room.total)}<span class="bundle-open-hint">${t("openBundleRoom")} →</span></a>${bundleRoomTooltip(room)}</article>`;
       }
       function overview() {
-        let c = S.counts,
-          m = S.meta;
-        return `${greetingTitle(m)}<div class="grid stats">${[
-          ["museum", t("museum"), [0, 72], "museum"],
-          ["fish", t("fish"), [0, 128], "fish"],
-          ["shipped", t("shipped"), [0, 24], "shipped"],
-          ["cooking", t("cooking"), [0, 194], "cooking"],
-          ["crafting", t("crafting"), [2, 13], "crafting"],
-          ["perfection", t("perfection"), [1, 96], "perfection"],
-        ]
-          .map(([k, l, i, g]) => countStat(k, l, i, g))
-          .join(
-            "",
-          )}</div>${colorLegend()}${featureNavigation()}<div class="grid two overview-panels"><section class="card"><h2 class="panel-title">${t("todayPlan")}</h2>${todayHighlights()}</section><section class="card"><h2 class="panel-title">${t("foundAlert")} <span class="badge ${S.alerts.museum_found_not_donated.length ? "alert" : "ok"}">${S.alerts.museum_found_not_donated.length}</span></h2><div class="overview-items">${
-          S.alerts.museum_found_not_donated
+        const alerts = S.alerts.museum_found_not_donated;
+        return `${greetingTitle(S.meta)}<div class="bento">${perfectionTile("s5")}${statTile("museum", t("museum"), [0, 72], "museum", "ice", "s4")}${statTile("fish", t("fish"), [0, 128], "fish", "", "s3")}<section class="tile s7"><h3>${t("todayPlan")}</h3>${todayHighlights()}</section>${unlocksPanel("s5")}${statTile("shipped", t("shipped"), [0, 24], "shipped", "violet", "s4")}${statTile("cooking", t("cooking"), [0, 194], "cooking", "mint", "s4")}${statTile("crafting", t("crafting"), [2, 13], "crafting", "", "s4")}</div>${colorLegend()}${featureNavigation()}<div class="bento"><section class="tile s12"><h3>${t("foundAlert")} <span class="badge ${alerts.length ? "alert" : "ok"}">${alerts.length}</span></h3><div class="overview-items">${
+          alerts
             .slice(0, 6)
             .map(
               (x) =>
-                `<div class="row alert">${itemIcon(x.sp, true)}<div class="row-main">${nm(x)}</div><span class="badge alert">!</span></div>`,
+                `<div class="item">${itemIcon(x.sp, true)}<span><b>${nm(x)}</b></span><span class="tag alert">!</span></div>`,
             )
-            .join("") || `<div class="sub">${t("noData")}</div>`
+            .join("") || `<div class="empty">${t("noData")}</div>`
         }</div></section></div><div class="section-head"><h2>${t("bundles")}</h2><button data-go="bundles">${t("bundles")} →</button></div><div class="grid two">${S.bundles.map((room) => bundleRoomCard(room)).join("")}</div>`;
       }
       function todayHighlights() {
-        let x = S.today,
-          bits = [];
-        if (x.birthdays_today.length)
-          bits.push(
-            `<div class="row">${uiIcon(2)}<div class="row-main"><b>${t("birthday")}:</b> ${x.birthdays_today.map((p) => esc(EN ? p.en : p.ru)).join(", ")}</div><span class="badge warn">${uiIcon(0)}</span></div>`,
-          );
+        const x = S.today,
+          name = (o) => esc(EN ? o.en : o.ru),
+          items = [],
+          add = (ico, head, sub, tag, tone = "") =>
+            items.push(
+              `<div class="item">${ico}<span><b>${head}</b>${sub ? `<small>${sub}</small>` : ""}</span><span class="tag ${tone}">${tag}</span></div>`,
+            );
+        x.birthdays_today.forEach((p) =>
+          add(
+            portrait(p.p_idx, true),
+            `${t("birthday")}: ${name(p)}`,
+            (p.loved || []).slice(0, 2).map(name).join(", "),
+            t("today"),
+            "warn",
+          ),
+        );
         if (x.donate_museum.length)
-          bits.push(
-            `<div class="row alert">${uiIcon(21)}<div class="row-main"><b>${t("museumDonate")}</b><div class="meta">${x.donate_museum
-              .slice(0, 3)
-              .map((r) => esc(EN ? r.en : r.ru))
-              .join(
-                ", ",
-              )}</div></div><span class="badge alert">${x.donate_museum.length}</span></div>`,
+          add(
+            itemIcon(x.donate_museum[0].sp),
+            `${t("museumDonate")} — ${x.donate_museum.length}`,
+            x.donate_museum.slice(0, 3).map(name).join(", "),
+            t("museum"),
+            "alert",
           );
-        if (x.fish_now.length)
-          bits.push(
-            `<div class="row">${itemIcon(x.fish_now[0].sp)}<div class="row-main"><b>${t("now")}:</b> ${x.fish_now
-              .slice(0, 3)
-              .map((r) => esc(EN ? r.en : r.ru))
-              .join(
-                ", ",
-              )}</div><span class="badge ok">${x.fish_now.length}</span></div>`,
-          );
-        if (x.bundles_close.length)
-          bits.push(
-            `<div class="row">${bundleIcon(x.bundles_close[0].slot)}<div class="row-main"><b>${t("bundles")}:</b> ${x.bundles_close
-              .slice(0, 2)
-              .map((b) => esc(EN ? b.en : b.ru))
-              .join(
-                ", ",
-              )}</div><span class="badge warn">${x.bundles_close.length}</span></div>`,
-          );
-        if (x.birthdays_soon.length)
-          bits.push(
-            `<div class="row">${uiIcon(2)}<div class="row-main"><b>${t("birthday")}:</b> ${x.birthdays_soon
-              .slice(0, 3)
-              .map((p) => `${esc(EN ? p.en : p.ru)} (${dayCount(p.until)})`)
-              .join(", ")}</div><span class="badge">7d</span></div>`,
-          );
-        return `<div class="overview-items">${bits.join("") || `<div class="empty">${t("noData")}</div>`}</div>`;
+        x.fish_now.slice(0, 3).forEach((r) =>
+          add(
+            itemIcon(r.sp),
+            `${t("now")}: ${name(r)}`,
+            [
+              (r.locs || []).slice(0, 2).map(name).join(", "),
+              r.time ? fishTime(r.time) : "",
+            ]
+              .filter(Boolean)
+              .join(" · "),
+            t("fish"),
+            "ok",
+          ),
+        );
+        x.bundles_close.slice(0, 2).forEach((b) =>
+          add(
+            bundleIcon(b.slot),
+            `${t("bundles")}: ${name(b)}`,
+            `${t("bundleMissingItems")}: ${b.missing.map(name).join(", ")}`,
+            `${b.left} ${t("left")}`,
+            "warn",
+          ),
+        );
+        x.birthdays_soon.slice(0, 2).forEach((p) =>
+          add(
+            portrait(p.p_idx, true),
+            `${t("birthday")}: ${name(p)}`,
+            "",
+            dayCount(p.until),
+          ),
+        );
+        return `<div class="overview-items">${items.join("") || `<div class="empty">${t("noData")}</div>`}</div>`;
       }
       function today() {
         const x = S.today,
           meta = S.meta,
-          todayDate = `${esc((seasons[meta.season] || [meta.season, meta.season])[EN ? 1 : 0])} ${esc(meta.day)}, ${yearText(meta.year)} · ${esc(meta.clock)} · ${weatherLabel(meta.weather || "")}`;
-        return `${title(t("todayPlan"), todayDate)}${colorLegend()}<div class="today-layout">${unlocksPanel()}
-          <div class="grid two today-pair">
-            <section class="card today-card">
-              <h2 class="panel-title">${t("birthday")}</h2>
-              <div class="today-list">
-                ${[...x.birthdays_today, ...x.birthdays_soon].map((person) => `<div class="row">${portrait(person.p_idx, true)}<div class="row-main"><b>${esc(EN ? person.en : person.ru)}</b><div class="meta">${person.until === 0 ? t("today") : dayCount(person.until)} · ${heartsBar(person.hearts, 10)}</div></div><div class="right"><span class="badge ${person.until === 0 ? "warn" : "no"}">${uiIcon(person.until === 0 ? 0 : 2)}</span></div></div>`).join("") || `<div class="empty">—</div>`}
-              </div>
-            </section>
-            <section class="card today-card">
-              <h2 class="panel-title">${t("museumDonate")}</h2>
-              <div class="today-list">${rowsView(x.donate_museum, "normal", "museum")}</div>
-            </section>
-          </div>
-          <div class="grid two today-pair">
-            <section class="card today-card">
-              <div class="section-head"><h2>${t("fish")} — ${t("now")}</h2><button type="button" data-go="fish">${t("fish")} →</button></div>
-              <div class="today-list">${rowsView(x.fish_now, "fish", "fish")}</div>
-            </section>
-            <section class="card today-card">
-              <h2 class="panel-title">${t("later")}</h2>
-              <div class="today-list">${rowsView(x.fish_later, "fish", "fish")}</div>
-            </section>
-          </div>
-          <section class="card today-card">
-            <h2 class="panel-title">${t("bundles")}</h2>
-            <div class="grid bundles today-bundles">${x.bundles_close.map((bundle) => `<article class="bundle today-bundle"><div class="bundle-head"><a class="today-bundle-link" href="#bundles/${bundleAnchor(bundle)}" aria-label="${t("openBundleItem")}: ${esc(EN ? bundle.en : bundle.ru)}">${bundleIcon(bundle.slot)}<span class="today-bundle-name"><b>${esc(EN ? bundle.en : bundle.ru)}</b><span class="sub">${esc(EN ? bundle.room_en : bundle.room_ru)}</span></span></a>${bundleTooltip(bundle)}</div><div class="sub">${bundle.have}/${bundle.need} · ${bundle.left} ${t("left")}</div><div class="bundle-items">${bundle.missing.map((item) => `<span class="bundle-item">${itemIcon(item.sp, true)}${esc(EN ? item.en : item.ru)}</span>`).join("")}</div></article>`).join("") || `<div class="empty">—</div>`}</div>
-          </section>
-          <div class="grid two today-pair">
-            <section class="card today-card"><h2 class="panel-title">${t("cooking")} · ${t("ready")}</h2><div class="today-list">${rowsView(x.ready_cook.slice(0, 8), "recipe", "cooking")}</div></section>
-            <section class="card today-card"><h2 class="panel-title">${t("crafting")} · ${t("ready")}</h2><div class="today-list">${rowsView(x.ready_craft.slice(0, 8), "recipe", "crafting")}</div></section>
-          </div>
-        </div>`;
+          todayDate = `${esc((seasons[meta.season] || [meta.season, meta.season])[EN ? 1 : 0])} ${esc(meta.day)}, ${yearText(meta.year)} · ${esc(meta.clock)} · ${weatherLabel(meta.weather || "")}`,
+          tile = (span, head, body, extra = "") =>
+            `<section class="tile today-card ${span}"><div class="tile-head"><h3>${head}</h3>${extra}</div><div class="today-list">${body}</div></section>`;
+        return `${title(t("todayPlan"), todayDate)}${colorLegend()}<div class="today-layout"><div class="bento">${unlocksPanel("s12")}${tile(
+          "s6",
+          t("birthday"),
+          [...x.birthdays_today, ...x.birthdays_soon]
+            .map(
+              (person) =>
+                `<div class="row">${portrait(person.p_idx, true)}<div class="row-main"><b>${esc(EN ? person.en : person.ru)}</b><div class="meta">${person.until === 0 ? t("today") : dayCount(person.until)} · ${heartsBar(person.hearts, 10)}</div></div><div class="right"><span class="badge ${person.until === 0 ? "warn" : "no"}">${uiIcon(person.until === 0 ? 0 : 2)}</span></div></div>`,
+            )
+            .join("") || `<div class="empty">—</div>`,
+        )}${tile("s6", t("museumDonate"), rowsView(x.donate_museum, "normal", "museum"))}${tile(
+          "s7",
+          `${t("fish")} — ${t("now")}`,
+          rowsView(x.fish_now, "fish", "fish"),
+          `<button type="button" data-go="fish">${t("fish")} →</button>`,
+        )}${tile("s5", t("later"), rowsView(x.fish_later, "fish", "fish"))}<section class="tile today-card s12"><div class="tile-head"><h3>${t("bundles")}</h3></div><div class="grid bundles today-bundles">${x.bundles_close.map((bundle) => `<article class="bundle today-bundle"><div class="bundle-head"><a class="today-bundle-link" href="#bundles/${bundleAnchor(bundle)}" aria-label="${t("openBundleItem")}: ${esc(EN ? bundle.en : bundle.ru)}">${bundleIcon(bundle.slot)}<span class="today-bundle-name"><b>${esc(EN ? bundle.en : bundle.ru)}</b><span class="sub">${esc(EN ? bundle.room_en : bundle.room_ru)}</span></span></a>${bundleTooltip(bundle)}</div><div class="sub">${bundle.have}/${bundle.need} · ${bundle.left} ${t("left")}</div><div class="bundle-items">${bundle.missing.map((item) => `<span class="bundle-item">${itemIcon(item.sp, true)}${esc(EN ? item.en : item.ru)}</span>`).join("")}</div></article>`).join("") || `<div class="empty">—</div>`}</div></section>${tile(
+          "s6",
+          `${t("cooking")} · ${t("ready")}`,
+          rowsView(x.ready_cook.slice(0, 8), "recipe", "cooking"),
+        )}${tile("s6", `${t("crafting")} · ${t("ready")}`, rowsView(x.ready_craft.slice(0, 8), "recipe", "crafting"))}</div></div>`;
       }
       function listPage(key, label, rows, type = "normal", extra = "") {
         let c = S.counts[key] || [0, 0],
@@ -4466,11 +4939,11 @@
         return `${form[0]} ${n} ${form[1]}`;
       }
       // «Ключи и доступы»: какие локации/условия уже открыты в этой игре.
-      function unlocksPanel() {
+      function unlocksPanel(span = "s12") {
         const items = S.unlocks?.milestones || [];
         if (!items.length) return "";
         const open = items.filter((m) => m.met === true).length;
-        return `<section class="card today-card unlocks-card"><div class="section-head" style="margin-top:0"><h2>${svgIcon("key-round")} ${t("unlocks")}</h2><span class="badge ${open === items.length ? "ok" : "lock"}">${open}/${items.length}</span></div><p class="sub" style="margin:-4px 0 10px">${t("unlocksHint")}</p><div class="unlock-list">${items
+        return `<section class="tile unlocks-card ${span}"><div class="tile-head"><h3>${svgIcon("key-round")} ${t("unlocks")}</h3><span class="badge ${open === items.length ? "ok" : "lock"}">${open}/${items.length}</span></div><p class="sub">${t("unlocksHint")}</p><div class="unlock-list">${items
           .map((m) => {
             const g = gateInfo(m.key),
               cls = m.met === true ? "met" : m.met === false ? "locked" : "",

@@ -30,13 +30,12 @@ class TestResponsiveStyles(unittest.TestCase):
 
     def test_tablet_navigation_and_columns(self):
         tablet = self.media(900)
-        self.assertIn("display: none", css_block(tablet, ".nav"))
+        # Пилюли групп и подразделов прячутся, остаётся доступный селектор разделов.
+        self.assertIn("display: none", css_block(tablet, ".groups,"))
         mobile_nav = css_block(tablet, ".mobile-nav")
         self.assertIn("display: block", mobile_nav)
         self.assertIn("min-height: 40px", mobile_nav)
-        self.assertIn("position: sticky", css_block(tablet, ".sidebar"))
-        self.assertIn("margin-left: 0", css_block(tablet, ".main"))
-        self.assertIn("position: static", css_block(tablet, "header"))
+        self.assertIn("position: sticky", css_block(self.css, ".topbar {"))
         self.assertIn(
             "grid-template-columns: repeat(2, minmax(0, 1fr))",
             css_block(tablet, ".two,"),
@@ -51,12 +50,8 @@ class TestResponsiveStyles(unittest.TestCase):
     def test_small_touch_and_narrow_screen_layout(self):
         mobile = self.media(450)
         self.assertIn("min-height: 40px", css_block(mobile, "button"))
-        self.assertIn(
-            "grid-template-columns: repeat(2, minmax(0, 1fr))",
-            css_block(mobile, ".stats"),
-        )
-        narrow = self.media(360)
-        self.assertIn("grid-template-columns: 1fr", css_block(narrow, ".stats"))
+        # На узких экранах плитки bento по умолчанию идут в одну колонку.
+        self.assertIn("grid-column: span 12", css_block(self.css, ".tile {"))
 
     def test_item_and_row_icons_are_centered_and_readable(self):
         small_icon = css_block(self.css, ".item-icon.small")
@@ -94,7 +89,8 @@ class TestResponsiveStyles(unittest.TestCase):
         html = TEMPLATE.read_text(encoding="utf-8")
         self.assertIn('id="mobileNav"', html)
         self.assertIn('class="mobile-nav"', html)
-        self.assertIn('class="nav-group-title"', html)
+        self.assertIn('id="nav" class="groups"', html)
+        self.assertIn('id="subnav" class="subnav-links"', html)
         self.assertIn('<optgroup label="${group.label}">', html)
         self.assertIn('t("sections")', html)
         self.assertIn('class="feature-nav"', html)
@@ -110,7 +106,7 @@ class TestResponsiveStyles(unittest.TestCase):
     def test_home_bundle_cards_deep_link_and_have_individual_tips(self):
         html = TEMPLATE.read_text(encoding="utf-8")
         for token in (
-            'class="grid two overview-panels"',
+            'class="bento"',
             "function bundleRoomAnchor(room)",
             "function bundleAnchor(bundle)",
             "function bundleRoomTooltip(room)",
@@ -124,7 +120,7 @@ class TestResponsiveStyles(unittest.TestCase):
             'target.scrollIntoView?.({ behavior: "smooth", block: "start" })',
         ):
             self.assertIn(token, html)
-        self.assertIn("gap: 18px", css_block(self.css, ".overview-panels"))
+        self.assertIn("gap: var(--gap)", css_block(self.css, ".bento {"))
         self.assertIn('class="overview-items"', html)
         self.assertIn("gap: 8px", css_block(self.css, ".overview-items"))
         self.assertIn("scroll-margin-top: 90px", css_block(self.css, ".bundle-room"))
@@ -191,7 +187,7 @@ class TestResponsiveStyles(unittest.TestCase):
     def test_farmer_greeting_is_localized_and_escaped(self):
         html = TEMPLATE.read_text(encoding="utf-8")
         self.assertIn("function greetingTitle(meta)", html)
-        self.assertIn('${t("greeting")}, ${esc(farmer)}!', html)
+        self.assertIn('${t("greeting")}, <em>${esc(farmer)}</em>!', html)
         self.assertIn('meta.farmer || ""', html)
         self.assertIn('farmerFallback: "фермер"', html)
         self.assertIn('farmerFallback: "farmer"', html)
@@ -202,9 +198,9 @@ class TestResponsiveStyles(unittest.TestCase):
     def test_today_cards_and_status_rows_fit_narrow_screens(self):
         html = TEMPLATE.read_text(encoding="utf-8")
         self.assertIn('class="today-layout"', html)
-        self.assertIn('class="grid two today-pair"', html)
+        self.assertIn('class="bento"', html)
         self.assertIn('class="today-list"', html)
-        self.assertIn('class="card today-card"', html)
+        self.assertIn('class="tile today-card ${span}"', html)
         self.assertIn(".today-list .row", self.css)
         self.assertIn(".today-list .row > .right", self.css)
         self.assertIn("max-width: 190px", self.css)
@@ -267,7 +263,7 @@ class TestResponsiveStyles(unittest.TestCase):
         html = TEMPLATE.read_text(encoding="utf-8")
         light = css_block(self.css, ":root {")
         dark = css_block(self.css, ':root[data-theme="dark"] {')
-        for token in ("--bg:", "--surface:", "--text:", "--state-lock:", "--danger:"):
+        for token in ("--bg:", "--surface:", "--text:", "--state-lock:", "--danger:", "--tile-bg:", "--seg-on-bg:"):
             self.assertIn(token, light)
             self.assertIn(token, dark)
         # Вне блоков объявления тем hex-цветов быть не должно.
@@ -278,12 +274,79 @@ class TestResponsiveStyles(unittest.TestCase):
         for token in ("function applyTheme()", 'id="themeToggle"', "prefers-color-scheme: dark", 'LS.set("theme"'):
             self.assertIn(token, html)
 
+    def test_cold_bento_design_system_two_palettes(self):
+        """Светлая B2 «Иней» (по умолчанию) и тёмная B1 «Ночь»; старое имя темы мигрирует."""
+
+        html = TEMPLATE.read_text(encoding="utf-8")
+        self.assertNotIn('data-theme="frost"', self.css)
+        self.assertIn('theme: normalizeTheme(LS.get("theme", "light"))', html)
+        self.assertIn('if (value === "frost") return "light"', html)
+        self.assertIn('themeNext = { light: "dark", dark: "auto", auto: "light" }', html)
+        self.assertIn('themeLight: "Иней · светлая"', html)
+        self.assertIn('themeDark: "Ночь · тёмная"', html)
+        self.assertIn('themeLight: "Frost · light"', html)
+        self.assertIn('themeDark: "Night · dark"', html)
+        self.assertIn("color-scheme: light", css_block(self.css, ":root {"))
+        self.assertIn("color-scheme: dark", css_block(self.css, ':root[data-theme="dark"] {'))
+        light = css_block(self.css, ":root {")
+        for token in ("--font-display:", "Bahnschrift", "--t9:", "--tile-radius:", "--tile-hero-bg:", "--seg-on-bg:"):
+            self.assertIn(token, light)
+        # Ар-деко: срезанная рамка плитки; в тёмной теме прозрачна токеном --frame.
+        self.assertIn("clip-path: polygon(", css_block(self.css, ".tile::before {"))
+        self.assertIn("--frame: transparent", css_block(self.css, ':root[data-theme="dark"] {'))
+
+    def test_bento_grid_has_no_orphan_rows(self):
+        """12 колонок на десктопе; метрики идут по 3 в ряд на средних ширинах, карточки разделов — 4/2."""
+
+        self.assertIn("repeat(12, minmax(0, 1fr))", css_block(self.css, ".bento {"))
+        wide = css_block(self.css, "@media (min-width: 1100px)")
+        for span in (3, 4, 5, 6, 7, 8):
+            self.assertIn(f"grid-column: span {span}", wide)
+        mid = css_block(self.css, "@media (min-width: 600px) and (max-width: 1099px)")
+        self.assertIn("grid-column: span 4", css_block(mid, ".tile.m"))
+        features_wide = css_block(self.css, "@media (min-width: 1360px)")
+        self.assertIn("repeat(4, minmax(0, 1fr))", features_wide)
+        features_mid = css_block(self.css, "@media (min-width: 560px) and (max-width: 1359px)")
+        self.assertIn("repeat(2, minmax(0, 1fr))", features_mid)
+        self.assertIn("max-width: 1840px", css_block(self.css, ".content {"))
+
+    def test_overview_is_a_bento_of_tiles(self):
+        html = TEMPLATE.read_text(encoding="utf-8")
+        for token in (
+            "function statTile(key, label, iconSp, go, tone, span)",
+            "function perfectionTile(span)",
+            'class="tile hero m ${span}"',
+            '<span class="stat-icon">${itemIcon(iconSp, true)}</span>',
+            'perfectionTile("s5")',
+            'statTile("museum", t("museum"), [0, 72], "museum", "ice", "s4")',
+        ):
+            self.assertIn(token, html)
+        # Иконка лежит в рамке фиксированного размера, высокие спрайты не сдвигают заголовки.
+        icon_box = css_block(self.css, ".stat-icon {")
+        self.assertIn("width: 28px", icon_box)
+        self.assertIn("height: 28px", icon_box)
+        self.assertIn("display: inline-flex", css_block(self.css, ".t-name {"))
+
+    def test_top_navigation_groups_and_subsections(self):
+        html = TEMPLATE.read_text(encoding="utf-8")
+        for token in (
+            "function navGroups()",
+            "function groupOf(key)",
+            'class="topbar"',
+            'class="${selected ? "selected" : ""}${group.danger ? " danger-link" : ""}"',
+            'aria-current="page"',
+        ):
+            self.assertIn(token, html)
+        self.assertNotIn('class="sidebar"', html)
+        self.assertIn("position: sticky", css_block(self.css, ".topbar {"))
+        self.assertIn("border-radius: 999px", css_block(self.css, ".groups {"))
+
     def test_requirements_filters_and_danger_zone(self):
         html = TEMPLATE.read_text(encoding="utf-8")
         for token in (
             "function reqChip(r)",
             "function reqTip(r)",
-            "function unlocksPanel()",
+            'function unlocksPanel(span = "s12")',
             "function filterBar(type, shown, total)",
             "function applyFilters(rows, type)",
             "function secretsPage()",

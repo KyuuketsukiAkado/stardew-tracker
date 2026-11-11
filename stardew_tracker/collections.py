@@ -20,7 +20,6 @@ from .requirements import (
 )
 from .timeutil import days_until_birthday, time_matches, weather_matches
 
-
 NIGHT_MARKET_TIME = "1700 2600"
 
 
