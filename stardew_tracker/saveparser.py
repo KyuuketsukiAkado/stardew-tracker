@@ -293,6 +293,19 @@ def _flag(host: ET.Element, name: str) -> bool:
     return xml.txt(xml.kid(host, name)).lower() == "true"
 
 
+def _access_flag(host: ET.Element, name: str, mail_lower: set[str]) -> bool:
+    """Флаг доступа (``hasSkullKey``, ``hasRustyKey``…) в обоих форматах сейва.
+
+    В 1.5 это булев тег игрока (``<hasSkullKey>true</hasSkullKey>``). В 1.6 тег
+    остаётся, но ПУСТОЙ, а настоящее значение лежит в ``mailReceived`` под
+    именем ``HasSkullKey``: проверено на реальных сейвах 1.6.15. Чтение одних
+    тегов считало Пещеру Черепа, Болото ведьмы и Логово мутантов закрытыми у
+    игроков, которые там давно побывали.
+    """
+
+    return _flag(host, name) or name.lower() in mail_lower
+
+
 def _parse_axe_level(host: ET.Element) -> int | None:
     """Уровень топора из инвентаря; ``None``, если топора в рюкзаке нет.
 
@@ -466,7 +479,8 @@ def _parse_uncached(signature: tuple[str, int, int]) -> dict[str, Any]:
     mine_chests = _parse_mine_chests(host)
 
     deepest_mine = xml.first_int(xml.kid(host, "deepestMineLevel")) or 0
-    has_skull_key = _flag(host, "hasSkullKey")
+    mail_lower = {mail.lower() for mail in mail_received}
+    has_skull_key = _access_flag(host, "hasSkullKey", mail_lower)
     if has_skull_key:
         deepest_mine = max(120, deepest_mine)
     farm_type = xml.first_int(lookup.get("whichFarm"))
@@ -520,10 +534,10 @@ def _parse_uncached(signature: tuple[str, int, int]) -> dict[str, Any]:
         "max_stamina": max_stamina,
         # Флаги доступа к локациям: из них считаются «обязательные условия».
         "has_skull_key": has_skull_key,
-        "has_rusty_key": _flag(host, "hasRustyKey"),
-        "has_dark_talisman": _flag(host, "hasDarkTalisman"),
-        "has_magic_ink": _flag(host, "hasMagicInk"),
-        "has_club_card": _flag(host, "hasClubCard"),
+        "has_rusty_key": _access_flag(host, "hasRustyKey", mail_lower),
+        "has_dark_talisman": _access_flag(host, "hasDarkTalisman", mail_lower),
+        "has_magic_ink": _access_flag(host, "hasMagicInk", mail_lower),
+        "has_club_card": _access_flag(host, "hasClubCard", mail_lower),
         "house_level": xml.first_int(xml.kid(host, "houseUpgradeLevel")) or 0,
         "axe_level": _parse_axe_level(host),
         "farm_type": farm_type,
@@ -578,9 +592,21 @@ def read_save_summary(path: str) -> dict[str, Any] | None:
 
     name = xml.txt(xml.kid(root, "name"))
     farm_name = xml.txt(xml.kid(root, "farmName"))
-    season = xml.txt(xml.kid(root, "currentSeason")).lower()
-    day = xml.first_int(xml.kid(root, "dayOfMonth"))
-    year = xml.first_int(xml.kid(root, "year"))
+    # Реальный SaveGameInfo (проверено на сейвах 1.5.6 и 1.6.15) хранит дату под
+    # именами ``...ForSaveGame``, а сезон — числом 0..3. Прежние имена тегов
+    # оставлены запасным вариантом: в корне ``<Farmer>`` их нет, но они бывают в
+    # самодельных и очень старых файлах.
+    season_index = xml.first_int(xml.kid(root, "seasonForSaveGame"))
+    if season_index is not None and 0 <= season_index < len(SEASONS):
+        season = SEASONS[season_index]
+    else:
+        season = xml.txt(xml.kid(root, "currentSeason")).lower()
+    day = xml.first_int(xml.kid(root, "dayOfMonthForSaveGame"))
+    if day is None:
+        day = xml.first_int(xml.kid(root, "dayOfMonth"))
+    year = xml.first_int(xml.kid(root, "yearForSaveGame"))
+    if year is None:
+        year = xml.first_int(xml.kid(root, "year"))
     if not name or not farm_name or season not in SEASONS or day is None or year is None:
         return None
     return {

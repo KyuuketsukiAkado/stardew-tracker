@@ -66,7 +66,11 @@ def build_fish_rows(
         time_ok, later_today = time_matches(time_span, current_minutes)
         weather_ok = weather_matches(weather_required, save_weather)
         alternatives, _common = fish_alternatives(uid, info)
-        lock = _lock_fields(alternatives, ctx)
+        # Уже пойманная рыба не «закрыта» (как найденное в музее и изученные
+        # рецепты): на реальных сейвах Рыба Ночного рынка и Лосось Пустоты,
+        # давно пойманные, помечались 🔒 только потому, что условие доступа
+        # зависит от даты или не распознано.
+        lock = {"lock": "open", "req": []} if caught > 0 else _lock_fields(alternatives, ctx)
         reachable = lock["lock"] != "locked"
         now_ok = bool(in_season and time_ok and weather_ok and reachable)
         later_ok = bool(in_season and later_today and weather_ok and reachable)

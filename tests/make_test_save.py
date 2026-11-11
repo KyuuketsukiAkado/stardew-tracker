@@ -233,15 +233,37 @@ def build_xml(pad_objects=0, root_tail=""):
 """
 
 
-def write_test_save(base_dir, pad_objects=0, root_tail=""):
-    """Создаёт <base_dir>/Тестовая_345678901/Тестовая_345678901 и возвращает путь к сейву."""
+def build_save_game_info():
+    """``SaveGameInfo`` в структуре реальных сейвов (проверено на 1.5.6 и 1.6.15).
+
+    Корень — ``<Farmer>``; дата лежит под именами ``...ForSaveGame``, а сезон —
+    числом 0..3 (здесь 2 = осень). Значения совпадают с основным файлом сейва.
+    """
+
+    return (
+        '<?xml version="1.0" encoding="utf-8"?>'
+        '<Farmer xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">'
+        "<name>Фермер</name><forceOneTileWide>false</forceOneTileWide><isEmoting>false</isEmoting>"
+        "<farmName>Тестовая</farmName><dayOfMonthForSaveGame>12</dayOfMonthForSaveGame>"
+        "<seasonForSaveGame>2</seasonForSaveGame><yearForSaveGame>3</yearForSaveGame>"
+        "<totalMoneyEarned>418900</totalMoneyEarned><money>54230</money><gameVersion>1.6.15</gameVersion>"
+        "</Farmer>"
+    )
+
+
+def write_test_save(base_dir, pad_objects=0, root_tail="", xml=None, save_info=False):
+    """Создаёт <base_dir>/Тестовая_345678901/Тестовая_345678901 и возвращает путь к сейву.
+
+    ``xml`` подменяет содержимое сейва, ``save_info=True`` пишет реалистичный
+    ``SaveGameInfo`` вместо пустой заглушки ``<SaveGame/>``.
+    """
     folder = os.path.join(base_dir, "Тестовая_345678901")
     os.makedirs(folder, exist_ok=True)
     path = os.path.join(folder, "Тестовая_345678901")
     with open(path, "w", encoding="utf-8") as fh:
-        fh.write(build_xml(pad_objects, root_tail))
+        fh.write(xml if xml is not None else build_xml(pad_objects, root_tail))
     with open(os.path.join(folder, "SaveGameInfo"), "w", encoding="utf-8") as fh:
-        fh.write("<SaveGame/>")
+        fh.write(build_save_game_info() if save_info else "<SaveGame/>")
     return path
 
 
