@@ -5562,9 +5562,26 @@
         v.innerHTML = (views[route] || overview)();
         bind();
       }
+      // Ревизия состояния, которое сейчас на странице. Каждые 3 секунды
+      // спрашиваем крошечный /api/version и скачиваем всё состояние (сотни КБ)
+      // только когда ревизия изменилась.
+      let seenRev = null;
       async function pull(force) {
         if (MODE !== "live") return;
         try {
+          let rev = null;
+          if (S) {
+            try {
+              const vr = await fetch("/api/version", { cache: "no-store" });
+              if (vr.ok) {
+                const v = await vr.json();
+                rev = v.rev;
+                if (!force && v.ready && rev === seenRev) return;
+              }
+            } catch (e) {
+              // Нет /api/version (старый сервер) — работаем как раньше.
+            }
+          }
           let r = await fetch("/api/state", { cache: "no-store" });
           if (!r.ok) {
             let e = await r.json();
@@ -5574,6 +5591,7 @@
             return;
           }
           let n = await r.json();
+          seenRev = rev;
           if (pendingSaves > 0 && S) n.goals = S.goals;
           const saveChanged = !S || n.meta.save_mtime !== S.meta.save_mtime;
           if (

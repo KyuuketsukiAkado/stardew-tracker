@@ -57,6 +57,20 @@ def normalize_goals(value: Any) -> dict[str, Any]:
     return result
 
 
+def goals_signature(path: str | None = None) -> tuple[int, int] | None:
+    """``(mtime_ns, size)`` файла целей или ``None``, если файла нет.
+
+    Одного ``stat`` хватает, чтобы понять, менялись ли цели снаружи (правка
+    ``goals.json`` руками, второй экземпляр трекера), без чтения и разбора.
+    """
+
+    try:
+        stat = os.stat(_goals_path(path))
+    except OSError:
+        return None
+    return (stat.st_mtime_ns, stat.st_size)
+
+
 def load_goals(path: str | None = None) -> dict[str, Any]:
     """Читает цели, откатываясь на ``goals.json.bak`` при повреждении."""
 
