@@ -315,6 +315,7 @@ class UnlockContext:
     def __init__(self, raw: Mapping[str, Any], hearts: Mapping[str, int] | None = None):
         self.raw = raw
         self.mail: set[str] = set(raw.get("mail_received") or ())
+        self._mail_lower = {name.lower() for name in self.mail}
         self.skills: Mapping[str, int] = raw.get("skills") or {}
         self.hearts: Mapping[str, int] = hearts or {}
         self.walnuts = int(raw.get("walnuts") or 0)
@@ -322,6 +323,16 @@ class UnlockContext:
         self.museum: Mapping[str, Any] = raw.get("museum") or {}
         self.day_index = abs_day(raw.get("season") or "spring", raw.get("day") or 1, raw.get("year") or 1)
         self._cache: dict[str, Status] = {}
+
+    def has_mail(self, *names: str) -> bool:
+        """Есть ли хоть одно из писем; регистр не важен.
+
+        Игра не выдерживает единый стиль имён (``jojaVault``, но ``JojaMember``):
+        сравнение с точным регистром не видело членство в Joja, и у игроков на
+        этом пути «сообщество завершено» никогда не выполнялось.
+        """
+
+        return any(name.lower() in self._mail_lower for name in names)
 
     # ---- проверки отдельных ворот -----------------------------------------
     def status(self, key: str) -> Status:
@@ -339,11 +350,11 @@ class UnlockContext:
             return int(self.hearts.get(npc, 0)) >= int(level)
         if key == "island":
             # Орехи бывают только на острове: если они есть, остров открыт.
-            return "willyBoatFixed" in self.mail or "Visited_Island" in self.mail or self.walnuts > 0
+            return self.has_mail("willyBoatFixed", "Visited_Island") or self.walnuts > 0
         if key == "walnut_room":
             return self.walnuts >= 100
         if key == "desert":
-            return bool({"ccVault", "jojaVault"} & self.mail) or bool(raw.get("has_skull_key"))
+            return self.has_mail("ccVault", "jojaVault") or bool(raw.get("has_skull_key"))
         if key == "skull_cavern":
             return bool(raw.get("has_skull_key"))
         if key == "sewers":
@@ -352,7 +363,7 @@ class UnlockContext:
             if raw.get("has_dark_talisman"):
                 return True
             areas = raw.get("areasComplete") or [False]
-            community_done = bool({"ccIsComplete", "jojaMember"} & self.mail) or all(areas)
+            community_done = self.has_mail("ccIsComplete", "JojaMember") or all(areas)
             return bool(raw.get("has_rusty_key")) and community_done
         if key == "witch_swamp":
             return bool(raw.get("has_dark_talisman")) or bool(raw.get("has_magic_ink"))
@@ -379,7 +390,7 @@ class UnlockContext:
         if key == "special_orders":
             return self.day_index >= 2 * DAYS_PER_SEASON + 1  # осень 2, 1-й год
         if key == "greenhouse":
-            return bool({"ccPantry", "jojaPantry"} & self.mail)
+            return self.has_mail("ccPantry", "jojaPantry")
         if key == "cellar":
             return int(raw.get("house_level") or 0) >= 3
         if key == "museum_ancient_seed":
