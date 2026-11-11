@@ -40,7 +40,7 @@ ignore = [
 
 [tool.mypy]
 python_version = "3.9"
-files = ["stardew_tracker", "tracker.py", "build_data.py", "packaging/build_app.py"]
+files = ["stardew_tracker", "tracker.py", "build_data.py", "packaging/build_app.py", "tools"]
 check_untyped_defs = true
 ignore_missing_imports = true
 no_implicit_optional = true

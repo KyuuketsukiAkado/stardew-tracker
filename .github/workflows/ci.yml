@@ -91,7 +91,7 @@ jobs:
         run: ruff check .
 
       - name: Ruff (форматирование)
-        run: ruff format --check stardew_tracker tracker.py tests packaging/build_app.py
+        run: ruff format --check stardew_tracker tracker.py tests packaging/build_app.py tools
 
       - name: mypy
         run: mypy
@@ -100,7 +100,12 @@ jobs:
         run: vermin --no-tips --violations -t=3.9- stardew_tracker tracker.py packaging/build_app.py
 
       - name: Bandit
-        run: bandit -q -r stardew_tracker tracker.py build_data.py
+        run: bandit -q -r stardew_tracker tracker.py build_data.py tools
+
+      # Демо docs/index.html — сгенерированный файл: после правок dashboard.html или data/
+      # его нужно пересобрать (`python tools/build_demo.py`), иначе публичная демонстрация отстаёт.
+      - name: Демо docs/index.html актуально
+        run: python tools/build_demo.py --check
 
       - name: Тесты с покрытием
         run: |

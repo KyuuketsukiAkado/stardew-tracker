@@ -102,18 +102,24 @@ python3 tracker.py info --saves-dir /tmp/saves
 python3 tracker.py build --saves-dir /tmp/saves --out /tmp/report.html
 ```
 
-Тесты используют только `unittest` и синтетический XML-сейв: 248 тестов.
+Тесты используют только `unittest` и синтетический XML-сейв: 258 тестов.
 CI прогоняет их на Python 3.9, 3.11 и 3.13, а отдельный quality-job проверяет `ruff`, формат,
 `mypy`, `bandit` и покрытие не ниже 85%.
 
 ```bash
 python3 -m pip install -r requirements-dev.txt
 ruff check .
-ruff format --check stardew_tracker tracker.py tests
+ruff format --check stardew_tracker tracker.py tests tools
 mypy
-bandit -q -r stardew_tracker tracker.py build_data.py
+bandit -q -r stardew_tracker tracker.py build_data.py tools
 coverage run -m unittest discover -s tests && coverage report
+python tools/build_demo.py --check        # демо docs/index.html должно быть актуально
 ```
+
+Демо `docs/index.html` — автономный отчёт по тестовой ферме; его генерирует `tools/build_demo.py`
+(без текущего времени, часового пояса, локальных путей и `goals.json`, поэтому результат
+воспроизводим). После правок `assets/dashboard.html` или `data/` пересоберите его командой
+`python tools/build_demo.py` и закоммитьте результат — CI проверяет актуальность.
 
 Код разделён на пакет `stardew_tracker/` (поиск сейва, XML-парсер, справочники, состояние,
 рендер, HTTP-сервер, CLI). `tracker.py` — совместимая точка входа и реэкспорт публичного API,
@@ -149,8 +155,9 @@ saves/                     необязательная папка для сей
 goals.json                 локальные цели и задачи (игнорируется git)
 data/recipe_sources.json   точные источники рецептов (сверены с вики 1.6)
 data/secrets.json          контент danger zone: задания Ки, записки, секреты, иконки, ссылки на вики
-tests/                     248 тестов и генератор тестового сейва
-docs/index.html            автономная демонстрационная сборка
+tests/                     258 тестов и генератор тестового сейва
+docs/index.html            автономная демонстрационная сборка (генерируется tools/build_demo.py)
+tools/build_demo.py        детерминированная пересборка демо и проверка его актуальности
 docs/AUDIT.md              аудит, находки и AQA-отчёт
 pyproject.toml             настройки ruff/mypy/coverage и метаданные
 requirements-dev.txt       инструменты разработки и CI
