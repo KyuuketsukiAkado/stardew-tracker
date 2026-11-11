@@ -108,7 +108,7 @@ This is a beta and I would love to hear from you — what works, what is confusi
 
 ## Known limitations
 
-- The redesign is still in progress: the overview, *Today* and navigation are done; collection pages and the rest are being redesigned next.
+- The redesign is still in progress: the overview, *Today* and navigation are done; collection pages and the rest are being redesigned next. See the [proposed stages 2–4 roadmap (in Russian)](docs/REDESIGN-ROADMAP.md).
 - Multiplayer: only the host is counted.
 - The perfection percentage has not been compared with the number shown by the game itself. Obelisk and Golden Clock names are not verified on real saves.
 - Saves from 1.5.6 lack some data (for example tomorrow's weather); those fields stay empty.
