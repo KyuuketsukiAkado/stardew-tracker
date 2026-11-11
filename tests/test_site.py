@@ -175,6 +175,45 @@ class TestRussianCopy(SiteTestCase):
         self.assertRegex(self.html, r'\[data-lang="ru"\] h1 \{[^}]*line-height: 1\.1;')
 
 
+class TestHeroIllustration(SiteTestCase):
+    """The scene on the right of the hero is our own vector drawing, decorative and quiet."""
+
+    def setUp(self):
+        match = re.search(r'<figure class="hero-art" aria-hidden="true">(.*?)</figure>', self.html, re.S)
+        self.assertIsNotNone(match, "hero illustration is missing or not marked decorative")
+        self.art = match.group(1)
+
+    def test_scene_is_inline_vector_art_without_game_sprites_or_requests(self):
+        self.assertIn("<svg", self.art)
+        self.assertNotIn("<image", self.art)
+        self.assertNotIn("data:image", self.art)
+        self.assertNotIn("http", self.art.replace("http://www.w3.org", ""))
+        self.assertNotIn("sprites", self.art)
+
+    def test_scene_has_the_farm_motifs(self):
+        # farmhouse roof, crop field, pond with a fish, sun and the perfection star
+        for token in ('class="fish"', 'class="rays"', "crop field", "farmhouse", "pond with a jumping fish"):
+            self.assertIn(token, self.art, token)
+        self.assertIn("★", self.art)
+
+    def test_cards_over_the_scene_carry_no_translatable_words(self):
+        # digits and symbols only: the picture must read the same in English and Russian
+        cards = re.findall(
+            r'<div class="art-card[^"]*">(.*?)</div>\s*(?=<div class="art-card|</figure>)', self.html, re.S
+        )
+        text = re.sub(r"<[^>]+>", " ", " ".join(cards))
+        self.assertFalse(re.search(r"[A-Za-zА-Яа-яЁё]{3,}", text), text)
+
+    def test_motion_is_switched_off_for_people_who_ask(self):
+        reduced = self.html.split("@media (prefers-reduced-motion: reduce)", 1)[1]
+        for selector in (".hero-art .cloud", ".hero-art .rays", ".hero-art .fish"):
+            self.assertIn(selector, reduced, selector)
+        self.assertIn("animation: none", reduced)
+
+    def test_hero_stacks_on_narrow_screens(self):
+        self.assertRegex(self.html, r"@media \(max-width: 920px\) \{\s*\.hero \{\s*grid-template-columns: 1fr;")
+
+
 class TestNotFoundPage(SiteTestCase):
     def setUp(self):
         self.page = Path(self.out, "404.html").read_text(encoding="utf-8")
