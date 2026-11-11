@@ -18,14 +18,15 @@
     <meta property="og:url" content="{{SITE_URL}}" />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="theme-color" content="#e8eef4" />
+    <meta name="color-scheme" content="light" />
     <link
       rel="icon"
       href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' rx='12' fill='%238fd0f0'/%3E%3Ccircle cx='29' cy='10' r='3.4' fill='%23ffd34d'/%3E%3Cpath d='m8 21 11-9 11 9' fill='none' stroke='%23c2493a' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M11.500 19.500V29h15v-9.500' fill='%23fff6e0' stroke='%238a5a2b' stroke-width='2' stroke-linejoin='round'/%3E%3Cpath d='M17.500 29v-6h4v6' fill='%23c2493a'/%3E%3C/svg%3E"
     />
     <style>
-      /* Same "Cold Bento" language as the app: Frost (light) and Night (dark, follows the system). */
+      /* Same "Cold Bento" language as the app, in its light "Frost" theme. */
       :root {
-        color-scheme: light dark;
+        color-scheme: light;
         --bg: #e8eef4;
         --surface: #fbfcfe;
         --line: #d3dde8;
@@ -51,33 +52,6 @@
         --btn-fg: #e8eef4;
         --font-display: "Bahnschrift", "DIN Pro", "DIN Alternate", "Roboto Condensed", "Arial Narrow", system-ui, sans-serif;
         --font-text: "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, Roboto, "Helvetica Neue", Arial, sans-serif;
-      }
-      @media (prefers-color-scheme: dark) {
-        :root {
-          --bg: #070b14;
-          --surface: #0f1626;
-          --line: #1c2740;
-          --text: #e8f1ff;
-          --muted: #a3aec6;
-          --accent: #4de1ff;
-          --accent-strong: #8aeaff;
-          --ink: #4a85ff;
-          --ink-2: #4de1ff;
-          --on-ink: #04101f;
-          --ink-accent: #04101f;
-          --tone-ice: #b9e6ff;
-          --tone-mint: #5ff2c4;
-          --tone-violet: #8f7cff;
-          --glow-a: #1f3d8a55;
-          --glow-b: #00e0ff22;
-          --stripe: #ffffff05;
-          --warn-bg: #2a2410;
-          --warn-line: #6b5a1f;
-          --warn-text: #f2c45c;
-          --shadow: inset 0 0 0 1px var(--line);
-          --btn-bg: #4de1ff;
-          --btn-fg: #04101f;
-        }
       }
       * {
         box-sizing: border-box;
@@ -167,7 +141,7 @@
         padding: clamp(28px, 7vw, 76px) 0 clamp(20px, 4vw, 40px);
       }
       .kicker {
-        margin: 0 0 14px;
+        margin: 0 0 20px;
         color: var(--accent);
         font: 600 13px/1 var(--font-display);
         letter-spacing: 0.22em;
@@ -176,7 +150,7 @@
       h1 {
         margin: 0;
         max-width: 14ch;
-        font: 700 clamp(46px, 9vw, 96px) / 0.95 var(--font-display);
+        font: 700 clamp(46px, 9vw, 96px) / 1.02 var(--font-display);
         font-variation-settings: "wdth" 75;
         font-stretch: condensed;
         letter-spacing: -0.01em;
@@ -185,6 +159,10 @@
       h1 em {
         color: var(--accent);
         font-style: normal;
+      }
+      [data-lang="ru"] h1 {
+        max-width: 19ch;
+        line-height: 1.1;
       }
       .lead {
         max-width: 56ch;
@@ -445,7 +423,7 @@
         </a>
         <nav class="links" aria-label="Links">
           <a href="{{REPO_URL}}"><span lang="en">GitHub</span><span lang="ru">GitHub</span></a>
-          <a href="{{RELEASES_URL}}"><span lang="en">All downloads</span><span lang="ru">Все загрузки</span></a>
+          <a href="{{RELEASES_URL}}"><span lang="en">All downloads</span><span lang="ru">Все версии</span></a>
           <a href="#feedback"><span lang="en">Feedback</span><span lang="ru">Обратная связь</span></a>
           <button type="button" id="langToggle" aria-label="Switch language / Сменить язык">RU</button>
         </nav>
@@ -456,7 +434,7 @@
           <p class="kicker"><span lang="en">Free · offline · no mods</span><span lang="ru">Бесплатно · офлайн · без модов</span></p>
           <h1>
             <span lang="en">Know what's <em>left</em> on your farm</span>
-            <span lang="ru">Знайте, что ещё <em>осталось</em> на ферме</span>
+            <span lang="ru">Узнайте, что ещё <em>осталось</em> сделать на ферме</span>
           </h1>
           <p class="lead">
             <span lang="en">
@@ -464,8 +442,8 @@
               more — and tells you what you can't get yet, and why.
             </span>
             <span lang="ru">
-              Бесплатный трекер для Stardew Valley 1.5 / 1.6. Читает файл сохранения и показывает музей, рыбу, перфекцию и многое
-              другое — а ещё то, что пока нельзя получить, и почему.
+              Бесплатный трекер для Stardew Valley 1.5 / 1.6. Читает файл сохранения и показывает музей, рыбу, перфекцию и
+              многое другое. А ещё подсказывает, что пока нельзя получить и почему.
             </span>
           </p>
 
@@ -482,7 +460,7 @@
           </div>
           <p class="meta">
             <span class="badge"><span lang="en">{{CHANNEL_EN}}</span><span lang="ru">{{CHANNEL_RU}}</span></span>
-            <span lang="en">Version {{VERSION}} · free and open source</span><span lang="ru">Версия {{VERSION}} · бесплатно, с открытым кодом</span>
+            <span lang="en">Version {{VERSION}} · free and open source</span><span lang="ru">Версия {{VERSION}} · бесплатно, открытый исходный код</span>
           </p>
           <p class="mobile-note">
             <span lang="en">Stardew Tracker runs on a computer (Windows, macOS or Linux). Open this page on your PC to download it.</span>
@@ -494,55 +472,56 @@
               The source is open and every release has SHA-256 checksums.
             </span>
             <span lang="ru">
-              <b>Важно:</b> приложение не подписано, поэтому Windows может показать предупреждение SmartScreen — нажмите
-              <i>Подробнее → Выполнить в любом случае</i>. Исходный код открыт, у каждого релиза есть контрольные суммы SHA-256.
+              <b>Важно:</b> у приложения нет цифровой подписи, поэтому Windows может показать предупреждение SmartScreen.
+              Нажмите <i>Подробнее → Выполнить в любом случае</i>. Исходный код открыт, а у каждого релиза есть контрольные
+              суммы SHA-256.
             </span>
           </p>
         </div>
 
         <section aria-labelledby="why">
-          <h2 id="why"><span lang="en">Why you'll like it</span><span lang="ru">Чем он хорош</span></h2>
+          <h2 id="why"><span lang="en">Why you'll like it</span><span lang="ru">Чем он полезен</span></h2>
           <div class="tiles">
             <div class="tile ink">
-              <h3><span lang="en">Reads your save only</span><span lang="ru">Только читает сейв</span></h3>
+              <h3><span lang="en">Reads your save only</span><span lang="ru">Только читает сохранение</span></h3>
               <p>
                 <span lang="en">No mods and no SMAPI. It uses the file your game already writes, and updates itself when you save.</span>
-                <span lang="ru">Без модов и SMAPI. Берёт файл, который игра и так записывает, и обновляется сам при сохранении.</span>
+                <span lang="ru">Без модов и SMAPI. Использует файл, который игра и так записывает, и сам обновляется при каждом сохранении.</span>
               </p>
             </div>
             <div class="tile ice">
-              <h3><span lang="en">Stays on your PC</span><span lang="ru">Остаётся на вашем ПК</span></h3>
+              <h3><span lang="en">Stays on your PC</span><span lang="ru">Данные остаются у вас</span></h3>
               <p>
                 <span lang="en">Offline by design: no accounts, no analytics, nothing is uploaded. Your save never leaves your computer.</span>
-                <span lang="ru">Работает офлайн: ни аккаунтов, ни аналитики, ничего не отправляется. Ваш сейв не покидает компьютер.</span>
+                <span lang="ru">Работает офлайн: без аккаунтов и аналитики, ничего не отправляется. Ваше сохранение не покидает компьютер.</span>
               </p>
             </div>
             <div class="tile">
-              <h3><span lang="en">Knows what's locked</span><span lang="ru">Знает, что закрыто</span></h3>
+              <h3><span lang="en">Knows what's locked</span><span lang="ru">Знает, что ещё закрыто</span></h3>
               <p>
                 <span lang="en">Items you can't get yet are marked 🔒 with a short "how to unlock" hint — Ginger Island, Qi's room, Skull Cavern and more.</span>
-                <span lang="ru">Предметы, которые пока недоступны, помечены 🔒 с короткой подсказкой, как открыть: остров, комната Ки, Пещера Черепа и другое.</span>
+                <span lang="ru">То, что пока нельзя получить, помечено значком 🔒 и короткой подсказкой, как это открыть: остров, Комната Ки, Пещера Черепа и так далее.</span>
               </p>
             </div>
             <div class="tile mint">
               <h3><span lang="en">Filters like you play</span><span lang="ru">Фильтры под вашу игру</span></h3>
               <p>
                 <span lang="en">Fish by place, time, season, weather and gear. "Which fish live in the Mines?" is one click.</span>
-                <span lang="ru">Рыба по месту, времени, сезону, погоде и снасти. «Какая рыба в шахтах?» — один клик.</span>
+                <span lang="ru">Рыба — по месту, времени, сезону, погоде и снасти. «Какая рыба ловится в шахтах?» — один клик.</span>
               </p>
             </div>
             <div class="tile violet">
               <h3><span lang="en">Spoiler-safe secrets</span><span lang="ru">Секреты без спойлеров</span></h3>
               <p>
                 <span lang="en">Mr. Qi's solutions wait behind a warning, and every hint opens only when you click it.</span>
-                <span lang="ru">Решения заданий мистера Ки скрыты за предупреждением, каждая подсказка открывается только по клику.</span>
+                <span lang="ru">Решения заданий мистера Ки спрятаны за предупреждением, а каждая подсказка открывается только по клику.</span>
               </p>
             </div>
             <div class="tile">
               <h3><span lang="en">English &amp; Russian</span><span lang="ru">Русский и английский</span></h3>
               <p>
                 <span lang="en">Light and dark themes, and your language is asked once on first launch.</span>
-                <span lang="ru">Светлая и тёмная темы; язык спрашивается один раз при первом запуске.</span>
+                <span lang="ru">Есть светлая и тёмная темы. Язык выбирается один раз при первом запуске.</span>
               </p>
             </div>
           </div>
@@ -551,8 +530,10 @@
         <section aria-labelledby="look">
           <h2 id="look"><span lang="en">A look inside</span><span lang="ru">Как это выглядит</span></h2>
           <div class="shots">
-            <img src="screenshots/overview-light.png" width="1440" height="900" loading="lazy" alt="Overview page of the tracker in the light theme: perfection, museum and fish tiles, today's plan and unlocked areas" />
-            <img src="screenshots/overview-dark.png" width="1440" height="900" loading="lazy" alt="The same overview page in the dark theme" />
+            <img lang="en" src="screenshots/overview-light.png" width="1440" height="900" loading="lazy" alt="Overview page of the tracker in the light theme: perfection, museum and fish tiles, today's plan and unlocked areas" />
+            <img lang="en" src="screenshots/overview-dark.png" width="1440" height="900" loading="lazy" alt="The same overview page in the dark theme" />
+            <img lang="ru" src="screenshots/overview-light-ru.png" width="1440" height="900" loading="lazy" alt="Главная страница трекера в светлой теме: плитки перфекции, музея и рыбы, план на сегодня и открытые зоны" />
+            <img lang="ru" src="screenshots/overview-dark-ru.png" width="1440" height="900" loading="lazy" alt="Та же главная страница в тёмной теме" />
           </div>
         </section>
 
@@ -562,7 +543,7 @@
             <li>
               <b><span lang="en">Download</span><span lang="ru">Скачайте</span></b>
               <span lang="en">Get the zip for your system and unpack it.</span>
-              <span lang="ru">Скачайте архив для своей системы и распакуйте.</span>
+              <span lang="ru">Скачайте архив для своей системы и распакуйте его.</span>
             </li>
             <li>
               <b><span lang="en">Run it</span><span lang="ru">Запустите</span></b>
@@ -570,9 +551,9 @@
               <span lang="ru">Откройте <code>StardewTracker.exe</code> (macOS / Linux: <code>./StardewTracker</code>).</span>
             </li>
             <li>
-              <b><span lang="en">Look around</span><span lang="ru">Смотрите</span></b>
+              <b><span lang="en">Look around</span><span lang="ru">Пользуйтесь</span></b>
               <span lang="en">Your browser opens and your saves are found automatically. Close the console window to stop.</span>
-              <span lang="ru">Откроется браузер, сейвы найдутся сами. Чтобы остановить, закройте окно консоли.</span>
+              <span lang="ru">Откроется браузер, а сохранения найдутся сами. Чтобы остановить приложение, закройте окно консоли.</span>
             </li>
           </ol>
         </section>
@@ -589,7 +570,7 @@
             <div class="actions">
               <a class="button" href="mailto:{{EMAIL}}">{{EMAIL}}</a>
               <a class="button" href="{{ISSUES_URL}}" target="_blank" rel="noopener noreferrer">
-                <span lang="en">GitHub issue</span><span lang="ru">Issue на GitHub</span>
+                <span lang="en">GitHub issue</span><span lang="ru">Открыть issue на GitHub</span>
               </a>
             </div>
           </div>
@@ -599,10 +580,10 @@
       <footer>
         <p>
           <span lang="en">An unofficial fan project, not affiliated with or endorsed by ConcernedApe. Stardew Valley, its game data and art are © ConcernedApe.</span>
-          <span lang="ru">Неофициальный фан-проект, не связан с ConcernedApe и не одобрен им. Stardew Valley, игровые данные и графика — © ConcernedApe.</span>
+          <span lang="ru">Неофициальный фан-проект: не связан с ConcernedApe и не одобрен им. Stardew Valley, игровые данные и графика — © ConcernedApe.</span>
         </p>
         <p>
-          <span lang="en">Open source under the MIT licence.</span><span lang="ru">Открытый код, лицензия MIT.</span>
+          <span lang="en">Open source under the MIT licence.</span><span lang="ru">Открытый исходный код, лицензия MIT.</span>
           <a href="{{REPO_URL}}">GitHub</a> ·
           <a href="{{REPO_URL}}/blob/master/README.md">README</a> ·
           <a href="{{REPO_URL}}/blob/master/README.ru.md">README (RU)</a>
@@ -623,12 +604,26 @@
           var list = navigator.languages && navigator.languages.length ? navigator.languages : [navigator.language || "en"];
           return String(list[0] || "en").toLowerCase().indexOf("ru") === 0 ? "ru" : "en";
         }
+        var TEXT = {
+          en: {
+            title: document.title,
+            description: (document.querySelector('meta[name="description"]') || { content: "" }).content
+          },
+          ru: {
+            title: "Stardew Tracker — что сделано и что осталось в вашем сохранении Stardew Valley",
+            description:
+              "Бесплатный офлайн-трекер прогресса для Stardew Valley 1.5 / 1.6. Читает файл сохранения: музей, рыба, перфекция, условия открытия. Без модов и аккаунтов, ничего не отправляется."
+          }
+        };
         var lang = store.get("lang");
         if (lang !== "en" && lang !== "ru") lang = systemLanguage();
         function applyLanguage() {
           root.setAttribute("data-lang", lang);
           root.lang = lang;
           document.getElementById("langToggle").textContent = lang === "en" ? "RU" : "EN";
+          document.title = TEXT[lang].title;
+          var description = document.querySelector('meta[name="description"]');
+          if (description) description.setAttribute("content", TEXT[lang].description);
         }
         document.getElementById("langToggle").addEventListener("click", function () {
           lang = lang === "en" ? "ru" : "en";

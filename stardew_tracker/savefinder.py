@@ -7,7 +7,7 @@ import os
 from .constants import SEASON_RU  # noqa: F401  (реэкспорт для совместимости)
 from .errors import SaveError
 from .i18n import L
-from .paths import FROZEN, SAVES_DIR
+from .paths import COMMAND, SAVES_DIR
 
 _SKIP_NAMES = frozenset({"SaveGameInfo", "startup_preferences"})
 _SKIP_SUFFIXES = ("_old", "_old.bak", ".bak", ".tmp")
@@ -19,27 +19,15 @@ _SAVE_LOCATION_RU = r"В Windows сейвы обычно лежат в %APPDATA%
 def _no_save_steps() -> list[str]:
     """Steps shown when no save is found (built per call so they follow the language)."""
 
-    if FROZEN:
-        return [
-            L(
-                'Give the path yourself: StardewTracker serve --save "path\\to\\save"',
-                'Укажите путь вручную: StardewTracker serve --save "путь\\к\\сейву"',
-            ),
-            L(_SAVE_LOCATION_EN, _SAVE_LOCATION_RU),
-            L(
-                "Run StardewTracker info to check the automatic save search.",
-                "Запустите StardewTracker info, чтобы проверить автопоиск сохранений.",
-            ),
-        ]
     return [
         L(
-            'Give the path yourself: python tracker.py serve --save "path\\to\\save"',
-            'Укажите путь вручную: python tracker.py serve --save "путь\\к\\сейву"',
+            f'Give the path yourself: {COMMAND} serve --save "path\\to\\save"',
+            f'Укажите путь вручную: {COMMAND} serve --save "путь\\к\\сейву"',
         ),
         L(_SAVE_LOCATION_EN, _SAVE_LOCATION_RU),
         L(
-            "For a demo you can create a test save: python tests/make_test_save.py saves",
-            "Для демо-проверки можно создать тестовый сейв: python tests/make_test_save.py saves",
+            f"Run `{COMMAND} info` to check the automatic save search.",
+            f"Запустите `{COMMAND} info`, чтобы проверить автопоиск сохранений.",
         ),
     ]
 
@@ -193,8 +181,8 @@ def find_saves(saves_dir: str | None = None, explicit: str | None = None) -> lis
                     L("Check the path you passed to --save.", "Проверьте правильность пути в аргументе --save."),
                     L(_SAVE_LOCATION_EN + ".", _SAVE_LOCATION_RU + "."),
                     L(
-                        "Run `python tracker.py info` to check the automatic save search.",
-                        "Запустите `python tracker.py info`, чтобы проверить автопоиск.",
+                        f"Run `{COMMAND} info` to check the automatic save search.",
+                        f"Запустите `{COMMAND} info`, чтобы проверить автопоиск.",
                     ),
                 ],
             )

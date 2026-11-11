@@ -134,6 +134,42 @@ class TestBilingualErrors(LanguageCase):
         self.assertEqual(len(payload["i18n"]["en"]["steps"]), len(payload["i18n"]["ru"]["steps"]))
 
 
+class TestCommandNameInHints(LanguageCase):
+    """The packaged app is started as StardewTracker, not as `python tracker.py`."""
+
+    def _missing_path_steps(self, command):
+        from stardew_tracker import savefinder
+
+        with mock.patch.object(savefinder, "COMMAND", command), self.assertRaises(SaveError) as caught:
+            savefinder.find_saves(explicit=os.path.join(tempfile.gettempdir(), "definitely-missing-save-folder"))
+        return caught.exception.to_dict()["i18n"]
+
+    def test_source_tree_hint_names_the_python_script(self):
+        steps = self._missing_path_steps("python tracker.py")
+        self.assertIn("python tracker.py info", " ".join(steps["en"]["steps"]))
+        self.assertIn("python tracker.py info", " ".join(steps["ru"]["steps"]))
+
+    def test_packaged_app_hint_names_the_app(self):
+        steps = self._missing_path_steps("StardewTracker")
+        for lang in ("en", "ru"):
+            joined = " ".join(steps[lang]["steps"])
+            self.assertIn("StardewTracker info", joined, lang)
+            self.assertNotIn("tracker.py", joined, lang)
+
+    def test_no_saves_hint_uses_the_same_name(self):
+        from stardew_tracker import savefinder
+
+        with mock.patch.object(savefinder, "COMMAND", "StardewTracker"):
+            steps = savefinder.no_saves_error().to_dict()["i18n"]["en"]["steps"]
+        self.assertTrue(all("tracker.py" not in step for step in steps), steps)
+        self.assertIn("StardewTracker serve --save", steps[0])
+
+    def test_command_matches_how_the_program_runs(self):
+        from stardew_tracker import paths
+
+        self.assertEqual(paths.COMMAND, "StardewTracker" if paths.FROZEN else "python tracker.py")
+
+
 class TestCliLanguage(LanguageCase):
     def _run(self, argv):
         output = io.StringIO()

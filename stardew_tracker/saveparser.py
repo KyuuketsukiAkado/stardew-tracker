@@ -19,6 +19,7 @@ from . import xmlutil as xml
 from .constants import SEASONS
 from .errors import SaveError
 from .i18n import L
+from .paths import SAVES_DIR
 from .xmlutil import norm_id
 
 _CACHE_LIMIT = 16
@@ -106,8 +107,8 @@ def _file_sig(path: str) -> tuple[str, int, int]:
                     "Подождите пару секунд, если игра прямо сейчас записывает сейв, и нажмите «Обновить».",
                 ),
                 L(
-                    "Try copying the save folder into a saves/ subfolder next to tracker.py.",
-                    "Попробуйте скопировать папку сейва в подпапку saves/ рядом с tracker.py.",
+                    f"Try copying the save folder into {SAVES_DIR}.",
+                    f"Попробуйте скопировать папку сейва в {SAVES_DIR}.",
                 ),
             ],
         ) from exc

@@ -38,8 +38,15 @@ class TestBuild(SiteTestCase):
     def test_output_has_page_screenshots_and_nojekyll(self):
         self.assertIn("index.html", self.files)
         self.assertIn(".nojekyll", self.files)
-        for name in ("overview-light.png", "overview-dark.png"):
+        self.assertIn("404.html", self.files)
+        for name in ("overview-light.png", "overview-dark.png", "overview-light-ru.png", "overview-dark-ru.png"):
             self.assertTrue(os.path.isfile(os.path.join(self.out, "screenshots", name)), name)
+
+    def test_every_screenshot_on_the_page_exists_and_has_a_language(self):
+        sources = re.findall(r'<img lang="(en|ru)" src="(screenshots/[^"]+)"', self.html)
+        self.assertEqual([lang for lang, _src in sources], ["en", "en", "ru", "ru"])
+        for _lang, src in sources:
+            self.assertTrue(os.path.isfile(os.path.join(self.out, src)), src)
 
     def test_build_is_deterministic(self):
         other = os.path.join(self.tmp, "second")
@@ -131,6 +138,61 @@ class TestEnglishFirst(SiteTestCase):
         for token in ("not code-signed", "SmartScreen", "SHA-256", "repro4chful@gmail.com", "public beta"):
             self.assertIn(token.lower(), self.html.lower())
         self.assertIn("ConcernedApe", self.html)
+
+
+class TestWhiteDesign(SiteTestCase):
+    """The site uses the tracker's light Frost look, whatever the visitor's system theme is."""
+
+    def test_light_only(self):
+        self.assertNotIn("prefers-color-scheme: dark", self.html)
+        self.assertIn("color-scheme: light;", self.html)
+        self.assertIn('name="color-scheme" content="light"', self.html)
+        self.assertIn("--bg: #e8eef4;", self.html)
+
+
+class TestRussianCopy(SiteTestCase):
+    """Wording that read badly in review must not come back."""
+
+    def test_old_phrasings_are_gone(self):
+        for bad in (
+            "Знайте",
+            "а ещё то, что",
+            "Issue на GitHub",
+            "приложение не подписано",
+            "Все загрузки",
+            "сейв",
+            "Берёт файл",
+        ):
+            self.assertNotIn(bad, self.html, bad)
+
+    def test_russian_page_has_its_own_title_description_and_screenshots(self):
+        self.assertIn("что сделано и что осталось в вашем сохранении", self.html)
+        self.assertIn("Бесплатный офлайн-трекер прогресса", self.html)
+        self.assertIn("overview-light-ru.png", self.html)
+
+    def test_cyrillic_capitals_get_room_for_their_marks(self):
+        # Й and Ё carry a mark above the letter; a tight line height made it touch the line above.
+        self.assertRegex(self.html, r'\[data-lang="ru"\] h1 \{[^}]*line-height: 1\.1;')
+
+
+class TestNotFoundPage(SiteTestCase):
+    def setUp(self):
+        self.page = Path(self.out, "404.html").read_text(encoding="utf-8")
+
+    def test_page_is_complete_bilingual_and_points_home_absolutely(self):
+        self.assertEqual(re.findall(r"\{\{[A-Z_]+\}\}", self.page), [])
+        self.assertIn('href="https://kyuuketsukiakado.github.io/stardew-tracker/"', self.page)
+        self.assertIn("Page not found", self.page)
+        self.assertIn("Страница не найдена", self.page)
+        self.assertEqual(
+            len(re.findall(r'<span lang="en">', self.page)), len(re.findall(r'<span lang="ru">', self.page))
+        )
+
+    def test_page_is_light_and_loads_nothing_external(self):
+        self.assertIn("color-scheme: light;", self.page)
+        self.assertNotIn("prefers-color-scheme", self.page)
+        self.assertEqual(re.findall(r"<script[^>]+src=|<link[^>]+href=\"https?://", self.page), [])
+        self.assertIn('name="robots" content="noindex"', self.page)
 
 
 class TestPagesWorkflow(unittest.TestCase):
