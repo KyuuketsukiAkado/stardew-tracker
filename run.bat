@@ -11,6 +11,7 @@ if not defined PY (
     if not errorlevel 1 set "PY=python"
 )
 if not defined PY (
+    echo Python 3.9+ was not found. Install it from https://www.python.org/downloads/ and tick "Add python.exe to PATH".
     echo Не найден Python 3.9+. Установите с https://www.python.org/downloads/ и отметьте "Add python.exe to PATH".
     pause
     exit /b 1

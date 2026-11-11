@@ -1,0 +1,43 @@
+name: Bug report
+description: Something looks wrong or does not work
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for testing the beta! You can also write to **repro4chful@gmail.com**.
+        Please **do not attach your save file here** unless you are fine with sharing your farm's details (names, money, progress).
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What did you expect, and what did you see instead? Screenshots are welcome.
+    validations:
+      required: true
+  - type: input
+    id: build
+    attributes:
+      label: App version and system
+      description: The version is in the beta banner and in `StardewTracker --version`.
+      placeholder: "0.4.0-beta.2, Windows 11, StardewTracker.exe"
+    validations:
+      required: true
+  - type: input
+    id: game
+    attributes:
+      label: Game version of your save
+      placeholder: "1.6.15 (shown by `StardewTracker info`)"
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Open Fish
+        2. Pick "The Mines" under "Where"
+        3. …
+  - type: textarea
+    id: output
+    attributes:
+      label: Console output
+      description: If the console window printed an error, paste it here (check it for personal paths first).
+      render: text

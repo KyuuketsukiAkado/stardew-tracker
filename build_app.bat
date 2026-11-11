@@ -11,12 +11,14 @@ if not defined PY (
     if not errorlevel 1 set "PY=python"
 )
 if not defined PY (
+    echo Python 3.9+ was not found. Install it from https://www.python.org/downloads/ and tick "Add python.exe to PATH".
     echo Не найден Python 3.9+. Установите с https://www.python.org/downloads/ и отметьте "Add python.exe to PATH".
     pause
     exit /b 1
 )
 
 if not exist ".build-venv\Scripts\python.exe" (
+    echo Creating the .build-venv environment ...
     echo Создаю окружение сборки .build-venv ...
     %PY% -m venv .build-venv || goto :error
 )
@@ -25,12 +27,14 @@ python -m pip install --disable-pip-version-check -r requirements-build.txt || g
 python packaging\build_app.py || goto :error
 
 echo.
+echo Done: %CD%\dist\StardewTracker.exe
 echo Готово: %CD%\dist\StardewTracker.exe
 pause
 exit /b 0
 
 :error
 echo.
+echo The build failed. See the messages above.
 echo Сборка не удалась. Скопируйте текст ошибки выше.
 pause
 exit /b 1

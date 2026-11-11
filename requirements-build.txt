@@ -1,2 +1,3 @@
+# Tools for building the standalone app (not needed to run from source).
 # Только для сборки standalone-приложения (не нужно для запуска из исходников).
 pyinstaller==6.22.3

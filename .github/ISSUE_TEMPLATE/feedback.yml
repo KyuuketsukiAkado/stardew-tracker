@@ -1,0 +1,27 @@
+name: Feedback or suggestion
+description: An idea, a missing feature, or "this was confusing"
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        This is a beta and every impression helps. You can also write to **repro4chful@gmail.com**.
+  - type: textarea
+    id: idea
+    attributes:
+      label: What would make the tracker better for you?
+      description: A missing feature, a confusing screen, a hint that is wrong, a thing you would like to filter by…
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: How do you play?
+      description: Optional context — new farm or late game, perfection run, which version, how you use the tracker.
+  - type: dropdown
+    id: language
+    attributes:
+      label: Interface language you use
+      options:
+        - English
+        - Russian
