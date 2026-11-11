@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 import contextlib
+import gzip
 import json
 import os
+import secrets
 import sys
 import threading
 import time
@@ -15,7 +17,7 @@ from urllib.parse import parse_qs, urlsplit
 
 from .constants import SPRITE_FILES
 from .errors import SaveError
-from .goals import GOALS_LOCK, load_goals, normalize_goals, save_goals
+from .goals import GOALS_LOCK, goals_signature, load_goals, normalize_goals, save_goals
 from .paths import SPRITES_DIR
 from .render import render
 from .savefinder import find_saves
@@ -28,10 +30,45 @@ _CSP = (
     "style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; "
     "connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'"
 )
+# Имена, под которыми браузер обращается к серверу на loopback. Всё остальное в
+# заголовке Host — признак DNS-rebinding: чужая страница заставила браузер
+# ходить на 127.0.0.1 под своим доменом и теперь читает ваши данные «как свои».
+_LOOPBACK_HOSTS = frozenset({"127.0.0.1", "localhost", "::1"})
+# Сколько раз наблюдатель повторяет разбор одного и того же сломанного файла
+# (задержка растёт вдвое: 2, 4, 8, 16, 32 с) и потом ждёт нового изменения.
+_WATCH_RETRY_BASE = 2.0
+_WATCH_RETRY_ATTEMPTS = 5
+_UNSET: Any = object()
+
+
+class _Payload:
+    """Состояние одной ревизии в виде готового JSON (и его gzip по требованию).
+
+    Сериализация ~450 КБ стоит ~25 мс, а вкладка опрашивала её каждые 3 секунды.
+    Теперь она делается один раз на ревизию и раздаётся всем клиентам.
+    """
+
+    __slots__ = ("_gzip", "raw", "rev")
+
+    def __init__(self, rev: str, raw: bytes):
+        self.rev = rev
+        self.raw = raw
+        self._gzip: bytes | None = None
+
+    @property
+    def gzipped(self) -> bytes:
+        if self._gzip is None:
+            self._gzip = gzip.compress(self.raw, compresslevel=5, mtime=0)
+        return self._gzip
 
 
 class TrackerApp:
-    """Состояние приложения, общее для всех потоков HTTP-сервера."""
+    """Состояние приложения, общее для всех потоков HTTP-сервера.
+
+    ``state`` неизменяем «вглубь»: любое обновление подменяет словарь целиком и
+    увеличивает ревизию. Клиенты узнают об изменениях по ``rev`` (``/api/version``
+    или ``ETag``), а не скачивая и сравнивая всё состояние.
+    """
 
     def __init__(self, save: str | None = None, saves_dir: str | None = None):
         self.save = save
@@ -39,25 +76,108 @@ class TrackerApp:
         self.state: dict[str, Any] | None = None
         self.error: dict[str, Any] | None = None
         self.lock = threading.RLock()
+        # ``epoch`` отличает ревизии разных запусков: после перезапуска счётчик
+        # начинается заново, и без него открытая вкладка могла бы пропустить
+        # обновление из-за совпадения номера.
+        self.epoch = secrets.token_hex(4)
+        self._revision = 0
+        self._payload: _Payload | None = None
+        self._goals_sig: Any = _UNSET
 
     # ---- снимки состояния -------------------------------------------------
     def snapshot(self) -> tuple[dict[str, Any] | None, dict[str, Any] | None]:
         with self.lock:
             return self.state, self.error
 
+    def _bump(self) -> None:
+        """Новая ревизия; вызывать под ``self.lock``."""
+
+        self._revision += 1
+        self._payload = None
+        self._goals_sig = _UNSET  # следующий sync_goals() перечитает цели один раз
+
     def set_state(self, state: dict[str, Any] | None, error: dict[str, Any] | None = None) -> None:
         with self.lock:
             self.state = state
             self.error = error
+            self._bump()
+
+    def set_state_if_current(self, state: dict[str, Any], save: str | None, saves_dir: str | None) -> bool:
+        """Применяет состояние, только если выбор сейва не менялся, пока оно строилось.
+
+        Разбор большого сейва идёт секунды; если за это время пользователь
+        переключил ферму, результат для прежнего сейва нельзя ставить поверх.
+        """
+
+        with self.lock:
+            if (self.save, self.saves_dir) != (save, saves_dir):
+                return False
+            self.state = state
+            self.error = None
+            self._bump()
+            return True
 
     def set_error(self, error: SaveError) -> None:
+        info = error.to_dict()
         with self.lock:
-            self.error = error.to_dict()
+            if info != self.error:  # повтор той же ошибки не должен дёргать клиентов
+                self.error = info
+                self._bump()
 
     def set_goals(self, goals: dict[str, Any]) -> None:
         with self.lock:
             if self.state is not None:
-                self.state["goals"] = goals
+                self.state = {**self.state, "goals": goals}
+                self._bump()
+
+    def sync_goals(self) -> None:
+        """Подхватывает правки ``goals.json`` снаружи: один ``stat`` на проверку."""
+
+        signature = goals_signature()
+        with self.lock:
+            if self.state is None or signature == self._goals_sig:
+                return
+        # Чтение под тем же замком, что и запись из POST: иначе можно прочитать
+        # старый файл между save_goals() и set_goals() и откатить свежие цели.
+        # app.lock здесь не держим: POST берёт их в порядке GOALS_LOCK -> app.lock.
+        with GOALS_LOCK:
+            signature = goals_signature()
+            goals = load_goals()
+        with self.lock:
+            if self.state is not None and self.state.get("goals") != goals:
+                self.state = {**self.state, "goals": goals}
+                self._bump()
+            self._goals_sig = signature
+
+    # ---- публикация для клиентов -----------------------------------------
+    def version(self) -> dict[str, Any]:
+        """Крошечный ответ ``/api/version``: менялось ли что-то с прошлого опроса."""
+
+        self.sync_goals()
+        with self.lock:
+            state = self.state
+            return {
+                "rev": f"{self.epoch}-{self._revision}",
+                "ready": state is not None,
+                "save_mtime": state["meta"]["save_mtime"] if state else None,
+            }
+
+    def state_payload(self) -> _Payload | None:
+        """JSON текущего состояния (кэшируется на ревизию) или ``None`` без сейва."""
+
+        self.sync_goals()
+        with self.lock:
+            state, revision, cached = self.state, self._revision, self._payload
+            rev = f"{self.epoch}-{revision}"
+        if state is None:
+            return None
+        if cached is not None and cached.rev == rev:
+            return cached
+        payload = _Payload(rev, json.dumps(state, ensure_ascii=False).encode("utf-8"))
+        with self.lock:
+            if self._revision == revision:
+                self._payload = payload
+        return payload
 
     # ---- операции ---------------------------------------------------------
     def load(self) -> dict[str, Any]:
@@ -81,6 +201,7 @@ class TrackerApp:
             self.save = path
             self.state = state
             self.error = None
+            self._bump()
         return state
 
     def allowed_save_paths(self) -> set[str]:
@@ -145,8 +266,45 @@ class _BaseHandler(BaseHTTPRequestHandler):
     def _json(self, code: int, value: Any, extra_headers: dict[str, str] | None = None) -> None:
         self._send(code, json.dumps(value, ensure_ascii=False), extra_headers=extra_headers)
 
+    def _host_allowed(self) -> bool:
+        """Защита от DNS-rebinding: на loopback принимаем только свои имена хоста."""
+
+        allowed = getattr(self.server, "allowed_hosts", None)
+        if allowed is None:  # явный ``--host 0.0.0.0``: пользователь открыл доступ сам
+            return True
+        header = self.headers.get("Host")
+        return not header or _host_name(header) in allowed
+
+    def _reject_host(self) -> None:
+        self._json(403, {"error": "Недопустимый заголовок Host: обращайтесь по 127.0.0.1 или localhost"})
+
+    def _etag_matches(self, etag: str) -> bool:
+        header = self.headers.get("If-None-Match", "")
+        candidates = {token.strip().removeprefix("W/") for token in header.split(",")}
+        return etag in candidates or "*" in candidates
+
+    def _send_state(self, payload: _Payload) -> None:
+        """Состояние с ETag: 304 для неизменившегося и gzip для клиентов, которые его принимают."""
+
+        etag = f'"{payload.rev}"'
+        headers = {"ETag": etag, "Cache-Control": "no-cache", "Vary": "Accept-Encoding"}
+        if self._etag_matches(etag):
+            self.send_response(304)
+            for key, value in headers.items():
+                self.send_header(key, value)
+            self.end_headers()
+            return
+        body = payload.raw
+        if "gzip" in self.headers.get("Accept-Encoding", "").lower():
+            body = payload.gzipped
+            headers["Content-Encoding"] = "gzip"
+        self._send(200, body, extra_headers=headers)
+
     # ---- GET --------------------------------------------------------------
     def do_OPTIONS(self) -> None:
+        if not self._host_allowed():
+            self._reject_host()
+            return
         # Дашборд живёт на том же origin; произвольным сайтам CORS не нужен.
         self.send_response(204)
         self.send_header("Allow", _ALLOWED_METHODS)
@@ -154,6 +312,9 @@ class _BaseHandler(BaseHTTPRequestHandler):
         self.end_headers()
 
     def do_GET(self) -> None:
+        if not self._host_allowed():
+            self._reject_host()
+            return
         parsed = urlsplit(self.path)
         path = parsed.path
         query = parse_qs(parsed.query)
@@ -186,15 +347,16 @@ class _BaseHandler(BaseHTTPRequestHandler):
                 self._send(404, b"not found", "text/plain; charset=utf-8")
             return
 
+        if path == "/api/version":
+            self._json(200, self.application.version())
+            return
+
         if path == "/api/state":
-            with self.application.lock:
-                state = self.application.state
-                error = self.application.error
-                if state is not None:
-                    state["goals"] = load_goals()
-            if state is not None:
-                self._json(200, state)
+            payload = self.application.state_payload()
+            if payload is not None:
+                self._send_state(payload)
             else:
+                _state, error = self.application.snapshot()
                 self._json(404, {"error": error or {"title": "Сейв не загружен"}})
             return
 
@@ -230,8 +392,12 @@ class _BaseHandler(BaseHTTPRequestHandler):
 
         if path == "/api/refresh":
             try:
-                state = self.application.refresh(clear_caches=True)
-                self._json(200, state)
+                self.application.refresh(clear_caches=True)
+                payload = self.application.state_payload()
+                if payload is None:  # состояние успели сбросить — отдаём как «нет сейва»
+                    self._json(404, {"error": {"title": "Сейв не загружен"}})
+                else:
+                    self._send_state(payload)
             except SaveError as exc:
                 self.application.set_error(exc)
                 self._json(500, {"error": exc.to_dict()})
@@ -268,6 +434,9 @@ class _BaseHandler(BaseHTTPRequestHandler):
         return payload
 
     def do_POST(self) -> None:
+        if not self._host_allowed():
+            self._reject_host()
+            return
         path = urlsplit(self.path).path
         payload = self._read_payload()
         if payload is None:
@@ -295,14 +464,13 @@ class _BaseHandler(BaseHTTPRequestHandler):
             return
 
         try:
-            goals = normalize_goals(
-                {
-                    "goals": goals_value,
-                    "tasks": tasks_value,
-                    "annotations": payload.get("annotations", load_goals().get("annotations", {})),
-                }
-            )
+            # Чтение сохранённых пометок, нормализация и запись — под одним
+            # замком: иначе два одновременных POST теряли пометки друг друга.
             with GOALS_LOCK:
+                annotations = (
+                    payload["annotations"] if "annotations" in payload else load_goals().get("annotations", {})
+                )
+                goals = normalize_goals({"goals": goals_value, "tasks": tasks_value, "annotations": annotations})
                 save_goals(goals)
                 self.application.set_goals(goals)
             self._json(200, {"ok": True, "goals": goals})
@@ -337,19 +505,56 @@ def make_handler(app: TrackerApp) -> type[_BaseHandler]:
     return Handler
 
 
+def _host_name(header: str) -> str:
+    """Имя хоста из заголовка ``Host`` без порта: ``localhost:8777`` -> ``localhost``."""
+
+    value = header.strip().lower()
+    if value.startswith("["):  # IPv6: [::1]:8777
+        end = value.find("]")
+        return value[1:end] if end > 0 else value
+    return value.rsplit(":", 1)[0] if value.count(":") == 1 else value
+
+
+def allowed_hosts_for(bind_host: str) -> frozenset[str] | None:
+    """Допустимые значения ``Host`` для адреса привязки; ``None`` — без ограничений.
+
+    Привязка к loopback — режим «только этот компьютер», и там чужие имена
+    хоста отклоняются. Явный ``--host 0.0.0.0`` или адрес в локальной сети —
+    сознательное решение открыть доступ, имена заранее неизвестны.
+    """
+
+    host = bind_host.strip("[]").lower()
+    if host in _LOOPBACK_HOSTS or host.startswith("127."):
+        return _LOOPBACK_HOSTS | {host}
+    return None
+
+
 class TrackerHTTPServer(ThreadingHTTPServer):
     daemon_threads = True
     allow_reuse_address = True
 
     def __init__(self, address: tuple[str, int], app: TrackerApp):
         self.app = app
+        self.allowed_hosts = allowed_hosts_for(str(address[0]))
         super().__init__(address, make_handler(app))
 
 
 def watch_loop(app: TrackerApp, stop: threading.Event, interval: float = 2.0) -> None:
-    """Следит за mtime сейва и пересобирает состояние при изменении."""
+    """Следит за mtime сейва и пересобирает состояние при изменении.
+
+    Подпись файла запоминается только после УСПЕШНОГО разбора. Игра пишет
+    большой сейв не мгновенно, а антивирус или сама игра могут ненадолго
+    удерживать файл: раньше такой сбой помечал подпись как «обработанную», и
+    состояние оставалось старым до следующей записи сейва. Теперь неудачный
+    разбор повторяется с нарастающей паузой, но не бесконечно: сломанный файл
+    в 25 МБ нельзя перечитывать каждые две секунды.
+    """
 
     last_signature: tuple[str, int, int] | None = None
+    failed_signature: tuple[str, int, int] | None = None
+    failures = 0
+    retry_at = 0.0
+    last_message = ""
     while not stop.is_set():
         try:
             with app.lock:
@@ -360,15 +565,31 @@ def watch_loop(app: TrackerApp, stop: threading.Event, interval: float = 2.0) ->
                 stat = os.stat(selected)
                 signature = (os.path.abspath(selected), stat.st_mtime_ns, stat.st_size)
                 if signature != last_signature:
-                    last_signature = signature
-                    app.set_state(build_state(current_save, current_dir))
-                    print(f"[{time.strftime('%H:%M:%S')}] сейв обновлён -> состояние пересобрано")
+                    if signature != failed_signature:  # файл изменился — счётчик сбоев не нужен
+                        failed_signature, failures, retry_at = None, 0, 0.0
+                    if failures < _WATCH_RETRY_ATTEMPTS and time.monotonic() >= retry_at:
+                        try:
+                            state = build_state(current_save, current_dir)
+                        except (SaveError, OSError):
+                            failed_signature = signature
+                            failures += 1
+                            retry_at = time.monotonic() + _WATCH_RETRY_BASE * 2 ** (failures - 1)
+                            raise
+                        last_signature = signature
+                        failed_signature, failures, last_message = None, 0, ""
+                        if app.set_state_if_current(state, current_save, current_dir):
+                            print(f"[{time.strftime('%H:%M:%S')}] сейв обновлён -> состояние пересобрано")
         except SaveError as exc:
             # SaveError наследуется от SystemExit: без явного перехвата поток
             # наблюдателя молча умирал при исчезновении сейва.
-            print("watch:", exc, file=sys.stderr)
+            app.set_error(exc)
+            if str(exc) != last_message:
+                last_message = str(exc)
+                print("watch:", exc, file=sys.stderr)
         except Exception as exc:
-            print("watch:", exc, file=sys.stderr)
+            if str(exc) != last_message:  # одну и ту же ошибку не печатаем каждые 2 с
+                last_message = str(exc)
+                print("watch:", exc, file=sys.stderr)
         stop.wait(interval)
 
 
