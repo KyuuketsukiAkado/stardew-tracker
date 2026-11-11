@@ -102,7 +102,7 @@ python3 tracker.py info --saves-dir /tmp/saves
 python3 tracker.py build --saves-dir /tmp/saves --out /tmp/report.html
 ```
 
-Тесты используют только `unittest` и синтетический XML-сейв: 258 тестов.
+Тесты используют только `unittest` и синтетический XML-сейв: 275 тестов.
 CI прогоняет их на Python 3.9, 3.11 и 3.13, а отдельный quality-job проверяет `ruff`, формат,
 `mypy`, `bandit` и покрытие не ниже 85%.
 
@@ -155,7 +155,7 @@ saves/                     необязательная папка для сей
 goals.json                 локальные цели и задачи (игнорируется git)
 data/recipe_sources.json   точные источники рецептов (сверены с вики 1.6)
 data/secrets.json          контент danger zone: задания Ки, записки, секреты, иконки, ссылки на вики
-tests/                     258 тестов и генератор тестового сейва
+tests/                     275 тестов и генератор тестового сейва
 docs/index.html            автономная демонстрационная сборка (генерируется tools/build_demo.py)
 tools/build_demo.py        детерминированная пересборка демо и проверка его актуальности
 docs/AUDIT.md              аудит, находки и AQA-отчёт

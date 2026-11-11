@@ -3688,6 +3688,8 @@
         dangerConsent: "Я понимаю, что дальше спойлеры, и хочу их увидеть",
         dangerEnter: "Войти в danger zone",
         dangerLeave: "Скрыть снова и выйти",
+        secretsLoading: "Загружаю решения…",
+        secretsFailed: "Не удалось загрузить решения. Выйдите из раздела и откройте его снова.",
         dangerSectionLocked:
           "⚠ Вы ещё не открыли это место — раздел раскрывает будущее прохождение.",
         hint: "Подсказка",
@@ -3762,6 +3764,8 @@
         dangerConsent: "I understand there are spoilers ahead and want to see them",
         dangerEnter: "Enter the danger zone",
         dangerLeave: "Hide again and leave",
+        secretsLoading: "Loading solutions…",
+        secretsFailed: "Could not load the solutions. Leave this section and open it again.",
         dangerSectionLocked:
           "⚠ You haven't unlocked this place yet — this section spoils future progress.",
         hint: "Hint",
@@ -3805,6 +3809,11 @@
         nowOnly = false,
         peopleSearch = "",
         dangerConsent = false,
+        // Решения «Секретов» не приходят вместе с состоянием: страница просит их
+        // у /api/secrets только после согласия и забывает при выходе из раздела.
+        secretsCache = null,
+        secretsLoading = false,
+        secretsFailed = false,
         savesCache = null,
         pendingSaves = 0;
       // Фильтры коллекций запоминаются между визитами (localStorage).
@@ -5125,11 +5134,15 @@
           .join("")}</ul></div></div>`;
         if (!dangerConsent)
           return `${title(t("secrets"), "")}${banner}<div class="card danger-gate"><label><input type="checkbox" id="dangerConsent"> ${t("dangerConsent")}</label><button type="button" class="danger" id="dangerEnter" disabled>${svgIcon("triangle-alert")} ${t("dangerEnter")}</button></div>`;
-        const sec = S.secrets || { sections: [] },
-          qiDone = (sec.qi_orders_completed || []).length;
-        return `${title(t("secrets"), "", `<button type="button" id="dangerLeave">${t("dangerLeave")}</button>`)}${banner}${(
-          sec.sections || []
-        )
+        const sec = S.secrets || {},
+          qiDone = (sec.qi_orders_completed || []).length,
+          sections = secretsSections(),
+          leaveButton = `<button type="button" id="dangerLeave">${t("dangerLeave")}</button>`;
+        if (!sections) {
+          loadSecrets();
+          return `${title(t("secrets"), "", leaveButton)}${banner}<div class="card" role="status">${t(secretsFailed ? "secretsFailed" : "secretsLoading")}</div>`;
+        }
+        return `${title(t("secrets"), "", leaveButton)}${banner}${sections
           .map((s) => {
             const gate = s.gate ? gateInfo(s.gate) : null,
               warn =
@@ -5266,8 +5279,33 @@
         }
         toast(t("savedSuccessfully"));
       }
+      // Автономный отчёт несёт решения внутри состояния; живой сервер — отдельным запросом.
+      function secretsSections() {
+        return S?.secrets?.sections || secretsCache;
+      }
+      function forgetSecrets() {
+        secretsCache = null;
+        secretsLoading = false;
+        secretsFailed = false;
+        revealed.clear();
+      }
+      async function loadSecrets() {
+        if (secretsLoading || secretsFailed || MODE !== "live") return;
+        secretsLoading = true;
+        try {
+          const response = await fetch("/api/secrets", { cache: "no-store" });
+          if (!response.ok) throw new Error("secrets unavailable");
+          secretsCache = (await response.json()).sections || [];
+        } catch (e) {
+          secretsFailed = true;
+        }
+        secretsLoading = false;
+        // Пока грузилось, пользователь мог выйти из раздела — тогда ничего не показываем.
+        if (route === "secrets" && dangerConsent) render();
+        else if (!dangerConsent) forgetSecrets();
+      }
       function findSecret(id) {
-        for (const s of S?.secrets?.sections || [])
+        for (const s of secretsSections() || [])
           for (const e of s.entries || []) if (e.id === id) return e;
         return null;
       }
@@ -5311,7 +5349,7 @@
         if (leave)
           leave.onclick = () => {
             dangerConsent = false;
-            revealed.clear();
+            forgetSecrets();
             render();
             focusViewHeading();
           };
@@ -5627,7 +5665,7 @@
         // Danger zone требует подтверждения при каждом входе.
         if (route !== "secrets") {
           dangerConsent = false;
-          revealed.clear();
+          forgetSecrets();
         }
         render();
         scrollTo(0, 0);

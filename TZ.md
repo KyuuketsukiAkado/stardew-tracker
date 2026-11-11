@@ -296,8 +296,11 @@ python tracker.py open                                        # build + откр
 | Метод | Путь | Назначение |
 |---|---|---|
 | GET | `/` | дашборд (HTML со встроенным состоянием) |
-| GET | `/api/state` | JSON состояния |
+| GET | `/api/state` | JSON состояния; `ETag`/`If-None-Match` (304), gzip по `Accept-Encoding`. Без текста решений «Секретов» — вместо него `secrets.lazy: true` |
+| GET | `/api/version` | крошечный `{"rev","ready","save_mtime"}`: страница опрашивает его и скачивает состояние только при смене `rev` |
+| GET | `/api/secrets` | `{"sections":[...]}` — решения danger zone; страница просит их только после согласия, автономный отчёт несёт их внутри |
 | GET | `/api/refresh` | принудительно перечитать сейв |
+| POST | `/api/saves/select` | `{"path": ...}` — переключить активный сейв (только из найденных); `GET /?save=…` больше ничего не переключает |
 | POST | `/api/goals` | `{"goals":[...],"tasks":[...],"annotations":{...}}` → `goals.json` (старые клиенты без `annotations` поддерживаются) |
 | GET | `/api/goals/export` | Экспорт целей, задач, пометок и заметок |
 | GET | `/api/saves` | Перечень доступных сохранений |

@@ -13,7 +13,7 @@ import time
 import webbrowser
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from typing import Any
-from urllib.parse import parse_qs, urlsplit
+from urllib.parse import urlsplit
 
 from .constants import SPRITE_FILES
 from .errors import SaveError, TrackerError
@@ -22,7 +22,7 @@ from .paths import SPRITES_DIR
 from .report import render
 from .savefinder import find_saves
 from .saveparser import clear_cache as clear_parse_cache
-from .state import build_state, clear_state_cache, list_saves_info
+from .state import build_state, clear_state_cache, list_saves_info, secret_sections
 
 _ALLOWED_METHODS = "GET, POST, OPTIONS"
 _CSP = (
@@ -39,6 +39,24 @@ _LOOPBACK_HOSTS = frozenset({"127.0.0.1", "localhost", "::1"})
 _WATCH_RETRY_BASE = 2.0
 _WATCH_RETRY_ATTEMPTS = 5
 _UNSET: Any = object()
+
+
+def client_state(state: dict[str, Any]) -> dict[str, Any]:
+    """Состояние для браузера в живом режиме: без текста решений раздела «Секреты».
+
+    Решения весят ~30 КБ и раньше уезжали в каждом ответе и в исходнике каждой
+    страницы, хотя интерфейс обещает показывать их только после явного согласия.
+    Теперь страница получает пометку ``secrets.lazy`` и после согласия запрашивает
+    ``/api/secrets``. Это защита от случайного спойлера (просмотр исходника,
+    отладчик, чужие глаза), а не секрет: данные по-прежнему отдаются любому, кто
+    запросит их сам. В автономном отчёте (``build``) всё встроено, сервера там нет.
+    """
+
+    secrets = state.get("secrets")
+    if not isinstance(secrets, dict) or "sections" not in secrets:
+        return state
+    light = {key: value for key, value in secrets.items() if key != "sections"}
+    return {**state, "secrets": {**light, "lazy": True}}
 
 
 class _Payload:
@@ -83,6 +101,7 @@ class TrackerApp:
         self._revision = 0
         self._payload: _Payload | None = None
         self._goals_sig: Any = _UNSET
+        self._secrets_json: bytes | None = None
 
     # ---- снимки состояния -------------------------------------------------
     def snapshot(self) -> tuple[dict[str, Any] | None, dict[str, Any] | None]:
@@ -173,11 +192,20 @@ class TrackerApp:
             return None
         if cached is not None and cached.rev == rev:
             return cached
-        payload = _Payload(rev, json.dumps(state, ensure_ascii=False).encode("utf-8"))
+        payload = _Payload(rev, json.dumps(client_state(state), ensure_ascii=False).encode("utf-8"))
         with self.lock:
             if self._revision == revision:
                 self._payload = payload
         return payload
+
+    def secrets_json(self) -> bytes:
+        """JSON разделов «Секреты» (не зависит от сейва, собирается один раз)."""
+
+        cached = self._secrets_json
+        if cached is None:
+            cached = json.dumps({"sections": secret_sections()}, ensure_ascii=False).encode("utf-8")
+            self._secrets_json = cached
+        return cached
 
     # ---- операции ---------------------------------------------------------
     def load(self) -> dict[str, Any]:
@@ -315,23 +343,16 @@ class _BaseHandler(BaseHTTPRequestHandler):
         if not self._host_allowed():
             self._reject_host()
             return
-        parsed = urlsplit(self.path)
-        path = parsed.path
-        query = parse_qs(parsed.query)
-        requested_save = (query.get("save") or [""])[0]
-
-        if requested_save and path in ("/", "/index.html", "/api/state"):
-            target = os.path.abspath(requested_save)
-            if target in self.application.allowed_save_paths():
-                try:
-                    self.application.activate(target)
-                except SaveError as exc:
-                    self.application.set_error(exc)
+        # GET ничего не меняет: раньше ``/?save=…`` переключал активный сейв, и любая
+        # страница могла дёрнуть это межсайтовым запросом. Переключение — только
+        # ``POST /api/saves/select`` (оно к тому же требует application/json).
+        path = urlsplit(self.path).path
 
         if path in ("/", "/index.html"):
             state, error = self.application.snapshot()
             try:
-                self._send(200, render(state, "live", error=error), "text/html; charset=utf-8")
+                page = render(client_state(state) if state is not None else None, "live", error=error)
+                self._send(200, page, "text/html; charset=utf-8")
             except FileNotFoundError:
                 self._send(500, "Нет файла assets/dashboard.html", "text/plain; charset=utf-8")
             return
@@ -349,6 +370,11 @@ class _BaseHandler(BaseHTTPRequestHandler):
 
         if path == "/api/version":
             self._json(200, self.application.version())
+            return
+
+        if path == "/api/secrets":
+            # Страница просит это только после согласия на спойлеры (см. client_state).
+            self._send(200, self.application.secrets_json())
             return
 
         if path == "/api/state":
@@ -491,7 +517,7 @@ class _BaseHandler(BaseHTTPRequestHandler):
             return
         try:
             state = self.application.activate(target)
-            self._json(200, state)
+            self._json(200, client_state(state))
         except SaveError as exc:
             self._json(400, {"error": exc.to_dict()})
 
