@@ -2195,7 +2195,6 @@
       .welcome-row > div:first-child {
         min-width: 0;
       }
-      :root[data-theme="dark"] .big,
       :root[data-theme="dark"] .page-head h1,
       :root[data-theme="dark"] .page-head h1 em {
         font-style: italic;
@@ -2318,20 +2317,31 @@
       .stat-icon .item-icon.sheet2 {
         transform: scale(0.5);
       }
+      /* Значение и единица — отдельные flex-элементы: наклонный глиф или запасной
+         шрифт больше не может нарисоваться поверх % либо /всего. Цифры прямые
+         в обеих темах, курсив остаётся у декоративных заголовков. */
       .big {
+        display: flex;
+        align-items: baseline;
+        flex-wrap: wrap;
+        column-gap: 14px;
         margin-top: 30px;
         font-size: clamp(48px, 5.2vw, var(--t9));
         font-weight: 700;
-        line-height: 0.85;
-        letter-spacing: -0.02em;
+        font-style: normal;
+        line-height: 1.05;
+        letter-spacing: -0.01em;
         font-variant-numeric: tabular-nums;
       }
-      .big sup {
-        margin-left: 8px;
-        font: 600 var(--t3) var(--font-display);
+      .big-value {
+        min-width: 0;
+      }
+      .big-unit {
+        flex: none;
+        font: 600 var(--t3) / 1.2 var(--font-display);
+        font-variant-numeric: tabular-nums;
         letter-spacing: 0;
-        vertical-align: top;
-        opacity: 0.55;
+        opacity: 0.78;
       }
       .tile .bar {
         height: 6px;
@@ -4393,12 +4403,12 @@
                 ? "statusProgress"
                 : "statusIdle",
           );
-        return `<section class="tile m ${tone} ${span} ${state}" data-go="${go}" role="link" tabindex="0" aria-label="${esc(label)}: ${v[0]} / ${v[1]} · ${stateText}"><div class="t-label"><span class="t-name"><span class="stat-icon">${itemIcon(iconSp, true)}</span>${label}</span><span>${percent}%</span></div><div class="big">${v[0]}<sup>/${v[1]}</sup></div><div class="bar" role="progressbar" aria-label="${t("progress")}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${percent}"><i style="width:${percent}%"></i></div><div class="stat-sub">${Math.max(0, v[1] - v[0])} ${t("left")}</div></section>`;
+        return `<section class="tile m ${tone} ${span} ${state}" data-go="${go}" role="link" tabindex="0" aria-label="${esc(label)}: ${v[0]} / ${v[1]} · ${stateText}"><div class="t-label"><span class="t-name"><span class="stat-icon">${itemIcon(iconSp, true)}</span>${label}</span><span>${percent}%</span></div><div class="big"><span class="big-value">${v[0]}</span><span class="big-unit">/${v[1]}</span></div><div class="bar" role="progressbar" aria-label="${t("progress")}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${percent}"><i style="width:${percent}%"></i></div><div class="stat-sub">${Math.max(0, v[1] - v[0])} ${t("left")}</div></section>`;
       }
       function perfectionTile(span) {
         const p = S.perfection,
           percent = Math.max(0, Math.min(100, Number(p.pct) || 0));
-        return `<section class="tile hero m ${span}" data-go="perfection" role="link" tabindex="0" aria-label="${t("perfection")}: ${p.pct}%"><div class="t-label"><span class="t-name"><span class="stat-icon">${itemIcon([1, 96], true)}</span>${t("perfection")}</span><span aria-hidden="true">★</span></div><div class="big">${p.pct}<sup>%</sup></div><div class="bar" role="progressbar" aria-label="${t("progress")}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(percent)}"><i style="width:${percent}%"></i></div><div class="stat-sub">${t("officialCriteria")}</div></section>`;
+        return `<section class="tile hero m ${span}" data-go="perfection" role="link" tabindex="0" aria-label="${t("perfection")}: ${p.pct}%"><div class="t-label"><span class="t-name"><span class="stat-icon">${itemIcon([1, 96], true)}</span>${t("perfection")}</span><span aria-hidden="true">★</span></div><div class="big"><span class="big-value">${p.pct}</span><span class="big-unit">%</span></div><div class="bar" role="progressbar" aria-label="${t("progress")}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(percent)}"><i style="width:${percent}%"></i></div><div class="stat-sub">${t("officialCriteria")}</div></section>`;
       }
       function header() {
         let m = (S && S.meta) || {};
