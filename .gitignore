@@ -2,6 +2,8 @@
 goals.json
 goals.json.bak
 goals.json.tmp
+settings.json
+settings.*.tmp
 report.html
 saves/
 *.save

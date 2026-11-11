@@ -2543,6 +2543,75 @@
       .beta-banner.hidden {
         display: none;
       }
+      /* Разрешение на поиск сохранений */
+      .consent .lead {
+        margin: 0 0 20px;
+        font-size: var(--t2);
+        line-height: 1.5;
+      }
+      .consent h3 {
+        margin-bottom: 12px;
+        font-size: var(--t4);
+      }
+      .folder-list {
+        display: grid;
+        gap: 8px;
+        margin: 0 0 20px;
+        padding: 0;
+        list-style: none;
+      }
+      .folder-list li {
+        padding: 10px 14px;
+        border-radius: 14px;
+        background: var(--surface-2);
+        box-shadow: inset 0 0 0 1px var(--line);
+        overflow-wrap: anywhere;
+      }
+      .folder-list code {
+        font: 13.5px / 1.4 ui-monospace, "Cascadia Mono", Consolas, monospace;
+      }
+      .consent .actions button {
+        padding: 12px 22px;
+        border-radius: 999px;
+        font-weight: 650;
+      }
+      .consent-form {
+        margin-top: 18px;
+      }
+      .consent-form label {
+        display: block;
+        margin-bottom: 6px;
+        color: var(--muted);
+        font-size: 14px;
+      }
+      .consent-form input[type="text"] {
+        flex: 1 1 280px;
+        min-width: 0;
+        padding: 10px 14px;
+        border: 1px solid var(--line-strong);
+        border-radius: 12px;
+        background: var(--surface);
+        color: var(--text);
+        font: inherit;
+      }
+      .consent-form [role="alert"] {
+        min-height: 1.2em;
+        margin: 6px 0 0;
+        color: var(--danger);
+      }
+      .folders-dialog {
+        width: min(640px, 100%);
+      }
+      .note-dialog h3.mini {
+        margin: 16px 0 8px;
+        color: var(--muted);
+        font: 650 12.5px / 1.2 var(--font-text);
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+      .folders-dialog .folder-list {
+        margin-bottom: 14px;
+      }
       /* Выбор языка при первом запуске */
       .lang-dialog {
         width: min(480px, 100%);
@@ -3298,6 +3367,21 @@
       </div>
     </div>
     <div
+      id="foldersModal"
+      class="note-modal hidden"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="foldersTitle"
+    >
+      <div class="note-dialog folders-dialog">
+        <h2 id="foldersTitle">Where the tracker looks</h2>
+        <div id="foldersBody"></div>
+        <div class="actions">
+          <button type="button" id="foldersClose">Close</button>
+        </div>
+      </div>
+    </div>
+    <div
       id="noteModal"
       class="note-modal hidden"
       role="dialog"
@@ -3395,7 +3479,8 @@
         if (prefs.theme === "auto") applyTheme();
       });
       let S = window.__STATE__,
-        ERR = window.__ERROR__;
+        ERR = window.__ERROR__,
+        consentDeferred = false;
       if (S) {
         S.goals = S.goals || { goals: [], tasks: [] };
         if (MODE === "static")
@@ -3463,6 +3548,31 @@
           betaText: "Это бета-версия. Вопросы, баги и предложения — пишите на почту",
           betaOr: "или",
           betaIssues: "создайте issue на GitHub",
+          consentKicker: "Приватность",
+          consentTitle: "Разрешить Stardew Tracker искать ваши сохранения?",
+          consentLead:
+            "Пока вы не разрешите, трекер не открывает папки с сохранениями. Если разрешите, он заглянет только в перечисленные ниже папки и прочитает найденные файлы сохранений (XML). Ничего никуда не отправляется.",
+          consentFolders: "Где он будет искать",
+          consentAllow: "Разрешить и запомнить",
+          consentLater: "Не сейчас",
+          consentPaused: "Поиск сохранений выключен. Трекер не будет читать их без вашего разрешения.",
+          consentResume: "Вернуться к выбору",
+          consentOther: "Указать другую папку…",
+          consentPathLabel: "Папка с вашими сохранениями",
+          consentPathHint: "например, D:\\Backups\\StardewSaves",
+          consentUse: "Использовать эту папку",
+          consentAside: "Вы остаётесь главным",
+          consentHint:
+            "Передумать можно в любой момент кнопкой «Папки» вверху. Хотите полный контроль? Запустите приложение с --saves-dir «папка» или --save «файл»: тогда оно вообще не будет искать сохранения само.",
+          foldersButton: "Папки",
+          foldersTitle: "Где ищет трекер",
+          foldersOn: "Разрешено: трекер сам ищет сохранения в стандартных папках.",
+          foldersOff: "Поиск в стандартных папках не разрешён.",
+          foldersEnv: "Разрешение дано настройкой STARDEW_TRACKER_ALLOW_SCAN для этого запуска. Его можно отозвать сейчас, но при следующем запуске с этой настройкой поиск снова будет разрешён.",
+          foldersExtra: "Папки, добавленные вами",
+          foldersStop: "Отозвать разрешение и забыть добавленные папки",
+          foldersAdd: "Добавить папку",
+          foldersClose: "Закрыть",
           dismiss: "Закрыть",
           goalHint: "Пользовательские цели и задачи сохраняются в goals.json.",
           offlineGoalsHint:
@@ -3595,6 +3705,31 @@
           betaText: "This is a beta. Questions, bugs and suggestions are very welcome — write to",
           betaOr: "or",
           betaIssues: "open a GitHub issue",
+          consentKicker: "Privacy",
+          consentTitle: "May Stardew Tracker look for your saves?",
+          consentLead:
+            "The tracker won't look in your save folders until you choose. If you allow it, it looks only in the folders below and reads the save files (XML) it finds there. Nothing is sent anywhere.",
+          consentFolders: "Folders it would look in",
+          consentAllow: "Allow and remember",
+          consentLater: "Not now",
+          consentPaused: "Save search is off. The tracker won't read your saves without your permission.",
+          consentResume: "Back to choices",
+          consentOther: "Use a different folder…",
+          consentPathLabel: "Folder with your saves",
+          consentPathHint: "for example D:\\Backups\\StardewSaves",
+          consentUse: "Use this folder",
+          consentAside: "You stay in control",
+          consentHint:
+            "You can change your mind at any time with the Folders button in the top bar. Want full control? Start the app with --saves-dir \"folder\" or --save \"file\" and it will never look for saves by itself.",
+          foldersButton: "Folders",
+          foldersTitle: "Where the tracker looks",
+          foldersOn: "Allowed: the tracker looks for saves in the standard folders by itself.",
+          foldersOff: "Search in the standard folders is not allowed.",
+          foldersEnv: "Allowed by STARDEW_TRACKER_ALLOW_SCAN for this run. You can withdraw now, but starting again with this setting grants access again.",
+          foldersExtra: "Folders you added",
+          foldersStop: "Withdraw permission and forget the folders I added",
+          foldersAdd: "Add folder",
+          foldersClose: "Close",
           dismiss: "Dismiss",
           goalHint: "Custom goals and tasks are saved in goals.json.",
           offlineGoalsHint:
@@ -4283,8 +4418,10 @@
           ? `${esc((seasons[m.season] || [m.season, m.season])[EN ? 1 : 0])} ${esc(m.day)}, ${yearText(m.year)} · ${esc(m.clock || "")} · ${Number(m.money || 0).toLocaleString(EN ? "en-US" : "ru-RU")}g${m.weather ? ` · ${weatherLabel(m.weather)}` : ""}`
           : "";
         let opts = "";
-        if (MODE === "live")
-          opts = `<select id="saveSelect" aria-label="${t("save")}"><option>${t("save")}: ${esc(m.save_name || "…")}</option></select><button id="refresh">↻ ${t("refresh")}</button>`;
+        if (MODE === "live") {
+          if (S) opts = `<select id="saveSelect" aria-label="${t("save")}"><option>${t("save")}: ${esc(m.save_name || "…")}</option></select><button id="refresh">↻ ${t("refresh")}</button>`;
+          opts += `<button type="button" id="foldersBtn" title="${t("foldersTitle")}">${svgIcon("lock")} ${t("foldersButton")}</button>`;
+        }
         const themeNext = { light: "dark", dark: "auto", auto: "light" },
           themeIcon = { light: "sun", dark: "moon", auto: "sun" },
           themeLabel = {
@@ -4322,6 +4459,8 @@
               toast(t("apiError"));
             }
           };
+        let fb = $("#foldersBtn");
+        if (fb) fb.onclick = openFolders;
         let ss = $("#saveSelect");
         if (ss) loadSaves(ss, m.save_path);
       }
@@ -4391,7 +4530,7 @@
               render();
               $("#saveSelect")?.focus();
               toast(t("updated"));
-            } else toast(x.error?.title || x.error || t("apiError"));
+            } else toast(errorText(x.error) || t("apiError"));
           };
         } catch (e) {
           if (sel.isConnected) toast(t("apiError"));
@@ -5055,9 +5194,102 @@
             .join("") || `<div class="empty">${t("noGoals")}</div>`
         }<section class="card" style="margin-top:14px"><h2 class="panel-title">${t("task")} <span class="badge ${G.tasks.length > 0 && G.tasks.every((x) => x.done) ? "ok" : G.tasks.some((x) => x.done) ? "warn" : "no"}">${G.tasks.filter((x) => !x.done).length}/${G.tasks.length}</span></h2>${live ? `<div class="form"><input id="taskTitle" type="text" maxlength="120" aria-label="${t("title")}" placeholder="${t("title")}"><button type="button" id="addTask">+ ${t("addTask")}</button></div>` : ""}${G.tasks.map((a) => `<div class="task ${a.done ? "done" : ""}"><input type="checkbox" data-task="${esc(a.id)}" aria-label="${esc(a.title)}" ${a.done ? "checked" : ""} ${live ? "" : "disabled"}><span style="flex:1;${a.done ? "text-decoration:line-through;color:var(--state-done)" : ""}">${esc(a.title)}</span>${live ? `<button type="button" data-deltask="${esc(a.id)}" aria-label="${t("deleteTask")}" title="${t("deleteTask")}">×</button>` : ""}</div>`).join("") || `<div class="empty">${t("noTasks")}</div>`}</section>`;
       }
+      // An error carries both languages (``i18n``); the page shows the one the user chose.
+      function errorFields(e) {
+        const local = (e && e.i18n && e.i18n[EN ? "en" : "ru"]) || {};
+        return {
+          title: local.title || (e && e.title) || "",
+          detail: local.detail || (e && e.detail) || "",
+          steps: local.steps || (e && e.steps) || [],
+        };
+      }
+      function errorText(e) {
+        if (!e) return "";
+        return typeof e === "string" ? e : errorFields(e).title;
+      }
+      async function postConsent(payload) {
+        const response = await fetch("/api/consent", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        let data = {};
+        try {
+          data = await response.json();
+        } catch (e) {
+          data = {};
+        }
+        if (!response.ok) throw new Error(errorText(data.error) || t("apiError"));
+        return data;
+      }
+      function folderList(folders) {
+        return `<ul class="folder-list">${folders.map((folder) => `<li><code>${esc(folder)}</code></li>`).join("")}</ul>`;
+      }
+      // The tracker opens no folder on its own until the user says yes.
+      function consentView(e) {
+        const folders = (e.data && e.data.folders) || [];
+        return `<div class="page-head"><div><p class="kicker">${t("consentKicker")}</p><h1 id="consentTitle">${t("consentTitle")}</h1></div></div><div class="bento"><section class="tile consent s8" aria-labelledby="consentTitle"><p class="lead">${t("consentLead")}</p><h3>${t("consentFolders")}</h3>${folderList(folders)}<div class="actions"><button type="button" id="consentAllow" class="active">${t("consentAllow")}</button><button type="button" id="consentOther">${t("consentOther")}</button><button type="button" id="consentLater">${t("consentLater")}</button></div><form id="consentForm" class="consent-form hidden"><label for="consentPath">${t("consentPathLabel")}</label><div class="actions"><input type="text" id="consentPath" autocomplete="off" spellcheck="false" placeholder="${esc(t("consentPathHint"))}"><button type="submit" class="active">${t("consentUse")}</button></div><p id="consentError" role="alert"></p></form></section><aside class="tile ice s4"><h3>${svgIcon("lock")} ${t("consentAside")}</h3><p>${t("consentHint")}</p></aside></div>`;
+      }
       function errorView() {
-        let e = ERR || {};
-        return `<div class="error"><h2>${esc(e.title || t("noSave"))}</h2><p>${esc(e.detail || "")}</p>${(e.steps || []).map((s) => `<div>• ${esc(s)}</div>`).join("")}<button id="retry" style="margin-top:12px">${t("restore")}</button></div>`;
+        const e = ERR || {};
+        if (e.kind === "consent_required")
+          return consentDeferred
+            ? `<div class="error"><h2>${t("consentPaused")}</h2><button type="button" id="consentResume">${t("consentResume")}</button></div>`
+            : consentView(e);
+        const f = errorFields(e);
+        return `<div class="error"><h2>${esc(f.title || t("noSave"))}</h2><p>${esc(f.detail)}</p>${f.steps.map((s) => `<div>• ${esc(s)}</div>`).join("")}<button id="retry" style="margin-top:12px">${t("restore")}</button></div>`;
+      }
+      // "Folders" dialog: what the tracker may look at, and a way to take it back.
+      async function renderFolders() {
+        const body = $("#foldersBody");
+        $("#foldersTitle").textContent = t("foldersTitle");
+        $("#foldersClose").textContent = t("foldersClose");
+        body.textContent = "…";
+        let info;
+        try {
+          const response = await fetch("/api/consent", { cache: "no-store" });
+          info = await response.json();
+        } catch (e) {
+          body.textContent = t("apiError");
+          return;
+        }
+        const withdraw =
+          info.standard_allowed || info.extra.length
+            ? `<button type="button" id="foldersStop">${t("foldersStop")}</button>`
+            : "";
+        const allow = info.standard_allowed
+          ? ""
+          : `<button type="button" id="foldersAllow" class="active">${t("consentAllow")}</button>`;
+        body.innerHTML = `<p class="sub">${info.standard_allowed ? t("foldersOn") : t("foldersOff")}</p>${info.by_environment ? `<p class="sub">${t("foldersEnv")}</p>` : ""}<h3 class="mini">${t("consentFolders")}</h3>${folderList(info.standard)}${info.extra.length ? `<h3 class="mini">${t("foldersExtra")}</h3>${folderList(info.extra)}` : ""}<div class="actions">${allow}${withdraw}</div><form id="foldersForm" class="consent-form"><label for="foldersPath">${t("consentPathLabel")}</label><div class="actions"><input type="text" id="foldersPath" autocomplete="off" spellcheck="false" placeholder="${esc(t("consentPathHint"))}"><button type="submit">${t("foldersAdd")}</button></div><p id="foldersError" role="alert"></p></form>`;
+        const act = async (payload) => {
+          try {
+            await postConsent(payload);
+            await pull(true);
+            await renderFolders();
+          } catch (err) {
+            $("#foldersError").textContent = err.message;
+          }
+        };
+        if ($("#foldersAllow")) $("#foldersAllow").onclick = () => act({ allow: true });
+        if ($("#foldersStop")) $("#foldersStop").onclick = () => act({ forget: true });
+        $("#foldersForm").onsubmit = (event) => {
+          event.preventDefault();
+          const value = $("#foldersPath").value.trim();
+          if (value) act({ folder: value });
+        };
+      }
+      let foldersTrigger = null;
+      function openFolders(event) {
+        foldersTrigger = event && event.currentTarget;
+        $("#foldersModal").classList.remove("hidden");
+        document.body.classList.add("modal-open");
+        renderFolders().then(() => $("#foldersClose").focus());
+      }
+      function closeFolders() {
+        $("#foldersModal").classList.add("hidden");
+        document.body.classList.remove("modal-open");
+        if (foldersTrigger && foldersTrigger.isConnected) foldersTrigger.focus();
+        foldersTrigger = null;
       }
       function blockedText(n) {
         if (EN) return `${n} ${n === 1 ? "item" : "items"} locked`;
@@ -5557,12 +5789,61 @@
           modal.onclick = (e) => {
             if (e.target === modal) closeNote();
           };
+        const consentAllow = $("#consentAllow");
+        if (consentAllow)
+          consentAllow.onclick = async () => {
+            try {
+              await postConsent({ allow: true });
+              await pull(true);
+            } catch (err) {
+              toast(err.message);
+            }
+          };
+        const consentOther = $("#consentOther"),
+          consentForm = $("#consentForm");
+        if (consentOther)
+          consentOther.onclick = () => {
+            consentForm.classList.toggle("hidden");
+            if (!consentForm.classList.contains("hidden")) $("#consentPath").focus();
+          };
+        if ($("#consentLater"))
+          $("#consentLater").onclick = () => {
+            consentDeferred = true;
+            render();
+          };
+        if ($("#consentResume"))
+          $("#consentResume").onclick = () => {
+            consentDeferred = false;
+            render();
+            $("#consentAllow")?.focus();
+          };
+        if (consentForm)
+          consentForm.onsubmit = async (event) => {
+            event.preventDefault();
+            const value = $("#consentPath").value.trim();
+            if (!value) return;
+            try {
+              await postConsent({ folder: value });
+              await pull(true);
+            } catch (err) {
+              $("#consentError").textContent = err.message;
+            }
+          };
+        const foldersModal = $("#foldersModal");
+        if (foldersModal) {
+          foldersModal.onclick = (e) => {
+            if (e.target === foldersModal) closeFolders();
+          };
+          $("#foldersClose").onclick = closeFolders;
+        }
         document.onkeydown = (e) => {
           const langOpen = !$("#langModal").classList.contains("hidden"),
-            modal = langOpen ? $("#langModal") : $("#noteModal");
+            foldersOpen = !$("#foldersModal").classList.contains("hidden"),
+            modal = langOpen ? $("#langModal") : foldersOpen ? $("#foldersModal") : $("#noteModal");
           if (!modal || modal.classList.contains("hidden")) return;
           if (e.key === "Escape") {
             if (langOpen) langChoose?.(prefs.lang);
+            else if (foldersOpen) closeFolders();
             else closeNote();
             return;
           }
@@ -5799,6 +6080,7 @@
             return;
           }
           let n = await r.json();
+          consentDeferred = false;
           seenRev = rev;
           if (pendingSaves > 0 && S) n.goals = S.goals;
           const saveChanged = !S || n.meta.save_mtime !== S.meta.save_mtime;
@@ -5841,7 +6123,7 @@
         scrollTo(0, 0);
         if (!focusBundleTarget()) focusViewHeading();
       });
-      if (!S && MODE === "live") fetch("/api/refresh").then(pull);
+      if (!S && MODE === "live") pull(true);
       render();
       langGate();
       focusBundleTarget();

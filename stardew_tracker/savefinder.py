@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import os
+import sys
 
+from . import consent
 from .constants import SEASON_RU  # noqa: F401  (реэкспорт для совместимости)
 from .errors import SaveError
 from .i18n import L
@@ -32,15 +34,18 @@ def _no_save_steps() -> list[str]:
     ]
 
 
-def candidate_save_dirs() -> list[str]:
-    """Стандартные расположения сейвов в Windows, Linux (включая Proton) и macOS."""
+def candidate_save_dirs(platform: str | None = None) -> list[str]:
+    """Standard save folders of the current system (Windows, macOS, or Linux incl. Proton)."""
 
+    system = sys.platform if platform is None else platform
     home = os.path.expanduser("~")
-    appdata = os.environ.get("APPDATA") or os.path.join(home, "AppData", "Roaming")
+    if system == "win32":
+        appdata = os.environ.get("APPDATA") or os.path.join(home, "AppData", "Roaming")
+        return [os.path.join(appdata, "StardewValley", "Saves")]
+    if system == "darwin":
+        return [os.path.join(home, "Library", "Application Support", "StardewValley", "Saves")]
     return [
-        os.path.join(appdata, "StardewValley", "Saves"),
         os.path.join(home, ".config", "StardewValley", "Saves"),
-        os.path.join(home, "Library", "Application Support", "StardewValley", "Saves"),
         os.path.join(
             home,
             ".local",
@@ -59,6 +64,12 @@ def candidate_save_dirs() -> list[str]:
             "Saves",
         ),
     ]
+
+
+def standard_folders() -> list[str]:
+    """Where the tracker looks on its own once the user has allowed it (no disk access here)."""
+
+    return [*candidate_save_dirs(), SAVES_DIR]
 
 
 def safe_mtime(path: str) -> float:
@@ -187,7 +198,8 @@ def find_saves(saves_dir: str | None = None, explicit: str | None = None) -> lis
                 ],
             )
 
-    directories = [saves_dir] if saves_dir else [*candidate_save_dirs(), SAVES_DIR]
+    # A folder the caller names is the user's own choice; the standard folders need permission.
+    directories = [saves_dir] if saves_dir else consent.folders_to_scan(standard_folders())
 
     seen_dirs: set[str] = set()
     results: list[str] = []

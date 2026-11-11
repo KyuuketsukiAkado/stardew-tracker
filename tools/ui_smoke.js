@@ -10,7 +10,8 @@
 //
 // Checks: every section renders in English and Russian, light and dark, without script
 // errors; the English UI contains no Russian text outside the bilingual item-name spans;
-// the secrets section works after consent; first-run language chooser, "remember my
+// the secrets section works after consent; the permission screen to look for saves and the Folders dialog;
+// errors in the interface language; first-run language chooser, "remember my
 // choice", Escape, system-language suggestion, legacy theme migration, beta banner.
 
 "use strict";
@@ -168,11 +169,167 @@ async function betaBanner() {
   s.w.close();
 }
 
+
+// ---------------------------------------------------------------------------------------------
+// Live mode with a fake server: the permission screen, the "Folders" dialog and error language.
+// The raw template (placeholders intact) is a live page without a save; the state comes from the demo.
+// ---------------------------------------------------------------------------------------------
+const TEMPLATE = fs.readFileSync(path.join(__dirname, "..", "assets", "dashboard.html"), "utf8");
+const DEMO = fs.readFileSync(path.join(__dirname, "..", "docs", "index.html"), "utf8");
+const DEMO_STATE = (() => {
+  const marker = "window.__STATE__ = ";
+  const start = DEMO.indexOf(marker) + marker.length;
+  return JSON.parse(DEMO.slice(start, DEMO.indexOf(";\n", start)));
+})();
+
+function fakeBackend({ allowed = false, error = null } = {}) {
+  const b = { allowed, extra: [], folders: ["C:/Games/Stardew/Saves", "C:/App/saves"], calls: [], posted: [], error };
+  const consentError = () => ({
+    kind: "consent_required",
+    title: "console language title",
+    detail: "console language detail",
+    steps: [],
+    data: { folders: b.folders },
+    i18n: { en: { title: "Allow?", detail: "d", steps: [] }, ru: { title: "Разрешить?", detail: "д", steps: [] } },
+  });
+  const reply = (status, body) => ({ ok: status < 400, status, json: async () => body });
+  b.fetch = async (url, options = {}) => {
+    const route = String(url);
+    b.calls.push(route);
+    const method = (options.method || "GET").toUpperCase();
+    const hasState = b.allowed || b.extra.length > 0;
+    if (route === "/api/refresh" || route === "/api/state") {
+      if (b.error) return reply(route === "/api/refresh" ? 500 : 404, { error: b.error });
+      return hasState ? reply(200, DEMO_STATE) : reply(route === "/api/refresh" ? 500 : 404, { error: consentError() });
+    }
+    if (route === "/api/version") return reply(200, { rev: "r" + b.posted.length, ready: hasState });
+    if (route === "/api/saves") {
+      const m = DEMO_STATE.meta;
+      return reply(200, { saves: hasState ? [{ path: m.save_path, farm: m.farm, farmer: m.farmer, season: m.season, day: m.day, year: m.year }] : [], active: hasState ? m.save_path : "" });
+    }
+    if (route === "/api/consent" && method === "GET")
+      return reply(200, { standard: b.folders, standard_allowed: b.allowed, by_environment: false, extra: b.extra });
+    if (route === "/api/consent" && method === "POST") {
+      const body = JSON.parse(options.body);
+      b.posted.push(body);
+      if (body.folder !== undefined) {
+        if (!body.folder.startsWith("D:/")) return reply(400, { error: "Not a folder: " + body.folder });
+        b.extra.push(body.folder);
+      }
+      if (body.allow !== undefined) b.allowed = !!body.allow;
+      if (body.forget) { b.allowed = false; b.extra = []; }
+      return reply(200, { ok: true, consent: { standard: b.folders, standard_allowed: b.allowed, by_environment: false, extra: b.extra } });
+    }
+    return reply(404, { error: "not found" });
+  };
+  return b;
+}
+
+async function bootLive(backend, storage = prefs("en")) {
+  const errors = [];
+  allErrors.push(errors);
+  const virtualConsole = new VirtualConsole();
+  virtualConsole.on("jsdomError", (e) => errors.push(String(e.message).slice(0, 200)));
+  const dom = new JSDOM(TEMPLATE, {
+    runScripts: "dangerously",
+    url: "http://localhost:8777/",
+    pretendToBeVisual: true,
+    virtualConsole,
+    beforeParse(w) {
+      w.scrollTo = () => {};
+      w.HTMLElement.prototype.scrollIntoView = () => {};
+      w.fetch = backend.fetch;
+      for (const [key, value] of Object.entries(storage)) w.localStorage.setItem(key, value);
+    },
+  });
+  await sleep(500);
+  return { w: dom.window, d: dom.window.document };
+}
+
+async function consentFlow() {
+  let backend = fakeBackend();
+  let s = await bootLive(backend);
+  let view = s.d.getElementById("view");
+  check("permission: the screen asks before anything is read", /May Stardew Tracker look for your saves\?/.test(view.textContent));
+  const listed = [...view.querySelectorAll(".folder-list code")].map((c) => c.textContent);
+  check("permission: it lists exactly the folders it would look in", listed.join("|") === backend.folders.join("|"), listed.join("|"));
+  check("permission: Allow and Use-another-folder are offered", !!s.d.getElementById("consentAllow") && !!s.d.getElementById("consentOther"));
+  check("permission: no save list is requested before the answer", !backend.calls.includes("/api/saves") && backend.posted.length === 0);
+  check("folders: settings remain available without a loaded save", !!s.d.getElementById("foldersBtn"));
+  s.d.getElementById("consentLater").click();
+  check("permission: Not now keeps the search off", /Save search is off/.test(s.d.getElementById("view").textContent) && backend.posted.length === 0);
+  s.d.getElementById("consentResume").click();
+  check("permission: a declined choice can be reconsidered", !!s.d.getElementById("consentAllow"));
+
+  s.d.getElementById("language").click();
+  await sleep(150);
+  check("permission: the screen follows the interface language (RU)", /Разрешить Stardew Tracker искать ваши сохранения\?/.test(s.d.getElementById("view").textContent));
+  s.d.getElementById("language").click();
+  await sleep(150);
+
+  s.d.getElementById("consentOther").click();
+  check("permission: another folder can be typed in", !s.d.getElementById("consentForm").classList.contains("hidden"));
+  s.d.getElementById("consentPath").value = "Z:/nope";
+  s.d.getElementById("consentForm").dispatchEvent(new s.w.Event("submit", { cancelable: true }));
+  await sleep(200);
+  check("permission: a wrong folder shows the server's message", /Not a folder: Z:\/nope/.test(s.d.getElementById("consentError").textContent));
+
+  s.d.getElementById("consentAllow").click();
+  await sleep(500);
+  check("permission: Allow sends allow=true and the app opens", JSON.stringify(backend.posted.at(-1)) === '{"allow":true}' && /Hello/.test(s.d.getElementById("view").textContent));
+
+  // the Folders dialog
+  const folders = s.d.getElementById("foldersBtn");
+  check("folders: the button is in the top bar", !!folders);
+  folders.click();
+  await sleep(300);
+  const dialog = s.d.getElementById("foldersModal");
+  check("folders: the dialog opens and shows the permission", visible(dialog) && /Allowed: the tracker looks for saves/.test(dialog.textContent));
+  check("folders: it lists the standard folders", backend.folders.every((f) => dialog.textContent.includes(f)));
+  s.d.dispatchEvent(new s.w.KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+  check("folders: Escape closes it", !visible(dialog));
+  folders.click();
+  await sleep(300);
+  s.d.getElementById("foldersStop").click();
+  await sleep(600);
+  check("folders: withdrawing sends forget=true", JSON.stringify(backend.posted.at(-1)) === '{"forget":true}');
+  check("folders: after withdrawing the app asks again", /May Stardew Tracker look for your saves\?/.test(s.d.getElementById("view").textContent));
+  s.w.close();
+
+  // a folder chosen by hand
+  backend = fakeBackend();
+  s = await bootLive(backend);
+  s.d.getElementById("consentOther").click();
+  s.d.getElementById("consentPath").value = "D:/Backups/StardewSaves";
+  s.d.getElementById("consentForm").dispatchEvent(new s.w.Event("submit", { cancelable: true }));
+  await sleep(500);
+  check("permission: a folder of your own opens the app without the standard permission", backend.posted.at(-1).folder === "D:/Backups/StardewSaves" && backend.allowed === false && /Hello/.test(s.d.getElementById("view").textContent));
+  s.w.close();
+}
+
+async function errorLanguage() {
+  const error = { kind: "io_error", title: "console title", detail: "console detail", steps: ["console step"], i18n: { en: { title: "English title", detail: "English detail", steps: ["English step"] }, ru: { title: "Русский заголовок", detail: "Русские подробности", steps: ["Русский шаг"] } } };
+  for (const [lang, expected] of [["en", "English title"], ["ru", "Русский заголовок"]]) {
+    const backend = fakeBackend({ error });
+    const s = await bootLive(backend, prefs(lang));
+    const text = s.d.getElementById("view").textContent;
+    check(`errors: shown in the interface language (${lang})`, text.includes(expected) && !text.includes("console title"), text.slice(0, 60));
+    check(`errors: details and steps follow the language (${lang})`, lang === "en" ? /English detail/.test(text) && /English step/.test(text) : /Русские подробности/.test(text) && /Русский шаг/.test(text));
+    s.w.close();
+  }
+  const backend = fakeBackend({ error: { kind: "x", title: "Only plain", detail: "plain detail", steps: [] } });
+  const s = await bootLive(backend);
+  check("errors: an error without translations still shows its own text", /Only plain/.test(s.d.getElementById("view").textContent));
+  s.w.close();
+}
+
 (async () => {
   await sectionsWalk();
   await secrets();
   await languageFlow();
   await betaBanner();
+  await consentFlow();
+  await errorLanguage();
   const errors = allErrors.flat();
   check("no script errors in any run", errors.length === 0, errors.slice(0, 2).join(" | "));
   for (const r of results) console.log(`${r.ok ? "PASS" : "FAIL"}  ${r.name}${r.detail ? "  -> " + r.detail : ""}`);

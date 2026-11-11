@@ -207,6 +207,8 @@ class TestSaveFinder(unittest.TestCase):
         with (
             mock.patch.object(savefinder, "candidate_save_dirs", return_value=[self.tmp]),
             mock.patch.object(savefinder, "SAVES_DIR", empty_saves),
+            # The standard folders are only searched with the user's permission (see test_consent.py).
+            mock.patch.dict(os.environ, {"STARDEW_TRACKER_ALLOW_SCAN": "1"}),
         ):
             found = savefinder.find_saves()
         self.assertEqual(set(found), {self.save, self.other})

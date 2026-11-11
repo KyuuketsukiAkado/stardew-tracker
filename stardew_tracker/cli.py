@@ -8,10 +8,11 @@ import sys
 import time
 import webbrowser
 
+from . import consent
 from .errors import TrackerError
 from .i18n import ENV_VAR, LANGUAGES, L, get_language, set_language
 from .report import build_report
-from .savefinder import find_saves
+from .savefinder import find_saves, standard_folders
 from .server import serve
 from .state import build_state
 from .version import __version__
@@ -178,13 +179,62 @@ def build_parser() -> argparse.ArgumentParser:
             )
         ),
     )
+    parser.add_argument(
+        "--allow-scan",
+        action="store_true",
+        help=str(
+            L(
+                "allow the tracker to look for saves in the standard Stardew Valley folders and remember that",
+                "разрешить трекеру искать сохранения в стандартных папках Stardew Valley и запомнить выбор",
+            )
+        ),
+    )
     parser.add_argument("--version", action="version", version=f"Stardew Tracker {__version__}")
     return parser
+
+
+def _interactive() -> bool:
+    return bool(sys.stdin and sys.stdin.isatty() and sys.stdout and sys.stdout.isatty())
+
+
+def _ask_permission(folders: list[str]) -> bool:
+    """Console version of the page's permission question."""
+
+    print(
+        L(
+            "Stardew Tracker can look for your saves in these folders:",
+            "Stardew Tracker может искать сохранения в этих папках:",
+        )
+    )
+    for folder in folders:
+        print("  " + folder)
+    print(
+        L(
+            "It only opens save files (XML) to read them; nothing is sent anywhere.",
+            "Он только открывает файлы сохранений (XML), чтобы их прочитать; ничего никуда не отправляется.",
+        )
+    )
+    answer = input(str(L("Allow this and remember my choice? [y/N] ", "Разрешить и запомнить выбор? [y/N] ")))
+    return answer.strip().lower() in {"y", "yes", "д", "да"}
+
+
+def ensure_consent(args: argparse.Namespace) -> None:
+    """Looking into the standard folders needs the user's yes; pointing at a path does not."""
+
+    if args.allow_scan:
+        consent.allow_standard(True)
+        return
+    if args.save or args.saves_dir or consent.standard_allowed():
+        return
+    # ``serve`` asks in the browser; the one-off commands can ask right here.
+    if args.cmd in ("info", "build", "open") and _interactive() and _ask_permission(standard_folders()):
+        consent.allow_standard(True)
 
 
 def main(argv: list[str] | None = None) -> int:
     set_language(_requested_language(argv))
     args = build_parser().parse_args(argv)
+    ensure_consent(args)
 
     if args.cmd == "info":
         info(args.save, args.saves_dir)

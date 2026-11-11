@@ -39,8 +39,8 @@ Ready-made apps are on the **[Releases](https://github.com/KyuuketsukiAkado/star
 | Linux (x86-64) | `StardewTracker-linux-v….zip` → `StardewTracker` |
 
 1. Unpack the archive and run `StardewTracker.exe` (macOS/Linux: `./StardewTracker`).
-2. Your browser opens `http://127.0.0.1:8777` (the next free port if that one is busy). Your Stardew Valley saves are found automatically.
-3. Close the console window to stop the app.
+2. Your browser opens `http://127.0.0.1:8777` (the next free port if that one is busy). The tracker asks before looking in the listed Stardew Valley save folders. You can instead enter your own folder; nothing is uploaded.
+3. Close the console window to stop the app. Use **Folders** in the app to withdraw permission at any time.
 
 The apps are **not code-signed**, so your system may warn you:
 
@@ -63,7 +63,7 @@ python3 tracker.py build --save "/path/to/Saves/Farm_123/Farm_123"   # one-off r
 python3 -m stardew_tracker --version
 ```
 
-On Windows you can double-click `run.bat` (live server) or `report.bat` (standalone `report.html`). Useful options: `--save`, `--saves-dir`, `--port`, `--host`, `--out`, `--no-open`, `--no-watch`, `--lang`, `--version`.
+On Windows you can double-click `run.bat` (live server) or `report.bat` (standalone `report.html`). In a terminal, `info`, `build` and `open` ask before searching if interactive; scripts can use `--allow-scan` to explicitly allow and remember the search. `--save` and `--saves-dir` read only the path you specify, without granting automatic access. Useful options: `--save`, `--saves-dir`, `--allow-scan`, `--port`, `--host`, `--out`, `--no-open`, `--no-watch`, `--lang`, `--version`.
 
 Saves are normally in `%APPDATA%\StardewValley\Saves\<Farm>_<ID>\<Farm>_<ID>`. No game save at hand? Create a synthetic one: `python3 tests/make_test_save.py /tmp/saves`.
 
