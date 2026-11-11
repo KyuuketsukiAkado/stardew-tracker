@@ -62,11 +62,15 @@ class TestRepositoryDocs(unittest.TestCase):
 
     def test_changelog_is_english_and_current(self):
         changelog = read("CHANGELOG.md")
-        first_section = re.search(r"^## (v[^\n ]+)", changelog, re.M)
+        first_section = re.search(r"^## (v[^\n ]+)", changelog, re.M)  # "## Unreleased" may come first
         self.assertIsNotNone(first_section)
         self.assertEqual(first_section.group(1), f"v{__version__}")
         self.assertTrue(CYRILLIC.search(read("CHANGELOG.ru.md")))
         self.assertIn(f"## v{__version__}", read("CHANGELOG.ru.md"))
+        self.assertLess(
+            changelog.index("## Unreleased") if "## Unreleased" in changelog else 0,
+            changelog.index(f"## v{__version__}"),
+        )
 
     def test_issue_templates_exist_and_are_english(self):
         for name in ("bug_report.yml", "feedback.yml"):

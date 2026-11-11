@@ -1,0 +1,669 @@
+<!doctype html>
+<html lang="en" data-lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Stardew Tracker — see what's done and what's left in your Stardew Valley save</title>
+    <meta
+      name="description"
+      content="A free, offline progress tracker for Stardew Valley 1.5 / 1.6. Reads your save file: museum, fish, perfection, unlock requirements. No mods, no accounts, nothing uploaded."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Stardew Tracker — know what's left on your farm" />
+    <meta
+      property="og:description"
+      content="Free, offline tracker for Stardew Valley saves. No mods. Shows what's done, what's left, and what you can't get yet."
+    />
+    <meta property="og:image" content="{{SITE_URL}}screenshots/overview-light.png" />
+    <meta property="og:url" content="{{SITE_URL}}" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="theme-color" content="#e8eef4" />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' rx='12' fill='%238fd0f0'/%3E%3Ccircle cx='29' cy='10' r='3.4' fill='%23ffd34d'/%3E%3Cpath d='m8 21 11-9 11 9' fill='none' stroke='%23c2493a' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M11.500 19.500V29h15v-9.500' fill='%23fff6e0' stroke='%238a5a2b' stroke-width='2' stroke-linejoin='round'/%3E%3Cpath d='M17.500 29v-6h4v6' fill='%23c2493a'/%3E%3C/svg%3E"
+    />
+    <style>
+      /* Same "Cold Bento" language as the app: Frost (light) and Night (dark, follows the system). */
+      :root {
+        color-scheme: light dark;
+        --bg: #e8eef4;
+        --surface: #fbfcfe;
+        --line: #d3dde8;
+        --text: #0f1b2b;
+        --muted: #465c78;
+        --accent: #2f6fb3;
+        --accent-strong: #1f5590;
+        --on-ink: #e8eef4;
+        --ink: #0f1b2b;
+        --ink-2: #1c3352;
+        --ink-accent: #9fd0ff;
+        --tone-ice: #d6e8f8;
+        --tone-mint: #d5eeea;
+        --tone-violet: #dfe0f7;
+        --glow-a: #cfe0f2;
+        --glow-b: #dde3f6;
+        --stripe: transparent;
+        --warn-bg: #f6ead0;
+        --warn-line: #dfbd70;
+        --warn-text: #5c3f05;
+        --shadow: 0 0 0 1px var(--line), 0 24px 48px -32px #2a4a7066;
+        --btn-bg: #0f1b2b;
+        --btn-fg: #e8eef4;
+        --font-display: "Bahnschrift", "DIN Pro", "DIN Alternate", "Roboto Condensed", "Arial Narrow", system-ui, sans-serif;
+        --font-text: "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, Roboto, "Helvetica Neue", Arial, sans-serif;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #070b14;
+          --surface: #0f1626;
+          --line: #1c2740;
+          --text: #e8f1ff;
+          --muted: #a3aec6;
+          --accent: #4de1ff;
+          --accent-strong: #8aeaff;
+          --ink: #4a85ff;
+          --ink-2: #4de1ff;
+          --on-ink: #04101f;
+          --ink-accent: #04101f;
+          --tone-ice: #b9e6ff;
+          --tone-mint: #5ff2c4;
+          --tone-violet: #8f7cff;
+          --glow-a: #1f3d8a55;
+          --glow-b: #00e0ff22;
+          --stripe: #ffffff05;
+          --warn-bg: #2a2410;
+          --warn-line: #6b5a1f;
+          --warn-text: #f2c45c;
+          --shadow: inset 0 0 0 1px var(--line);
+          --btn-bg: #4de1ff;
+          --btn-fg: #04101f;
+        }
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html {
+        scroll-behavior: smooth;
+      }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font: 16px/1.6 var(--font-text);
+        -webkit-font-smoothing: antialiased;
+      }
+      body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        z-index: -1;
+        pointer-events: none;
+        background:
+          radial-gradient(1000px 600px at 100% 0, var(--glow-a), transparent 60%),
+          radial-gradient(800px 500px at 0 100%, var(--glow-b), transparent 60%),
+          repeating-linear-gradient(115deg, transparent 0 46px, var(--stripe) 46px 47px);
+      }
+      a {
+        color: var(--accent-strong);
+      }
+      [data-lang="en"] [lang="ru"],
+      [data-lang="ru"] [lang="en"] {
+        display: none !important;
+      }
+      .wrap {
+        max-width: 1120px;
+        margin: 0 auto;
+        padding: 0 clamp(18px, 4vw, 40px);
+      }
+      /* top bar */
+      .bar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 18px 0;
+      }
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        color: inherit;
+        text-decoration: none;
+        font: 700 20px/1 var(--font-display);
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+      }
+      .brand svg {
+        width: 34px;
+        height: 34px;
+      }
+      .links {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 6px 18px;
+        font-size: 14px;
+      }
+      .links a {
+        color: var(--muted);
+        text-decoration: none;
+        font-weight: 600;
+      }
+      .links a:hover {
+        color: var(--text);
+      }
+      .links button {
+        padding: 6px 14px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: var(--surface);
+        color: var(--text);
+        font: 600 13px/1 var(--font-display);
+        letter-spacing: 0.1em;
+        cursor: pointer;
+      }
+      /* hero */
+      .hero {
+        padding: clamp(28px, 7vw, 76px) 0 clamp(20px, 4vw, 40px);
+      }
+      .kicker {
+        margin: 0 0 14px;
+        color: var(--accent);
+        font: 600 13px/1 var(--font-display);
+        letter-spacing: 0.22em;
+        text-transform: uppercase;
+      }
+      h1 {
+        margin: 0;
+        max-width: 14ch;
+        font: 700 clamp(46px, 9vw, 96px) / 0.95 var(--font-display);
+        font-variation-settings: "wdth" 75;
+        font-stretch: condensed;
+        letter-spacing: -0.01em;
+        text-transform: uppercase;
+      }
+      h1 em {
+        color: var(--accent);
+        font-style: normal;
+      }
+      .lead {
+        max-width: 56ch;
+        margin: 22px 0 0;
+        color: var(--muted);
+        font-size: clamp(17px, 2.2vw, 20px);
+      }
+      .cta {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 14px 22px;
+        margin-top: 30px;
+      }
+      .button {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        padding: 18px 30px;
+        border-radius: 999px;
+        background: var(--btn-bg);
+        color: var(--btn-fg);
+        font: 700 17px/1 var(--font-display);
+        letter-spacing: 0.12em;
+        text-decoration: none;
+        text-transform: uppercase;
+        box-shadow: 0 14px 30px -14px var(--btn-bg);
+        transition: transform 0.15s ease;
+      }
+      .button:hover {
+        transform: translateY(-2px);
+      }
+      .button:focus-visible,
+      .links a:focus-visible,
+      .links button:focus-visible,
+      .others a:focus-visible {
+        outline: 3px solid var(--accent);
+        outline-offset: 3px;
+      }
+      .others {
+        color: var(--muted);
+        font-size: 14px;
+      }
+      .others a {
+        margin-right: 12px;
+        white-space: nowrap;
+      }
+      .meta {
+        margin: 16px 0 0;
+        color: var(--muted);
+        font-size: 14px;
+      }
+      .badge {
+        display: inline-block;
+        margin-right: 8px;
+        padding: 3px 11px;
+        border-radius: 999px;
+        background: var(--ink);
+        color: var(--on-ink);
+        font: 600 12px/1.4 var(--font-display);
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+      }
+      .note {
+        max-width: 66ch;
+        margin: 20px 0 0;
+        padding: 12px 16px;
+        border-radius: 14px;
+        background: var(--warn-bg);
+        box-shadow: inset 0 0 0 1px var(--warn-line);
+        color: var(--warn-text);
+        font-size: 14px;
+      }
+      .mobile-note {
+        display: none;
+        margin-top: 18px;
+        color: var(--muted);
+        font-size: 15px;
+      }
+      .is-mobile .mobile-note {
+        display: block;
+      }
+      /* tiles */
+      section {
+        padding: clamp(24px, 5vw, 48px) 0;
+      }
+      h2 {
+        margin: 0 0 22px;
+        font: 700 clamp(30px, 5vw, 44px) / 1 var(--font-display);
+        font-variation-settings: "wdth" 75;
+        font-stretch: condensed;
+        letter-spacing: 0.01em;
+        text-transform: uppercase;
+      }
+      .tiles {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 18px;
+      }
+      .tile {
+        padding: 26px;
+        border-radius: 26px;
+        background: var(--surface);
+        box-shadow: var(--shadow);
+      }
+      .tile.ice {
+        background: var(--tone-ice);
+        color: #0f1b2b;
+        box-shadow: none;
+      }
+      .tile.mint {
+        background: var(--tone-mint);
+        color: #0f1b2b;
+        box-shadow: none;
+      }
+      .tile.violet {
+        background: var(--tone-violet);
+        color: #0f1b2b;
+        box-shadow: none;
+      }
+      .tile.ink {
+        background: linear-gradient(160deg, var(--ink), var(--ink-2));
+        color: var(--on-ink);
+        box-shadow: none;
+      }
+      .tile h3 {
+        margin: 0 0 8px;
+        font: 700 24px/1.15 var(--font-display);
+        letter-spacing: 0.02em;
+        text-transform: uppercase;
+      }
+      .tile p {
+        margin: 0;
+        font-size: 15.5px;
+      }
+      .shots {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 18px;
+      }
+      .shots img {
+        display: block;
+        width: 100%;
+        height: auto;
+        border-radius: 20px;
+        box-shadow: var(--shadow);
+      }
+      .steps {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 18px;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+        counter-reset: step;
+      }
+      .steps li {
+        position: relative;
+        padding: 26px 26px 26px 78px;
+        border-radius: 26px;
+        background: var(--surface);
+        box-shadow: var(--shadow);
+        counter-increment: step;
+      }
+      .steps li::before {
+        content: counter(step);
+        position: absolute;
+        left: 24px;
+        top: 24px;
+        display: grid;
+        place-items: center;
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: var(--ink);
+        color: var(--on-ink);
+        font: 700 18px/1 var(--font-display);
+      }
+      .steps b {
+        display: block;
+        font: 700 20px/1.2 var(--font-display);
+        letter-spacing: 0.02em;
+        text-transform: uppercase;
+      }
+      .feedback {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 18px 28px;
+      }
+      .feedback p {
+        max-width: 52ch;
+      }
+      .feedback .actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+      }
+      .feedback .button {
+        padding: 14px 22px;
+        font-size: 15px;
+        background: var(--on-ink);
+        color: var(--ink-2);
+        box-shadow: none;
+      }
+      footer {
+        padding: 30px 0 56px;
+        color: var(--muted);
+        font-size: 13.5px;
+      }
+      footer p {
+        max-width: 80ch;
+        margin: 0 0 8px;
+      }
+      @media (max-width: 860px) {
+        .tiles,
+        .steps {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+      }
+      @media (max-width: 600px) {
+        .tiles,
+        .steps,
+        .shots {
+          grid-template-columns: 1fr;
+        }
+        .bar {
+          flex-wrap: wrap;
+        }
+        .button {
+          width: 100%;
+          justify-content: center;
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        html {
+          scroll-behavior: auto;
+        }
+        .button {
+          transition: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <header class="bar">
+        <a class="brand" href="./" aria-label="Stardew Tracker">
+          <svg viewBox="0 0 40 40" aria-hidden="true" focusable="false">
+            <rect x="1" y="1" width="38" height="38" rx="12" fill="#8fd0f0" stroke="#4f9fcb" />
+            <circle cx="29" cy="10" r="3.4" fill="#ffd34d" />
+            <path d="m8 21 11-9 11 9" fill="none" stroke="#c2493a" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" />
+            <path d="M11.5 19.5V29h15v-9.5" fill="#fff6e0" stroke="#8a5a2b" stroke-width="2" stroke-linejoin="round" />
+            <path d="M17.5 29v-6h4v6" fill="#c2493a" stroke="#8a5a2b" stroke-width="1.6" stroke-linejoin="round" />
+          </svg>
+          Stardew Tracker
+        </a>
+        <nav class="links" aria-label="Links">
+          <a href="{{REPO_URL}}"><span lang="en">GitHub</span><span lang="ru">GitHub</span></a>
+          <a href="{{RELEASES_URL}}"><span lang="en">All downloads</span><span lang="ru">Все загрузки</span></a>
+          <a href="#feedback"><span lang="en">Feedback</span><span lang="ru">Обратная связь</span></a>
+          <button type="button" id="langToggle" aria-label="Switch language / Сменить язык">RU</button>
+        </nav>
+      </header>
+
+      <main>
+        <div class="hero" id="top">
+          <p class="kicker"><span lang="en">Free · offline · no mods</span><span lang="ru">Бесплатно · офлайн · без модов</span></p>
+          <h1>
+            <span lang="en">Know what's <em>left</em> on your farm</span>
+            <span lang="ru">Знайте, что ещё <em>осталось</em> на ферме</span>
+          </h1>
+          <p class="lead">
+            <span lang="en">
+              A free tracker for Stardew Valley 1.5 / 1.6. It reads your save file and shows your museum, fish, perfection and
+              more — and tells you what you can't get yet, and why.
+            </span>
+            <span lang="ru">
+              Бесплатный трекер для Stardew Valley 1.5 / 1.6. Читает файл сохранения и показывает музей, рыбу, перфекцию и многое
+              другое — а ещё то, что пока нельзя получить, и почему.
+            </span>
+          </p>
+
+          <div class="cta">
+            <a class="button" id="download" href="{{WINDOWS_URL}}" data-os="windows">
+              <span lang="en">Download for Windows</span><span lang="ru">Скачать для Windows</span>
+            </a>
+            <div class="others" id="others">
+              <span lang="en">Other systems:</span><span lang="ru">Другие системы:</span>
+              <a href="{{WINDOWS_URL}}" data-os="windows">Windows</a>
+              <a href="{{MACOS_URL}}" data-os="macos">macOS (Apple Silicon)</a>
+              <a href="{{LINUX_URL}}" data-os="linux">Linux</a>
+            </div>
+          </div>
+          <p class="meta">
+            <span class="badge"><span lang="en">{{CHANNEL_EN}}</span><span lang="ru">{{CHANNEL_RU}}</span></span>
+            <span lang="en">Version {{VERSION}} · free and open source</span><span lang="ru">Версия {{VERSION}} · бесплатно, с открытым кодом</span>
+          </p>
+          <p class="mobile-note">
+            <span lang="en">Stardew Tracker runs on a computer (Windows, macOS or Linux). Open this page on your PC to download it.</span>
+            <span lang="ru">Stardew Tracker работает на компьютере (Windows, macOS или Linux). Откройте эту страницу на ПК, чтобы скачать.</span>
+          </p>
+          <p class="note">
+            <span lang="en">
+              <b>Heads-up:</b> the app is not code-signed, so Windows may show a SmartScreen warning — choose <i>More info → Run anyway</i>.
+              The source is open and every release has SHA-256 checksums.
+            </span>
+            <span lang="ru">
+              <b>Важно:</b> приложение не подписано, поэтому Windows может показать предупреждение SmartScreen — нажмите
+              <i>Подробнее → Выполнить в любом случае</i>. Исходный код открыт, у каждого релиза есть контрольные суммы SHA-256.
+            </span>
+          </p>
+        </div>
+
+        <section aria-labelledby="why">
+          <h2 id="why"><span lang="en">Why you'll like it</span><span lang="ru">Чем он хорош</span></h2>
+          <div class="tiles">
+            <div class="tile ink">
+              <h3><span lang="en">Reads your save only</span><span lang="ru">Только читает сейв</span></h3>
+              <p>
+                <span lang="en">No mods and no SMAPI. It uses the file your game already writes, and updates itself when you save.</span>
+                <span lang="ru">Без модов и SMAPI. Берёт файл, который игра и так записывает, и обновляется сам при сохранении.</span>
+              </p>
+            </div>
+            <div class="tile ice">
+              <h3><span lang="en">Stays on your PC</span><span lang="ru">Остаётся на вашем ПК</span></h3>
+              <p>
+                <span lang="en">Offline by design: no accounts, no analytics, nothing is uploaded. Your save never leaves your computer.</span>
+                <span lang="ru">Работает офлайн: ни аккаунтов, ни аналитики, ничего не отправляется. Ваш сейв не покидает компьютер.</span>
+              </p>
+            </div>
+            <div class="tile">
+              <h3><span lang="en">Knows what's locked</span><span lang="ru">Знает, что закрыто</span></h3>
+              <p>
+                <span lang="en">Items you can't get yet are marked 🔒 with a short "how to unlock" hint — Ginger Island, Qi's room, Skull Cavern and more.</span>
+                <span lang="ru">Предметы, которые пока недоступны, помечены 🔒 с короткой подсказкой, как открыть: остров, комната Ки, Пещера Черепа и другое.</span>
+              </p>
+            </div>
+            <div class="tile mint">
+              <h3><span lang="en">Filters like you play</span><span lang="ru">Фильтры под вашу игру</span></h3>
+              <p>
+                <span lang="en">Fish by place, time, season, weather and gear. "Which fish live in the Mines?" is one click.</span>
+                <span lang="ru">Рыба по месту, времени, сезону, погоде и снасти. «Какая рыба в шахтах?» — один клик.</span>
+              </p>
+            </div>
+            <div class="tile violet">
+              <h3><span lang="en">Spoiler-safe secrets</span><span lang="ru">Секреты без спойлеров</span></h3>
+              <p>
+                <span lang="en">Mr. Qi's solutions wait behind a warning, and every hint opens only when you click it.</span>
+                <span lang="ru">Решения заданий мистера Ки скрыты за предупреждением, каждая подсказка открывается только по клику.</span>
+              </p>
+            </div>
+            <div class="tile">
+              <h3><span lang="en">English &amp; Russian</span><span lang="ru">Русский и английский</span></h3>
+              <p>
+                <span lang="en">Light and dark themes, and your language is asked once on first launch.</span>
+                <span lang="ru">Светлая и тёмная темы; язык спрашивается один раз при первом запуске.</span>
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <section aria-labelledby="look">
+          <h2 id="look"><span lang="en">A look inside</span><span lang="ru">Как это выглядит</span></h2>
+          <div class="shots">
+            <img src="screenshots/overview-light.png" width="1440" height="900" loading="lazy" alt="Overview page of the tracker in the light theme: perfection, museum and fish tiles, today's plan and unlocked areas" />
+            <img src="screenshots/overview-dark.png" width="1440" height="900" loading="lazy" alt="The same overview page in the dark theme" />
+          </div>
+        </section>
+
+        <section aria-labelledby="how">
+          <h2 id="how"><span lang="en">Start in a minute</span><span lang="ru">Запуск за минуту</span></h2>
+          <ol class="steps">
+            <li>
+              <b><span lang="en">Download</span><span lang="ru">Скачайте</span></b>
+              <span lang="en">Get the zip for your system and unpack it.</span>
+              <span lang="ru">Скачайте архив для своей системы и распакуйте.</span>
+            </li>
+            <li>
+              <b><span lang="en">Run it</span><span lang="ru">Запустите</span></b>
+              <span lang="en">Open <code>StardewTracker.exe</code> (macOS / Linux: <code>./StardewTracker</code>).</span>
+              <span lang="ru">Откройте <code>StardewTracker.exe</code> (macOS / Linux: <code>./StardewTracker</code>).</span>
+            </li>
+            <li>
+              <b><span lang="en">Look around</span><span lang="ru">Смотрите</span></b>
+              <span lang="en">Your browser opens and your saves are found automatically. Close the console window to stop.</span>
+              <span lang="ru">Откроется браузер, сейвы найдутся сами. Чтобы остановить, закройте окно консоли.</span>
+            </li>
+          </ol>
+        </section>
+
+        <section id="feedback" aria-labelledby="fb">
+          <div class="tile ink feedback">
+            <div>
+              <h2 id="fb"><span lang="en">This is a public beta</span><span lang="ru">Это публичная бета</span></h2>
+              <p>
+                <span lang="en">Tell me what works, what's confusing and what's missing. Every message helps.</span>
+                <span lang="ru">Напишите, что работает, что непонятно и чего не хватает. Каждое сообщение помогает.</span>
+              </p>
+            </div>
+            <div class="actions">
+              <a class="button" href="mailto:{{EMAIL}}">{{EMAIL}}</a>
+              <a class="button" href="{{ISSUES_URL}}" target="_blank" rel="noopener noreferrer">
+                <span lang="en">GitHub issue</span><span lang="ru">Issue на GitHub</span>
+              </a>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <footer>
+        <p>
+          <span lang="en">An unofficial fan project, not affiliated with or endorsed by ConcernedApe. Stardew Valley, its game data and art are © ConcernedApe.</span>
+          <span lang="ru">Неофициальный фан-проект, не связан с ConcernedApe и не одобрен им. Stardew Valley, игровые данные и графика — © ConcernedApe.</span>
+        </p>
+        <p>
+          <span lang="en">Open source under the MIT licence.</span><span lang="ru">Открытый код, лицензия MIT.</span>
+          <a href="{{REPO_URL}}">GitHub</a> ·
+          <a href="{{REPO_URL}}/blob/master/README.md">README</a> ·
+          <a href="{{REPO_URL}}/blob/master/README.ru.md">README (RU)</a>
+        </p>
+      </footer>
+    </div>
+
+    <script>
+      "use strict";
+      // The page is plain HTML. This script only (1) picks the language and (2) highlights the right download.
+      (function () {
+        var root = document.documentElement;
+        var store = {
+          get: function (k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
+          set: function (k, v) { try { localStorage.setItem(k, v); } catch (e) { /* private mode */ } }
+        };
+        function systemLanguage() {
+          var list = navigator.languages && navigator.languages.length ? navigator.languages : [navigator.language || "en"];
+          return String(list[0] || "en").toLowerCase().indexOf("ru") === 0 ? "ru" : "en";
+        }
+        var lang = store.get("lang");
+        if (lang !== "en" && lang !== "ru") lang = systemLanguage();
+        function applyLanguage() {
+          root.setAttribute("data-lang", lang);
+          root.lang = lang;
+          document.getElementById("langToggle").textContent = lang === "en" ? "RU" : "EN";
+        }
+        document.getElementById("langToggle").addEventListener("click", function () {
+          lang = lang === "en" ? "ru" : "en";
+          store.set("lang", lang);
+          applyLanguage();
+        });
+        applyLanguage();
+
+        function detectOS() {
+          var ua = navigator.userAgent || "";
+          var platform = (navigator.userAgentData && navigator.userAgentData.platform) || navigator.platform || "";
+          if (/android|iphone|ipad|ipod/i.test(ua)) return "mobile";
+          if (/win/i.test(platform) || /Windows/i.test(ua)) return "windows";
+          if (/mac/i.test(platform) || /Macintosh|Mac OS X/i.test(ua)) return "macos";
+          if (/linux|x11|cros/i.test(platform + " " + ua)) return "linux";
+          return "windows";
+        }
+        var os = detectOS();
+        var names = {
+          windows: { en: "Download for Windows", ru: "Скачать для Windows" },
+          macos: { en: "Download for macOS (Apple Silicon)", ru: "Скачать для macOS (Apple Silicon)" },
+          linux: { en: "Download for Linux", ru: "Скачать для Linux" }
+        };
+        var button = document.getElementById("download");
+        if (os === "mobile") {
+          root.classList.add("is-mobile");
+        } else if (names[os]) {
+          var target = document.querySelector('#others a[data-os="' + os + '"]');
+          button.href = target.href;
+          button.setAttribute("data-os", os);
+          var spans = button.getElementsByTagName("span");
+          spans[0].textContent = names[os].en;
+          spans[1].textContent = names[os].ru;
+        }
+      })();
+    </script>
+  </body>
+</html>

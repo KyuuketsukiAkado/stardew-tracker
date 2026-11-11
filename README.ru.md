@@ -1,6 +1,6 @@
 # Stardew Valley Progress Tracker
 
-🇬🇧 [English version](README.md)
+🌐 [Сайт](https://kyuuketsukiakado.github.io/stardew-tracker/) · 🇬🇧 [English version](README.md)
 
 Русско-английский локальный трекер прогресса для сохранений Stardew Valley 1.5/1.6. Показывает не только проценты: в списках видны игровые спрайты предметов, жителей, бандлов и монстров, а цветовые состояния помогают быстро отличить найденное, сданное, готовое и недостающее.
 
@@ -124,6 +124,8 @@ bandit -q -r stardew_tracker tracker.py build_data.py tools
 coverage run -m unittest discover -s tests && coverage report
 python tools/build_demo.py --check        # демо docs/index.html должно быть актуально
 ```
+
+Посадочная страница лежит в `site/` (шаблон), собирается `tools/build_site.py`, а workflow **Pages** публикует её на GitHub Pages при каждом пуше в `master`, подставляя ссылки на файлы текущей версии (необязательная проверка без браузера: `node tools/site_smoke.js`, нужен `npm install --no-save jsdom`).
 
 Демо `docs/index.html` — автономный отчёт по вымышленной ферме (Sunny Acres); его генерирует `tools/build_demo.py`
 (без текущего времени, часового пояса, локальных путей и `goals.json`, поэтому результат
