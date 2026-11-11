@@ -244,9 +244,7 @@ def build_state(save_path: str | None = None, saves_dir: str | None = None) -> d
         },
         "secrets": {
             "sections": _secret_sections(secrets, items, load_json("big_craftables.json")),
-            "qi_orders_completed": sorted(
-                order for order in raw["special_orders"] if order.startswith("QiChallenge")
-            ),
+            "qi_orders_completed": sorted(order for order in raw["special_orders"] if order.startswith("QiChallenge")),
         },
         "alerts": {
             "museum_found_not_donated": [

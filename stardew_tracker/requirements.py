@@ -85,8 +85,7 @@ GATES: dict[str, tuple[str, str, str, str, str]] = {
     "secret_woods": (
         "Тайный лес",
         "Secret Woods",
-        "Нужен стальной топор (или лучше), чтобы разрубить большое бревно на северо-западе "
-        "Пепельносмольного леса.",
+        "Нужен стальной топор (или лучше), чтобы разрубить большое бревно на северо-западе Пепельносмольного леса.",
         "You need a Steel Axe (or better) to chop the large log in the north-west of Cindersap Forest.",
         "lock",
     ),
@@ -153,8 +152,7 @@ GATES: dict[str, tuple[str, str, str, str, str]] = {
         "Mastery Cave",
         "Прокачайте все 5 навыков до 10 — откроется Пещера мастерства в Пепельносмольном лесу. "
         "Рецепт выдаётся за мастерство соответствующего навыка.",
-        "Raise all 5 skills to level 10 to open the Mastery Cave in Cindersap Forest; the recipe is a "
-        "mastery reward.",
+        "Raise all 5 skills to level 10 to open the Mastery Cave in Cindersap Forest; the recipe is a mastery reward.",
         "lock",
     ),
     "special_orders": (
@@ -162,8 +160,7 @@ GATES: dict[str, tuple[str, str, str, str, str]] = {
         "Special Orders board",
         "Доска появляется у дома Пьера осенью 1-го года (со 2-го дня). Задание выпадает случайно — "
         "проверяйте доску по понедельникам.",
-        "The board appears next to Pierre's in Fall of Year 1 (from day 2). Orders rotate — check it on "
-        "Mondays.",
+        "The board appears next to Pierre's in Fall of Year 1 (from day 2). Orders rotate — check it on Mondays.",
         "lock",
     ),
     "greenhouse": (
