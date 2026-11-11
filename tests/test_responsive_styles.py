@@ -329,6 +329,24 @@ class TestResponsiveStyles(unittest.TestCase):
         self.assertIn("height: 28px", icon_box)
         self.assertIn("display: inline-flex", css_block(self.css, ".t-name {"))
 
+    def test_large_metrics_keep_numbers_and_units_separate(self):
+        """Italic digits used to paint over the inline /total and % at large sizes."""
+
+        html = TEMPLATE.read_text(encoding="utf-8")
+        metric = css_block(self.css, ".big {")
+        for rule in (
+            "display: flex",
+            "align-items: baseline",
+            "column-gap: 14px",
+            "font-style: normal",
+            "line-height: 1.05",
+        ):
+            self.assertIn(rule, metric)
+        self.assertIn('class="big-value">${p.pct}</span><span class="big-unit">%</span>', html)
+        self.assertIn('class="big-value">${v[0]}</span><span class="big-unit">/${v[1]}</span>', html)
+        self.assertNotIn(':root[data-theme="dark"] .big,', self.css)
+        self.assertNotIn(".big sup {", self.css)
+
     def test_top_navigation_groups_and_subsections(self):
         html = TEMPLATE.read_text(encoding="utf-8")
         for token in (
