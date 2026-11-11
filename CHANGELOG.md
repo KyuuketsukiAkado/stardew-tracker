@@ -2,6 +2,10 @@
 
 🇷🇺 [Русская версия (подробная)](CHANGELOG.ru.md) — the Russian changelog is the detailed one.
 
+## Unreleased
+
+- **Landing page on GitHub Pages** (`site/`, built by `tools/build_site.py`, published by the new **Pages** workflow): a short "what and why", screenshots, a download button that picks Windows / macOS / Linux for the visitor, and the feedback address. The page is plain HTML with no external requests, in English with a Russian switch, and its download links follow the app version automatically.
+
 ## v0.4.0-beta.2 — English by default, language chooser (2026-11-11)
 
 A beta for collecting feedback from English-speaking players.
