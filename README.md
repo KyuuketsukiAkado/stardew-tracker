@@ -39,7 +39,7 @@ python3 -m stardew_tracker --version   # то же CLI через пакет
 
 ## Сборка приложения (.exe / .app / Linux)
 
-Готовые standalone-файлы собирает workflow **Build app** в GitHub Actions: `Actions → Build app → Run workflow`. Он прогоняет PyInstaller на Windows, macOS и Linux и выкладывает `StardewTracker-windows`, `StardewTracker-macos` и `StardewTracker-linux` артефактами; при пуше тега `v*` те же архивы прикрепляются к релизу. В Windows это один `StardewTracker.exe`, Python на целевой машине не нужен.
+**Готовые приложения** — на странице [Releases](https://github.com/KyuuketsukiAkado/stardew-tracker/releases) (бета-версии помечены как pre-release; рядом лежит `SHA256SUMS.txt`). Их собирает workflow **Build app** в GitHub Actions: `Actions → Build app → Run workflow`. Он прогоняет PyInstaller на Windows, macOS (Apple Silicon) и Linux и выкладывает `StardewTracker-windows`, `StardewTracker-macos` и `StardewTracker-linux` артефактами; при пуше тега `v*` те же файлы упаковываются в zip с версией в имени и публикуются релизом, а теги с дефисом (`v0.4.0-beta.1`) — как предварительные. Заметки релиза берутся из `.github/release-notes/<тег>.md`. В Windows это один `StardewTracker.exe`, Python на целевой машине не нужен.
 
 Локальная сборка в Windows:
 
