@@ -139,6 +139,11 @@ class TestEnglishFirst(SiteTestCase):
             self.assertIn(token.lower(), self.html.lower())
         self.assertIn("ConcernedApe", self.html)
 
+    def test_getting_started_asks_before_searching_for_saves(self):
+        self.assertIn("Allow the tracker to look in the listed save folders", self.html)
+        self.assertIn("Разрешите поиск в указанных папках", self.html)
+        self.assertNotIn("saves are found automatically", self.html)
+
 
 class TestWhiteDesign(SiteTestCase):
     """The site uses the tracker's light Frost look, whatever the visitor's system theme is."""

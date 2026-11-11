@@ -20,8 +20,9 @@ class TrackerError(Exception):
     language; the page receives both languages under ``i18n`` and picks its own.
     """
 
-    def __init__(self, kind: str, title: str, detail: str, steps: list[str]):
+    def __init__(self, kind: str, title: str, detail: str, steps: list[str], data: dict[str, object] | None = None):
         self.kind = kind
+        self.data = dict(data or {})
         self.title = title
         self.detail = detail
         self.steps = list(steps)
@@ -37,6 +38,8 @@ class TrackerError(Exception):
             "title": str(self.title),
             "detail": str(self.detail),
             "steps": [str(step) for step in self.steps],
+            # Extra facts for the page (for example the folders a permission is about).
+            "data": dict(self.data),
             # Both languages: the page picks the one the user chose.
             "i18n": {
                 lang: {
@@ -75,4 +78,34 @@ class DataError(SaveError):
                     "Пересоберите справочники командой python build_data.py --content-dir <папка Content>.",
                 ),
             ],
+        )
+
+
+class ConsentRequired(SaveError):
+    """The tracker may not look into the standard save folders until the user agrees."""
+
+    def __init__(self, folders: list[str]):
+        listed = "; ".join(folders)
+        super().__init__(
+            "consent_required",
+            L("Allow the tracker to look for your saves?", "Разрешить трекеру искать ваши сохранения?"),
+            L(
+                f"The tracker does not open any folder on its own until you allow it. It would look in: {listed}",
+                f"Трекер сам не открывает папки, пока вы не разрешите. Он будет искать в: {listed}",
+            ),
+            [
+                L(
+                    'Open the tracker page and press "Allow": your choice is remembered.',
+                    "Откройте страницу трекера и нажмите «Разрешить»: выбор запоминается.",
+                ),
+                L(
+                    f"Or run `{paths.COMMAND} info --allow-scan` to allow it from the console and remember it.",
+                    f"Или выполните `{paths.COMMAND} info --allow-scan`, чтобы разрешить из консоли и запомнить выбор.",
+                ),
+                L(
+                    'Or point it at your saves yourself: --save "path" or --saves-dir "folder" (no permission needed).',
+                    'Или укажите сохранения сами: --save "путь" или --saves-dir "папка" (разрешение не нужно).',
+                ),
+            ],
+            data={"folders": list(folders)},
         )

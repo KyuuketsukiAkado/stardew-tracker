@@ -15,13 +15,14 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from typing import Any
 from urllib.parse import urlsplit
 
+from . import consent
 from .constants import SPRITE_FILES
-from .errors import SaveError, TrackerError
+from .errors import ConsentRequired, SaveError, TrackerError
 from .goals import GOALS_LOCK, goals_signature, load_goals, normalize_goals, save_goals
 from .i18n import L, normalize
 from .paths import SPRITES_DIR
 from .report import render
-from .savefinder import find_saves
+from .savefinder import find_saves, standard_folders
 from .saveparser import clear_cache as clear_parse_cache
 from .state import build_state, clear_state_cache, list_saves_info, secret_sections
 
@@ -91,7 +92,14 @@ class TrackerApp:
 
     def __init__(self, save: str | None = None, saves_dir: str | None = None):
         self.save = save
+        # A save selected from the discovered list is not an explicit --save.
+        # Withdrawing permission must not leave that selection readable.
+        self._launch_save = save
         self.saves_dir = saves_dir
+        self._permission_revision = 0
+        # Serializes watcher disk access with revocation. Regular HTTP reads already
+        # hold self.lock; keep this separate so save selection can change mid-parse.
+        self.scan_lock = threading.RLock()
         self.state: dict[str, Any] | None = None
         self.error: dict[str, Any] | None = None
         self.lock = threading.RLock()
@@ -122,15 +130,15 @@ class TrackerApp:
             self.error = error
             self._bump()
 
-    def set_state_if_current(self, state: dict[str, Any], save: str | None, saves_dir: str | None) -> bool:
-        """Применяет состояние, только если выбор сейва не менялся, пока оно строилось.
-
-        Разбор большого сейва идёт секунды; если за это время пользователь
-        переключил ферму, результат для прежнего сейва нельзя ставить поверх.
-        """
+    def set_state_if_current(
+        self, state: dict[str, Any], save: str | None, saves_dir: str | None, permission_revision: int | None = None
+    ) -> bool:
+        """Discard a watcher result if the save or permission changed during parsing."""
 
         with self.lock:
-            if (self.save, self.saves_dir) != (save, saves_dir):
+            if (self.save, self.saves_dir) != (save, saves_dir) or (
+                permission_revision is not None and permission_revision != self._permission_revision
+            ):
                 return False
             self.state = state
             self.error = None
@@ -210,32 +218,37 @@ class TrackerApp:
 
     # ---- операции ---------------------------------------------------------
     def load(self) -> dict[str, Any]:
-        state = build_state(self.save, self.saves_dir)
-        self.set_state(state)
-        return state
+        with self.lock:
+            state = build_state(self.save, self.saves_dir)
+            self.set_state(state)
+            return state
 
     def refresh(self, clear_caches: bool = False) -> dict[str, Any]:
-        if clear_caches:
-            clear_parse_cache()
-            clear_state_cache()
-        state = build_state(self.save, self.saves_dir)
-        self.set_state(state)
-        return state
+        with self.lock:
+            if clear_caches:
+                clear_parse_cache()
+                clear_state_cache()
+            state = build_state(self.save, self.saves_dir)
+            self.set_state(state)
+            return state
 
     def activate(self, path: str) -> dict[str, Any]:
         """Переключает активный сейв только после успешного разбора."""
 
-        state = build_state(path, None)
         with self.lock:
+            state = build_state(path, None)
             self.save = path
             self.state = state
             self.error = None
             self._bump()
-        return state
+            return state
 
     def allowed_save_paths(self) -> set[str]:
         """Белый список сейвов, на которые можно переключиться из UI."""
 
+        if self._launch_save and not self.saves_dir:
+            # --save names just one file: never expand it to the other farms nearby.
+            return {os.path.abspath(self._launch_save)}
         # Без начального значения ``paths`` падал UnboundLocalError, если
         # поиск сейвов выбрасывал SaveError (папка исчезла, нет прав).
         paths: list[str] = []
@@ -249,6 +262,40 @@ class TrackerApp:
                 with contextlib.suppress(SaveError):
                     allowed.update(os.path.abspath(path) for path in find_saves(saves_dir=parent))
         return allowed
+
+    # ---- permission to look for saves ---------------------------------------
+    def consent_info(self) -> dict[str, Any]:
+        """Where the tracker would look, and what the user has allowed (no disk access)."""
+
+        return consent.status(standard_folders())
+
+    def apply_consent(
+        self, *, allow: bool | None = None, folder: str | None = None, forget: bool = False
+    ) -> dict[str, Any]:
+        """Change the permission, then reload so the page shows the result at once.
+
+        Raises ``ValueError`` if ``folder`` is not an existing folder.
+        """
+
+        # An in-flight watcher may finish reading, but withdrawal never completes
+        # while it still has access to a previously allowed save.
+        with self.scan_lock, self.lock:
+            if folder:
+                consent.add_folder(folder)  # validate before changing any existing permissions
+            if forget:
+                consent.forget()
+            if allow is not None:
+                consent.allow_standard(allow)
+            if forget or allow is False:
+                self.save = self._launch_save
+            self._permission_revision += 1
+            # Discard the old state immediately, even if the reload fails.
+            self.set_state(None)
+            try:
+                self.refresh(clear_caches=True)
+            except SaveError as exc:
+                self.set_state(None, exc.to_dict())
+            return self.consent_info()
 
 
 class _BaseHandler(BaseHTTPRequestHandler):
@@ -406,23 +453,30 @@ class _BaseHandler(BaseHTTPRequestHandler):
             return
 
         if path == "/api/saves":
-            try:
-                saves = list_saves_info(
-                    saves_dir=self.application.saves_dir,
-                    explicit=None if self.application.saves_dir else self.application.save,
-                )
-                if self.application.save and not self.application.saves_dir:
-                    parent = os.path.dirname(os.path.dirname(os.path.abspath(self.application.save)))
-                    if os.path.isdir(parent):
-                        known = {item["path"] for item in saves}
-                        for item in list_saves_info(saves_dir=parent):
-                            if item["path"] not in known:
-                                saves.append(item)
-                state, _error = self.application.snapshot()
-                active = state["meta"]["save_path"] if state else (self.application.save or "")
-                self._json(200, {"saves": saves, "active": active})
-            except SaveError as exc:
-                self._json(200, {"saves": [], "active": "", "error": exc.to_dict()})
+            with self.application.lock:
+                result: dict[str, Any]
+                try:
+                    saves = list_saves_info(
+                        saves_dir=self.application.saves_dir,
+                        explicit=None if self.application.saves_dir else self.application.save,
+                    )
+                    if self.application.save and not self.application.saves_dir and not self.application._launch_save:
+                        parent = os.path.dirname(os.path.dirname(os.path.abspath(self.application.save)))
+                        if os.path.isdir(parent):
+                            known = {item["path"] for item in saves}
+                            for item in list_saves_info(saves_dir=parent):
+                                if item["path"] not in known:
+                                    saves.append(item)
+                    state, _error = self.application.snapshot()
+                    active = state["meta"]["save_path"] if state else (self.application.save or "")
+                    result = {"saves": saves, "active": active}
+                except SaveError as exc:
+                    result = {"saves": [], "active": "", "error": exc.to_dict()}
+            self._json(200, result)
+            return
+
+        if path == "/api/consent":
+            self._json(200, self.application.consent_info())
             return
 
         if path == "/api/goals/export":
@@ -504,6 +558,9 @@ class _BaseHandler(BaseHTTPRequestHandler):
         if path == "/api/saves/select":
             self._post_select_save(payload)
             return
+        if path == "/api/consent":
+            self._post_consent(payload)
+            return
         self._json(404, {"error": "not found"})
 
     def _post_goals(self, payload: dict[str, Any]) -> None:
@@ -548,20 +605,43 @@ class _BaseHandler(BaseHTTPRequestHandler):
         except Exception as exc:
             self._json(400, {"error": str(exc)})
 
+    def _post_consent(self, payload: dict[str, Any]) -> None:
+        allow, folder, forget = payload.get("allow"), payload.get("folder"), payload.get("forget")
+        if (allow is not None and not isinstance(allow, bool)) or (folder is not None and not isinstance(folder, str)):
+            self._json(
+                400,
+                {
+                    "error": self._text(
+                        "allow must be true/false and folder a string", "allow — true/false, folder — строка"
+                    )
+                },
+            )
+            return
+        if allow is None and not folder and forget is not True:
+            self._json(400, {"error": self._text("Nothing to change", "Нечего менять")})
+            return
+        try:
+            info = self.application.apply_consent(allow=allow, folder=folder, forget=forget is True)
+        except ValueError as exc:
+            self._json(400, {"error": self._text(f"Not a folder: {exc}", f"Это не папка: {exc}")})
+            return
+        self._json(200, {"ok": True, "consent": info})
+
     def _post_select_save(self, payload: dict[str, Any]) -> None:
         requested = str(payload.get("path") or "").strip()
         if not requested:
             self._json(400, {"error": self._text("No save path given", "Не указан путь к сейву")})
             return
         target = os.path.abspath(requested)
-        if target not in self.application.allowed_save_paths():
-            self._json(403, {"error": self._text("Not an allowed save file", "Недопустимый файл сохранения")})
-            return
-        try:
-            state = self.application.activate(target)
-            self._json(200, client_state(state))
-        except SaveError as exc:
-            self._json(400, {"error": exc.to_dict()})
+        with self.application.lock:
+            if target not in self.application.allowed_save_paths():
+                self._json(403, {"error": self._text("Not an allowed save file", "Недопустимый файл сохранения")})
+                return
+            try:
+                state = self.application.activate(target)
+                self._json(200, client_state(state))
+            except SaveError as exc:
+                self._json(400, {"error": exc.to_dict()})
 
 
 def make_handler(app: TrackerApp) -> type[_BaseHandler]:
@@ -625,34 +705,49 @@ def watch_loop(app: TrackerApp, stop: threading.Event, interval: float = 2.0) ->
     last_message = ""
     while not stop.is_set():
         try:
+            with app.scan_lock:
+                with app.lock:
+                    current_save, current_dir = app.save, app.saves_dir
+                    permission_revision = app._permission_revision
+                    paths = find_saves(saves_dir=current_dir, explicit=current_save)
+                if paths:
+                    selected = paths[0]
+                    stat = os.stat(selected)
+                    signature = (os.path.abspath(selected), stat.st_mtime_ns, stat.st_size)
+                    if signature != last_signature:
+                        if signature != failed_signature:  # файл изменился — счётчик сбоев не нужен
+                            failed_signature, failures, retry_at = None, 0, 0.0
+                        if failures < _WATCH_RETRY_ATTEMPTS and time.monotonic() >= retry_at:
+                            try:
+                                state = build_state(current_save, current_dir)
+                            except (SaveError, OSError):
+                                failed_signature = signature
+                                failures += 1
+                                retry_at = time.monotonic() + _WATCH_RETRY_BASE * 2 ** (failures - 1)
+                                raise
+                            applied = app.set_state_if_current(state, current_save, current_dir, permission_revision)
+                            # A different save selection has its own signature; a permission change
+                            # must force a fresh parse if access is granted again later.
+                            if permission_revision == app._permission_revision:
+                                last_signature = signature
+                            if applied:
+                                failed_signature, failures, last_message = None, 0, ""
+                                print(
+                                    f"[{time.strftime('%H:%M:%S')}] "
+                                    + L("save updated -> state rebuilt", "сейв обновлён -> состояние пересобрано")
+                                )
+        except ConsentRequired as exc:
+            # Waiting for the user's answer: shown by the page, nothing to print every two seconds.
             with app.lock:
-                current_save, current_dir = app.save, app.saves_dir
-            paths = find_saves(saves_dir=current_dir, explicit=current_save)
-            if paths:
-                selected = paths[0]
-                stat = os.stat(selected)
-                signature = (os.path.abspath(selected), stat.st_mtime_ns, stat.st_size)
-                if signature != last_signature:
-                    if signature != failed_signature:  # файл изменился — счётчик сбоев не нужен
-                        failed_signature, failures, retry_at = None, 0, 0.0
-                    if failures < _WATCH_RETRY_ATTEMPTS and time.monotonic() >= retry_at:
-                        try:
-                            state = build_state(current_save, current_dir)
-                        except (SaveError, OSError):
-                            failed_signature = signature
-                            failures += 1
-                            retry_at = time.monotonic() + _WATCH_RETRY_BASE * 2 ** (failures - 1)
-                            raise
-                        last_signature = signature
-                        failed_signature, failures, last_message = None, 0, ""
-                        if app.set_state_if_current(state, current_save, current_dir):
-                            print(
-                                f"[{time.strftime('%H:%M:%S')}] "
-                                + L("save updated -> state rebuilt", "сейв обновлён -> состояние пересобрано")
-                            )
+                if permission_revision == app._permission_revision:
+                    app.set_error(exc)
+            last_message = ""
         except SaveError as exc:
-            # Ошибки сейва показываем в интерфейсе (set_error), а не только в консоли.
-            app.set_error(exc)
+            # A stale error from a scan started before withdrawal must not hide the question.
+            with app.lock:
+                if permission_revision != app._permission_revision:
+                    continue
+                app.set_error(exc)
             if str(exc) != last_message:
                 last_message = str(exc)
                 print("watch:", exc, file=sys.stderr)
@@ -691,14 +786,31 @@ def serve(
         if save:
             raise
         app.set_error(exc)
-        print(str(exc), file=sys.stderr)
-        print(
-            "\n"
-            + L(
-                'The server is waiting for a save - create or copy one, then press "Refresh" in the browser.',
-                "Сервер запущен в режиме ожидания сейва — создайте/скопируйте сейв и нажмите «Обновить» в браузере.",
+        if isinstance(exc, ConsentRequired):
+            print(
+                L(
+                    "The tracker does not look into any folder until you allow it. It would look in:",
+                    "Трекер не открывает папки, пока вы не разрешите. Он будет искать в:",
+                )
             )
-        )
+            folders = exc.data.get("folders")
+            for folder in folders if isinstance(folders, list) else []:
+                print("  " + str(folder))
+            print(
+                L(
+                    'Open the page and press "Allow", or restart with --allow-scan, --save or --saves-dir.',
+                    "Нажмите «Разрешить» на странице или запустите с --allow-scan, --save либо --saves-dir.",
+                )
+            )
+        else:
+            print(str(exc), file=sys.stderr)
+            print(
+                "\n"
+                + L(
+                    'The server is waiting for a save - create or copy one, then press "Refresh" in the browser.',
+                    "Сервер ждёт сейв — создайте или скопируйте его и нажмите «Обновить» в браузере.",
+                )
+            )
 
     stop = threading.Event()
     if watch:
