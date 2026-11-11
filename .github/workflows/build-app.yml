@@ -85,25 +85,42 @@ jobs:
     permissions:
       contents: write
     steps:
+      - uses: actions/checkout@v5
+
       - uses: actions/download-artifact@v4
         with:
           path: artifacts
+          pattern: "StardewTracker-*"
 
-      - name: Упаковать в zip
+      - name: Упаковать в zip и посчитать контрольные суммы
         run: |
-          cd artifacts
-          for dir in */; do
-            name="${dir%/}"
-            if [ -f "$name/StardewTracker.exe" ]; then
-              (cd "$name" && zip "../$name.zip" StardewTracker.exe)
+          mkdir -p dist-release
+          for dir in artifacts/*/; do
+            name="$(basename "$dir")"
+            # каталоги с логами сборки (*-log) в релиз не попадают
+            case "$name" in *-log) continue ;; esac
+            archive="$GITHUB_WORKSPACE/dist-release/${name}-${GITHUB_REF_NAME}.zip"
+            if [ -f "$dir/StardewTracker.exe" ]; then
+              (cd "$dir" && zip "$archive" StardewTracker.exe)
             else
-              chmod +x "$name/StardewTracker"
-              (cd "$name" && zip "../$name.zip" StardewTracker)
+              chmod +x "$dir/StardewTracker"
+              (cd "$dir" && zip "$archive" StardewTracker)
             fi
           done
-          ls -lh ./*.zip
+          cd dist-release
+          sha256sum -- *.zip > SHA256SUMS.txt
+          ls -lh
+          cat SHA256SUMS.txt
 
       - name: Создать релиз
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh release create "${GITHUB_REF_NAME}" artifacts/*.zip --generate-notes
+        run: |
+          # Теги с дефисом (v0.4.0-beta.1, v1.0.0-rc.1) публикуются как предварительные.
+          flags=()
+          case "${GITHUB_REF_NAME}" in *-*) flags+=(--prerelease) ;; esac
+          # Заметки берём из .github/release-notes/<тег>.md, иначе — автоматические.
+          notes=".github/release-notes/${GITHUB_REF_NAME}.md"
+          if [ -f "$notes" ]; then flags+=(--notes-file "$notes"); else flags+=(--generate-notes); fi
+          gh release create "${GITHUB_REF_NAME}" dist-release/* \
+            --title "Stardew Tracker ${GITHUB_REF_NAME#v}" --verify-tag "${flags[@]}"
