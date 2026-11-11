@@ -18,6 +18,7 @@ from urllib.parse import urlsplit
 from .constants import SPRITE_FILES
 from .errors import SaveError, TrackerError
 from .goals import GOALS_LOCK, goals_signature, load_goals, normalize_goals, save_goals
+from .i18n import L, normalize
 from .paths import SPRITES_DIR
 from .report import render
 from .savefinder import find_saves
@@ -294,6 +295,12 @@ class _BaseHandler(BaseHTTPRequestHandler):
     def _json(self, code: int, value: Any, extra_headers: dict[str, str] | None = None) -> None:
         self._send(code, json.dumps(value, ensure_ascii=False), extra_headers=extra_headers)
 
+    def _text(self, en: str, ru: str) -> str:
+        """Message in the language the browser asked for (``Accept-Language``); English by default."""
+
+        first = self.headers.get("Accept-Language", "").split(",")[0].split(";")[0]
+        return ru if normalize(first) == "ru" else en
+
     def _host_allowed(self) -> bool:
         """Защита от DNS-rebinding: на loopback принимаем только свои имена хоста."""
 
@@ -304,7 +311,15 @@ class _BaseHandler(BaseHTTPRequestHandler):
         return not header or _host_name(header) in allowed
 
     def _reject_host(self) -> None:
-        self._json(403, {"error": "Недопустимый заголовок Host: обращайтесь по 127.0.0.1 или localhost"})
+        self._json(
+            403,
+            {
+                "error": self._text(
+                    "Invalid Host header: use 127.0.0.1 or localhost",
+                    "Недопустимый заголовок Host: обращайтесь по 127.0.0.1 или localhost",
+                )
+            },
+        )
 
     def _etag_matches(self, etag: str) -> bool:
         header = self.headers.get("If-None-Match", "")
@@ -354,7 +369,11 @@ class _BaseHandler(BaseHTTPRequestHandler):
                 page = render(client_state(state) if state is not None else None, "live", error=error)
                 self._send(200, page, "text/html; charset=utf-8")
             except FileNotFoundError:
-                self._send(500, "Нет файла assets/dashboard.html", "text/plain; charset=utf-8")
+                self._send(
+                    500,
+                    self._text("assets/dashboard.html is missing", "Нет файла assets/dashboard.html"),
+                    "text/plain; charset=utf-8",
+                )
             return
 
         if path.startswith("/assets/sprites/"):
@@ -383,7 +402,7 @@ class _BaseHandler(BaseHTTPRequestHandler):
                 self._send_state(payload)
             else:
                 _state, error = self.application.snapshot()
-                self._json(404, {"error": error or {"title": "Сейв не загружен"}})
+                self._json(404, {"error": error or {"title": self._text("No save loaded", "Сейв не загружен")}})
             return
 
         if path == "/api/saves":
@@ -421,7 +440,7 @@ class _BaseHandler(BaseHTTPRequestHandler):
                 self.application.refresh(clear_caches=True)
                 payload = self.application.state_payload()
                 if payload is None:  # состояние успели сбросить — отдаём как «нет сейва»
-                    self._json(404, {"error": {"title": "Сейв не загружен"}})
+                    self._json(404, {"error": {"title": self._text("No save loaded", "Сейв не загружен")}})
                 else:
                     self._send_state(payload)
             except SaveError as exc:
@@ -438,24 +457,35 @@ class _BaseHandler(BaseHTTPRequestHandler):
         try:
             length = int(self.headers.get("Content-Length") or 0)
         except ValueError:
-            self._json(400, {"error": "Некорректный Content-Length"})
+            self._json(400, {"error": self._text("Invalid Content-Length", "Некорректный Content-Length")})
             return None
         if length < 0:
-            self._json(400, {"error": "Некорректный размер запроса"})
+            self._json(400, {"error": self._text("Invalid request size", "Некорректный размер запроса")})
             return None
         if length > 1_000_000:
-            self._json(413, {"error": "Слишком большой запрос; лимит 1 МБ"})
+            self._json(
+                413, {"error": self._text("Request too large; the limit is 1 MB", "Слишком большой запрос; лимит 1 МБ")}
+            )
             return None
         if length and "application/json" not in self.headers.get("Content-Type", "").lower():
-            self._json(415, {"error": "Ожидался Content-Type: application/json"})
+            self._json(
+                415,
+                {
+                    "error": self._text(
+                        "Expected Content-Type: application/json", "Ожидался Content-Type: application/json"
+                    )
+                },
+            )
             return None
         try:
             payload = json.loads(self.rfile.read(length) or b"{}")
         except (ValueError, UnicodeDecodeError) as exc:
-            self._json(400, {"error": f"Некорректный JSON: {exc}"})
+            self._json(400, {"error": self._text(f"Invalid JSON: {exc}", f"Некорректный JSON: {exc}")})
             return None
         if not isinstance(payload, dict):
-            self._json(400, {"error": "JSON запроса должен быть объектом"})
+            self._json(
+                400, {"error": self._text("The request JSON must be an object", "JSON запроса должен быть объектом")}
+            )
             return None
         return payload
 
@@ -480,13 +510,22 @@ class _BaseHandler(BaseHTTPRequestHandler):
         goals_value = payload.get("goals", [])
         tasks_value = payload.get("tasks", [])
         if not isinstance(goals_value, list) or not isinstance(tasks_value, list):
-            self._json(400, {"error": "goals и tasks должны быть массивами"})
+            self._json(
+                400, {"error": self._text("goals and tasks must be arrays", "goals и tasks должны быть массивами")}
+            )
             return
         if not all(isinstance(item, dict) for item in goals_value + tasks_value):
-            self._json(400, {"error": "Элементы goals и tasks должны быть объектами"})
+            self._json(
+                400,
+                {
+                    "error": self._text(
+                        "goals and tasks items must be objects", "Элементы goals и tasks должны быть объектами"
+                    )
+                },
+            )
             return
         if "annotations" in payload and not isinstance(payload["annotations"], dict):
-            self._json(400, {"error": "annotations должен быть объектом"})
+            self._json(400, {"error": self._text("annotations must be an object", "annotations должен быть объектом")})
             return
 
         try:
@@ -502,18 +541,21 @@ class _BaseHandler(BaseHTTPRequestHandler):
             self._json(200, {"ok": True, "goals": goals})
         except OSError as exc:
             # Ошибка диска — это сбой сервера, а не «плохой запрос» клиента.
-            self._json(500, {"error": f"Не удалось записать goals.json: {exc}"})
+            self._json(
+                500,
+                {"error": self._text(f"Could not write goals.json: {exc}", f"Не удалось записать goals.json: {exc}")},
+            )
         except Exception as exc:
             self._json(400, {"error": str(exc)})
 
     def _post_select_save(self, payload: dict[str, Any]) -> None:
         requested = str(payload.get("path") or "").strip()
         if not requested:
-            self._json(400, {"error": "Не указан путь к сейву"})
+            self._json(400, {"error": self._text("No save path given", "Не указан путь к сейву")})
             return
         target = os.path.abspath(requested)
         if target not in self.application.allowed_save_paths():
-            self._json(403, {"error": "Недопустимый файл сохранения"})
+            self._json(403, {"error": self._text("Not an allowed save file", "Недопустимый файл сохранения")})
             return
         try:
             state = self.application.activate(target)
@@ -604,7 +646,10 @@ def watch_loop(app: TrackerApp, stop: threading.Event, interval: float = 2.0) ->
                         last_signature = signature
                         failed_signature, failures, last_message = None, 0, ""
                         if app.set_state_if_current(state, current_save, current_dir):
-                            print(f"[{time.strftime('%H:%M:%S')}] сейв обновлён -> состояние пересобрано")
+                            print(
+                                f"[{time.strftime('%H:%M:%S')}] "
+                                + L("save updated -> state rebuilt", "сейв обновлён -> состояние пересобрано")
+                            )
         except SaveError as exc:
             # Ошибки сейва показываем в интерфейсе (set_error), а не только в консоли.
             app.set_error(exc)
@@ -632,8 +677,14 @@ def serve(
     try:
         state = app.load()
         meta = state["meta"]
-        print(f"Ферма «{meta['farm']}», {meta['farmer']}, {meta['season_ru']} {meta['day']}, год {meta['year']}")
-        print(f"Сейв: {meta['save_path']}")
+        season_en = str(meta["season"]).capitalize()
+        print(
+            L(
+                f'Farm "{meta["farm"]}", {meta["farmer"]}, {season_en} {meta["day"]}, year {meta["year"]}',
+                f"Ферма «{meta['farm']}», {meta['farmer']}, {meta['season_ru']} {meta['day']}, год {meta['year']}",
+            )
+        )
+        print(L(f"Save: {meta['save_path']}", f"Сейв: {meta['save_path']}"))
         for warning in meta["warnings"]:
             print("  ! " + warning)
     except SaveError as exc:
@@ -641,7 +692,13 @@ def serve(
             raise
         app.set_error(exc)
         print(str(exc), file=sys.stderr)
-        print("\nСервер запущен в режиме ожидания сейва — создайте/скопируйте сейв и нажмите «Обновить» в браузере.")
+        print(
+            "\n"
+            + L(
+                'The server is waiting for a save - create or copy one, then press "Refresh" in the browser.',
+                "Сервер запущен в режиме ожидания сейва — создайте/скопируйте сейв и нажмите «Обновить» в браузере.",
+            )
+        )
 
     stop = threading.Event()
     if watch:
@@ -660,23 +717,32 @@ def serve(
         stop.set()
         raise TrackerError(
             "port_busy",
-            "Не удалось занять порт",
-            f"Порты {port}–{port + 11} на {host or 'всех интерфейсах'} недоступны: {last_error}",
+            L("Could not bind a port", "Не удалось занять порт"),
+            L(
+                f"Ports {port}-{port + 11} on {host or 'all interfaces'} are unavailable: {last_error}",
+                f"Порты {port}–{port + 11} на {host or 'всех интерфейсах'} недоступны: {last_error}",
+            ),
             [
-                "Закройте другой экземпляр трекера или укажите свободный порт: --port 9000.",
-                "Если порт занят системой, выберите номер выше 1024.",
+                L(
+                    "Close the other tracker instance or pass a free port: --port 9000.",
+                    "Закройте другой экземпляр трекера или укажите свободный порт: --port 9000.",
+                ),
+                L(
+                    "If the system holds the port, pick a number above 1024.",
+                    "Если порт занят системой, выберите номер выше 1024.",
+                ),
             ],
         )
 
     browser_host = "127.0.0.1" if host in ("0.0.0.0", "::", "") else host  # nosec B104 - сравнение, не bind
     url = f"http://{browser_host}:{port}/"
-    print(f"\nТрекер: {url}   (Ctrl+C — остановить)")
+    print("\n" + L(f"Tracker: {url}   (Ctrl+C to stop)", f"Трекер: {url}   (Ctrl+C — остановить)"))
     if open_browser:
         threading.Timer(0.7, lambda: webbrowser.open(url)).start()
     try:
         httpd.serve_forever()
     except KeyboardInterrupt:
-        print("\nОстановлено.")
+        print("\n" + L("Stopped.", "Остановлено."))
     finally:
         stop.set()
         httpd.server_close()

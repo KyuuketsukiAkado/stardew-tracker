@@ -34,7 +34,7 @@ def parse_xml(data: bytes) -> ET.Element:
     """
 
     if has_unsafe_xml_directives(data):
-        raise ET.ParseError("XML-документ содержит запрещённые DOCTYPE/ENTITY-директивы")
+        raise ET.ParseError("The XML document contains forbidden DOCTYPE/ENTITY directives")
     return ET.fromstring(data)  # nosec B314 - после проверки has_unsafe_xml_directives
 
 

@@ -19,6 +19,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, ROOT)
 sys.path.insert(0, os.path.join(ROOT, "tests"))
 
+from langpin import pin_english, unpin  # noqa: E402
 from make_test_save import write_test_save  # noqa: E402
 
 from stardew_tracker import (  # noqa: E402
@@ -35,6 +36,14 @@ from stardew_tracker.perfection import build_perfection, compute_counts  # noqa:
 from stardew_tracker.report import _inline_sprites_css, render  # noqa: E402
 from stardew_tracker.saveparser import parse_save  # noqa: E402
 from stardew_tracker.state import build_state  # noqa: E402
+
+
+def setUpModule():
+    pin_english()
+
+
+def tearDownModule():
+    unpin()
 
 
 class TestTimeUtil(unittest.TestCase):
@@ -590,7 +599,7 @@ class TestCli(unittest.TestCase):
                 code = main(["build", "--saves-dir", tmp, "--out", target])
             self.assertEqual(code, 0)
             self.assertTrue(os.path.isfile(target))
-            self.assertIn("Готово", output.getvalue())
+            self.assertIn("Done", output.getvalue())
             with contextlib.redirect_stdout(io.StringIO()):
                 with self.assertRaises(SystemExit) as context:
                     build_parser().parse_args(["--version"])
@@ -608,7 +617,7 @@ class TestCli(unittest.TestCase):
             self.assertEqual(code, 0)
             text = output.getvalue()
             self.assertIn("Тестовая", text)
-            self.assertIn("перфекция", text)
+            self.assertIn("perfection", text)
         finally:
             shutil.rmtree(tmp, ignore_errors=True)
 

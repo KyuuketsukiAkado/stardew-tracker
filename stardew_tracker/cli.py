@@ -1,4 +1,4 @@
-"""Командная строка трекера."""
+"""Command line of the tracker (English by default, Russian on a Russian system)."""
 
 from __future__ import annotations
 
@@ -9,6 +9,7 @@ import time
 import webbrowser
 
 from .errors import TrackerError
+from .i18n import ENV_VAR, LANGUAGES, L, get_language, set_language
 from .report import build_report
 from .savefinder import find_saves
 from .server import serve
@@ -17,11 +18,11 @@ from .version import __version__
 
 
 def configure_stdio() -> None:
-    """Не падать на кириллице, если stdout перенаправлен в cp1252/cp866.
+    """Do not crash on Cyrillic when stdout is redirected to cp1252/cp866.
 
-    В Windows консольное приложение печатает UTF-8, но при перенаправлении
-    в файл или канал Python берёт кодировку локали. Ошибки кодирования
-    заменяются на ``?``, чтобы диагностика не превращалась в трассировку.
+    A Windows console program prints UTF-8, but when redirected to a file or a
+    pipe Python picks the locale encoding. Encoding errors are replaced with
+    ``?`` so diagnostics never turn into a traceback.
     """
 
     for stream in (sys.stdout, sys.stderr):
@@ -35,10 +36,10 @@ def configure_stdio() -> None:
 
 
 def info(save: str | None = None, saves_dir: str | None = None) -> None:
-    """Диагностика: что найдено и сколько прогресса видит парсер."""
+    """Diagnostics: what was found and how much progress the parser sees."""
 
     paths = find_saves(saves_dir=saves_dir, explicit=save)
-    print(f"Найдено сохранений: {len(paths)}")
+    print(L(f"Saves found: {len(paths)}", f"Найдено сохранений: {len(paths)}"))
     for path in paths[:10]:
         try:
             stamp = time.strftime("%Y-%m-%d %H:%M", time.localtime(os.path.getmtime(path)))
@@ -47,61 +48,142 @@ def info(save: str | None = None, saves_dir: str | None = None) -> None:
         print("  ", path, stamp)
     if not paths:
         print(
-            '\nПодсказка: укажите путь вручную через --save "путь\\к\\сейву" или положите копию сейва в папку ./saves'
+            "\n"
+            + L(
+                'Hint: pass the path yourself with --save "path\\to\\save" or put a copy of the save into ./saves',
+                'Подсказка: укажите путь вручную через --save "путь\\к\\сейву" или положите копию в папку ./saves',
+            )
         )
         return
 
     state = build_state(save, saves_dir)
     meta, counts = state["meta"], state["counts"]
+    ru = get_language() == "ru"
+    season = meta["season_ru"] if ru else str(meta["season"]).capitalize()
     print(
-        f"\nФерма: {meta['farm']} / {meta['farmer']}   "
-        f"{meta['season_ru']} {meta['day']}, год {meta['year']}, {meta['clock']}"
+        "\n"
+        + L(
+            f"Farm: {meta['farm']} / {meta['farmer']}   {season} {meta['day']}, year {meta['year']}, {meta['clock']}",
+            f"Ферма: {meta['farm']} / {meta['farmer']}   {season} {meta['day']}, год {meta['year']}, {meta['clock']}",
+        )
     )
-    print(f"Версия игры в сейве: {meta['game_version'] or '?'}")
+    print(
+        L(
+            f"Game version in the save: {meta['game_version'] or '?'}",
+            f"Версия игры в сейве: {meta['game_version'] or '?'}",
+        )
+    )
     for key in ("fish", "museum", "museum_found", "shipped", "cooking", "crafting"):
         print(f"  {key:14s} {counts[key][0]:4d} / {counts[key][1]}")
-    print(f"  люди            {len(state['people'])}")
+    bundles_done = sum(room["done"] for room in state["bundles"])
+    bundles_total = sum(room["total"] for room in state["bundles"])
+    monsters = state["monsters"]["completed"]
+
+    def row(en: str, ru_label: str, value: object) -> None:
+        print(f"  {ru_label if ru else en:14s} {value}")
+
+    row("villagers", "люди", len(state["people"]))
+    row("bundles", "бандлы", f"{bundles_done} / {bundles_total}")
+    row("monsters", "монстры", f"{monsters[0]} / {monsters[1]}")
+    row("perfection", "перфекция", f"{state['perfection']['pct']}%")
+    not_donated = len(state["alerts"]["museum_found_not_donated"])
     print(
-        f"  бандлы          {sum(room['done'] for room in state['bundles'])} / "
-        f"{sum(room['total'] for room in state['bundles'])}"
+        L(
+            f"  found for the museum but not donated: {not_donated}",
+            f"  найдено в музее, но не сдано: {not_donated}",
+        )
     )
-    print(f"  монстры         {state['monsters']['completed'][0]} / {state['monsters']['completed'][1]}")
-    print(f"  перфекция       {state['perfection']['pct']}%")
-    print(f"  найдено в музее, но не сдано: {len(state['alerts']['museum_found_not_donated'])}")
     if meta["warnings"]:
-        print("\nПредупреждения:")
+        print("\n" + L("Warnings:", "Предупреждения:"))
         for warning in meta["warnings"]:
             print("  ! " + warning)
+
+
+def _requested_language(argv: list[str] | None) -> str | None:
+    """``--lang`` is needed before the real parser is built: its help text depends on it."""
+
+    args = list(sys.argv[1:] if argv is None else argv)
+    for index, arg in enumerate(args):
+        value: str | None = None
+        if arg == "--lang" and index + 1 < len(args):
+            value = args[index + 1]
+        elif arg.startswith("--lang="):
+            value = arg.split("=", 1)[1]
+        # An invalid value is ignored here; the full parser reports it with a proper message.
+        if value in LANGUAGES:
+            return value
+    return None
 
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="tracker.py",
-        description="Stardew Valley progress tracker",
+        description=str(
+            L(
+                "Local progress tracker for Stardew Valley saves (1.5 / 1.6).",
+                "Локальный трекер прогресса сохранений Stardew Valley (1.5 / 1.6).",
+            )
+        ),
     )
     parser.add_argument(
         "cmd",
         nargs="?",
         default="serve",
         choices=["serve", "build", "info", "open"],
-        help="serve (по умолчанию), build, info или open",
+        help=str(L("serve (default), build, info or open", "serve (по умолчанию), build, info или open")),
     )
-    parser.add_argument("--save", default=None, help="файл сейва или папка сейва")
-    parser.add_argument("--saves-dir", default=None, help="папка со всеми сохранениями")
-    parser.add_argument("--port", type=int, default=8777, help="порт для serve (по умолчанию 8777)")
+    parser.add_argument("--save", default=None, help=str(L("save file or save folder", "файл сейва или папка сейва")))
+    parser.add_argument(
+        "--saves-dir",
+        default=None,
+        help=str(L("folder that holds all saves", "папка со всеми сохранениями")),
+    )
+    parser.add_argument(
+        "--port",
+        type=int,
+        default=8777,
+        help=str(L("port for serve (default 8777)", "порт для serve (по умолчанию 8777)")),
+    )
     parser.add_argument(
         "--host",
         default="127.0.0.1",
-        help="адрес для serve; 0.0.0.0 открывает доступ из локальной сети",
+        help=str(
+            L(
+                "address for serve; 0.0.0.0 opens access from the local network",
+                "адрес для serve; 0.0.0.0 открывает доступ из локальной сети",
+            )
+        ),
     )
-    parser.add_argument("--out", default=None, help="путь для автономного report.html")
-    parser.add_argument("--no-open", action="store_true", help="не открывать браузер")
-    parser.add_argument("--no-watch", action="store_true", help="не следить за изменениями сейва")
+    parser.add_argument(
+        "--out",
+        default=None,
+        help=str(L("path of the standalone report.html", "путь для автономного report.html")),
+    )
+    parser.add_argument(
+        "--no-open", action="store_true", help=str(L("do not open the browser", "не открывать браузер"))
+    )
+    parser.add_argument(
+        "--no-watch",
+        action="store_true",
+        help=str(L("do not watch the save for changes", "не следить за изменениями сейва")),
+    )
+    parser.add_argument(
+        "--lang",
+        choices=LANGUAGES,
+        default=None,
+        help=str(
+            L(
+                f"language of console messages (default: system language, or the {ENV_VAR} variable)",
+                f"язык сообщений консоли (по умолчанию язык системы или переменная {ENV_VAR})",
+            )
+        ),
+    )
     parser.add_argument("--version", action="version", version=f"Stardew Tracker {__version__}")
     return parser
 
 
 def main(argv: list[str] | None = None) -> int:
+    set_language(_requested_language(argv))
     args = build_parser().parse_args(argv)
 
     if args.cmd == "info":
@@ -109,11 +191,17 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     if args.cmd == "build":
         state, path = build_report(args.save, args.saves_dir, args.out)
-        print(f"Готово: {path}")
+        counts = state["counts"]
+        print(L(f"Done: {path}", f"Готово: {path}"))
         print(
-            f"  музей {state['counts']['museum'][0]}/{state['counts']['museum'][1]}, "
-            f"рыба {state['counts']['fish'][0]}/{state['counts']['fish'][1]}, "
-            f"перфекция {state['perfection']['pct']}%"
+            L(
+                f"  museum {counts['museum'][0]}/{counts['museum'][1]}, "
+                f"fish {counts['fish'][0]}/{counts['fish'][1]}, "
+                f"perfection {state['perfection']['pct']}%",
+                f"  музей {counts['museum'][0]}/{counts['museum'][1]}, "
+                f"рыба {counts['fish'][0]}/{counts['fish'][1]}, "
+                f"перфекция {state['perfection']['pct']}%",
+            )
         )
         return 0
     if args.cmd == "open":
@@ -133,19 +221,19 @@ def main(argv: list[str] | None = None) -> int:
 
 
 def run() -> None:
-    """Точка входа с человеческим сообщением вместо трассировки."""
+    """Entry point: a human-readable message instead of a traceback."""
 
     configure_stdio()
     try:
         code = main()
     except TrackerError as exc:
-        # Сообщение с шагами решения уже сформировано — без трассировки стека.
+        # The message with steps is already built - no stack trace.
         print(exc, file=sys.stderr)
         raise SystemExit(1) from exc
     except KeyboardInterrupt:
-        print("\nОстановлено.")
+        print("\n" + L("Stopped.", "Остановлено."))
         raise SystemExit(130) from None
     except Exception as exc:
-        print(f"Непредвиденная ошибка: {type(exc).__name__}: {exc}", file=sys.stderr)
+        print(L("Unexpected error: ", "Непредвиденная ошибка: ") + f"{type(exc).__name__}: {exc}", file=sys.stderr)
         raise SystemExit(1) from exc
     raise SystemExit(code)

@@ -23,6 +23,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, ROOT)
 sys.path.insert(0, os.path.join(ROOT, "tests"))
 
+from langpin import pin_english, unpin  # noqa: E402
 from make_test_save import write_test_save  # noqa: E402
 
 import tracker  # noqa: E402
@@ -35,6 +36,14 @@ from stardew_tracker import (  # noqa: E402
     paths,
 )
 from stardew_tracker import goals as goals_module  # noqa: E402
+
+
+def setUpModule():
+    pin_english()
+
+
+def tearDownModule():
+    unpin()
 
 
 class TestData(unittest.TestCase):
@@ -505,7 +514,7 @@ class TestHTTPAPI(unittest.TestCase):
                 handle.write("<SaveGame><player>" + (" " * 300) + "</player></SaveGame>")
             response, body = self.request("/api/saves/select", {"path": fake})
             self.assertEqual(response.status, 403)
-            self.assertIn("Недопустимый файл", json.loads(body)["error"])
+            self.assertIn("Not an allowed save file", json.loads(body)["error"])
         finally:
             shutil.rmtree(outside, ignore_errors=True)
 

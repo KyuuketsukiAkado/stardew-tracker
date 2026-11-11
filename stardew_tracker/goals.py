@@ -12,6 +12,7 @@ import threading
 from typing import Any
 
 from . import paths
+from .i18n import L
 
 GOALS_LOCK = threading.RLock()
 NOTE_LIMIT = 280
@@ -110,7 +111,12 @@ def save_goals(goals: Any, path: str | None = None) -> dict[str, Any]:
                 shutil.copy2(target, target + ".bak")
             except OSError as exc:
                 print(
-                    f"Предупреждение: не удалось обновить резервную копию goals.json: {exc}",
+                    str(
+                        L(
+                            f"Warning: could not update the goals.json backup: {exc}",
+                            f"Предупреждение: не удалось обновить резервную копию goals.json: {exc}",
+                        )
+                    ),
                     file=sys.stderr,
                 )
 
