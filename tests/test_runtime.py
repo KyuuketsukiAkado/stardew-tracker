@@ -36,7 +36,7 @@ from make_test_save import write_test_save  # noqa: E402
 
 from stardew_tracker import SaveError, TrackerApp, TrackerHTTPServer, paths, server  # noqa: E402
 from stardew_tracker.goals import GOALS_LOCK, save_goals  # noqa: E402
-from stardew_tracker.render import _script_safe  # noqa: E402
+from stardew_tracker.report import _script_safe  # noqa: E402
 
 
 def _error() -> SaveError:

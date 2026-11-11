@@ -7,7 +7,8 @@ from typing import Any
 
 from .catalog import item_info, item_row
 from .constants import OBELISKS, SEASONS, SKILLS, STARDROPS
-from .requirements import (
+from .timeutil import days_until_birthday, time_matches, weather_matches
+from .unlocks import (
     SHIPPING_GATES,
     UnlockContext,
     evaluate,
@@ -18,7 +19,6 @@ from .requirements import (
     museum_tags,
     recipe_source,
 )
-from .timeutil import days_until_birthday, time_matches, weather_matches
 
 NIGHT_MARKET_TIME = "1700 2600"
 
