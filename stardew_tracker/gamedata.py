@@ -8,6 +8,7 @@ import threading
 from typing import Any
 
 from .errors import DataError
+from .i18n import L
 from .paths import DATA_DIR
 
 # Справочники неизменны на протяжении жизни процесса, поэтому кэшируются.
@@ -53,8 +54,11 @@ def load_json(name: str, data_dir: str | None = None) -> Any:
             data = json.load(handle)
     except (OSError, ValueError) as exc:
         raise DataError(
-            f"Не удалось прочитать справочник {name}",
-            f"Файл {path} отсутствует, повреждён или недоступен: {exc}",
+            L(f"Could not read the reference file {name}", f"Не удалось прочитать справочник {name}"),
+            L(
+                f"The file {path} is missing, damaged or unreadable: {exc}",
+                f"Файл {path} отсутствует, повреждён или недоступен: {exc}",
+            ),
         ) from exc
 
     with _LOCK:

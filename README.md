@@ -1,167 +1,180 @@
 # Stardew Valley Progress Tracker
 
-Русско-английский локальный трекер прогресса для сохранений Stardew Valley 1.5/1.6. Показывает не только проценты: в списках видны игровые спрайты предметов, жителей, бандлов и монстров, а цветовые состояния помогают быстро отличить найденное, сданное, готовое и недостающее.
+**A local, offline progress tracker for Stardew Valley 1.5 / 1.6 save files.** Point it at your save and it shows what is done and what is left: collections, museum, fish, shipping, cooking, crafting, villagers, bundles, perfection, and your own goals. No mods, no SMAPI, nothing to install but the app itself.
 
 [![CI](https://github.com/KyuuketsukiAkado/stardew-tracker/actions/workflows/ci.yml/badge.svg)](https://github.com/KyuuketsukiAkado/stardew-tracker/actions/workflows/ci.yml)
+· 🇷🇺 [Русская версия](README.ru.md)
 
-- Python 3.9+, стандартная библиотека; никаких модов или SMAPI.
-- Сохранение обрабатывается локально; приложение не отправляет его или цели в интернет.
-- Автообновление после записи сейва и переключение между найденными фермами.
-- Пометки-закладки и короткие заметки к предметам; отдельная страница собирает всё сохранённое.
-- Подсказки получения для рыбы, минералов/артефактов, ингредиентов и рецептов.
-- Работают живой сервер (`serve`) и автономный HTML-отчёт (`build`), в который встроены спрайты.
-- Сервер по умолчанию слушает только `127.0.0.1`; доступ из локальной сети включается явно через `--host 0.0.0.0`.
-- Оригинальный SVG-логотип фермы и название Stardew Tracker отображаются на русском и английском; на главной странице трекер приветствует фермера по игровому имени.
+> **Public beta — feedback wanted.** Questions, bug reports and suggestions are very welcome:
+> **[repro4chful@gmail.com](mailto:repro4chful@gmail.com)** or [open a GitHub issue](https://github.com/KyuuketsukiAkado/stardew-tracker/issues/new/choose).
+> The same address is shown in a small banner inside the app; you can dismiss it.
 
-## Запуск в Windows
+<p align="center">
+  <img src="docs/screenshots/overview-light.png" alt="Overview page, light theme" width="49%">
+  <img src="docs/screenshots/overview-dark.png" alt="Overview page, dark theme" width="49%">
+</p>
 
-1. Установите Python 3.9+ с [python.org](https://www.python.org/downloads/) и включите **Add python.exe to PATH**.
-2. Распакуйте репозиторий и запустите `run.bat`. Сохранения Stardew Valley ищутся автоматически.
-3. Если нужно, укажите сейв вручную:
+## Highlights
 
-```bat
-run.bat --save "%APPDATA%\StardewValley\Saves\МояФерма_123456789\МояФерма_123456789"
-```
+- **Reads the save file only.** Works on the XML your game already writes — no mods, no SMAPI.
+- **Private by design.** Everything runs on your computer. The app makes no network requests, and your save never leaves your machine. Links to the wiki are ordinary links that your browser opens.
+- **"What can I actually get right now?"** The tracker reads which locations and quests you have already unlocked (Ginger Island, Qi's Walnut Room, Skull Cavern, the Sewers, Secret Woods, mine floors, skills, hearts…) and marks everything you cannot get yet with 🔒 and a short *How to unlock* hint.
+- **Filters that match how you play.** Fish by place (for example "The Mines"), time of day, season, weather and gear; museum items by where to find them; recipes by source; everything by "available to me / needs unlocking".
+- **Live updates.** The page refreshes by itself when the game writes the save. Switch between farms from the header.
+- **English and Russian.** The interface and the console messages follow your system language, and you choose on first launch ([details](#languages)).
+- **Light and dark themes** — *Frost* (light) and *Night* (dark), plus "match my system".
+- **Spoiler-safe secrets.** A separate *Danger zone* holds Mr. Qi's quest solutions and other secrets behind a warning and a per-hint click. Nothing is revealed by accident.
+- **Marks, notes and goals.** Star items, add short notes, and create goals that count their own progress.
+- **Free and open source** (MIT). Python standard library only.
 
-Полезные ключи: `--host` (адрес сервера), `--port`, `--out` (путь отчёта), `--version`,
-`--no-open`, `--no-watch`.
+## Download
 
-Другие системы и запуск из терминала:
+Ready-made apps are on the **[Releases](https://github.com/KyuuketsukiAkado/stardew-tracker/releases)** page (beta builds are marked *Pre-release*; `SHA256SUMS.txt` is next to the files).
+
+| System | File |
+|---|---|
+| **Windows** | `StardewTracker-windows-v….zip` → `StardewTracker.exe` |
+| macOS (Apple Silicon only) | `StardewTracker-macos-v….zip` → `StardewTracker` |
+| Linux (x86-64) | `StardewTracker-linux-v….zip` → `StardewTracker` |
+
+1. Unpack the archive and run `StardewTracker.exe` (macOS/Linux: `./StardewTracker`).
+2. Your browser opens `http://127.0.0.1:8777` (the next free port if that one is busy). Your Stardew Valley saves are found automatically.
+3. Close the console window to stop the app.
+
+The apps are **not code-signed**, so your system may warn you:
+
+- **Windows (SmartScreen):** *More info* → *Run anyway*.
+- **macOS:** right-click → *Open*, or `xattr -d com.apple.quarantine StardewTracker`.
+- **Linux:** `chmod +x StardewTracker` if the file is not executable.
+
+Your goals and notes live in `%APPDATA%\StardewTracker` (Windows), `~/Library/Application Support/StardewTracker` (macOS) or `~/.local/share/StardewTracker` (Linux). Set `STARDEW_TRACKER_HOME` to move them.
+
+> Windows build: tested by hand on real saves from 1.5.6 and 1.6.15. The macOS and Linux builds only pass an automatic smoke test in CI. The macOS build targets Apple Silicon on a recent macOS; on older systems run it from source.
+
+## Run from source
+
+Python 3.9+ and nothing else (no `pip install`).
 
 ```bash
-python3 tracker.py serve
-python3 tracker.py info
-python3 tracker.py build --save "/path/to/Saves/Farm_123/Farm_123"
-python3 -m stardew_tracker --version   # то же CLI через пакет
+python3 tracker.py serve                     # live server (default command)
+python3 tracker.py info                      # what the parser found in your saves
+python3 tracker.py build --save "/path/to/Saves/Farm_123/Farm_123"   # one-off report.html
+python3 -m stardew_tracker --version
 ```
 
-Без сервера создайте автономный `report.html` командой `python3 tracker.py build`; `report.bat` делает то же в Windows. Цели и задачи можно редактировать только в живом режиме. Синтетическое сохранение для демонстрации: `python3 tests/make_test_save.py /tmp/saves`.
+On Windows you can double-click `run.bat` (live server) or `report.bat` (standalone `report.html`). Useful options: `--save`, `--saves-dir`, `--port`, `--host`, `--out`, `--no-open`, `--no-watch`, `--lang`, `--version`.
 
-## Сборка приложения (.exe / .app / Linux)
+Saves are normally in `%APPDATA%\StardewValley\Saves\<Farm>_<ID>\<Farm>_<ID>`. No game save at hand? Create a synthetic one: `python3 tests/make_test_save.py /tmp/saves`.
 
-**Готовые приложения** — на странице [Releases](https://github.com/KyuuketsukiAkado/stardew-tracker/releases) (бета-версии помечены как pre-release; рядом лежит `SHA256SUMS.txt`). Их собирает workflow **Build app** в GitHub Actions: `Actions → Build app → Run workflow`. Он прогоняет PyInstaller на Windows, macOS (Apple Silicon) и Linux и выкладывает `StardewTracker-windows`, `StardewTracker-macos` и `StardewTracker-linux` артефактами; при пуше тега `v*` те же файлы упаковываются в zip с версией в имени и публикуются релизом, а теги с дефисом (`v0.4.0-beta.1`) — как предварительные. Заметки релиза берутся из `.github/release-notes/<тег>.md`. В Windows это один `StardewTracker.exe`, Python на целевой машине не нужен.
+## Languages
 
-Локальная сборка в Windows:
+The tracker speaks **English** and **Russian**.
 
-1. Установите Python 3.9+ и запустите `build_app.bat` — скрипт создаст окружение `.build-venv`, поставит PyInstaller и соберёт `dist\StardewTracker.exe`.
-2. Готовый файл можно переносить на другой компьютер без Python.
+- **In the browser:** on first launch a small dialog asks which language you want (your browser's language is suggested, and "Remember my choice" is ticked). Change it any time with the **EN / RU** button in the top bar.
+- **In the console and error messages:** the language of your system is used (Windows display language, or `LC_ALL` / `LANG` elsewhere); anything other than Russian falls back to English. Override it with `--lang en|ru` or the `STARDEW_TRACKER_LANG` environment variable.
+- **Item names:** the English interface shows English names only; the Russian interface shows the Russian name with the English one next to it, which helps when searching the wiki.
 
-Любая ОС:
+## What is inside
 
-```bash
-python3 -m pip install -r requirements-build.txt
-python3 packaging/build_app.py
-```
+- **Farm guide and Today** — date, weather, what to do today, birthdays, what can be caught right now, which bundles are one item away, and a *Keys & access* panel.
+- **Perfection** — the official 1.6 perfection categories with weights, waivers, skills, obelisks and Stardrops.
+- **Museum** — all 95 artifacts and minerals; items found but not yet donated are highlighted; where-to-find filter.
+- **Fish** — the 72 fish of the 1.6 collection plus the five *Legendary II* fish from Mr. Qi's quest (marked separately), with place / time / season / weather / gear filters.
+- **Shipping, Cooking, Crafting** — 154 shipping items, 81 dishes and 150 crafting recipes; every recipe shows its exact source (skill level, friendship, Queen of Sauce date, shop, quest, Mr. Qi…).
+- **Unlock requirements** — what you already unlocked and what blocks each item (see Highlights).
+- **Danger zone · Secrets** — solutions for Mr. Qi's special orders, *Mysterious Qi*, secret notes and journal scraps. Entry needs explicit confirmation, hints and solutions open separately, and sections for places you have not unlocked yet are flagged. Solutions include item icons and self-drawn diagrams; screenshots of the game are not bundled.
+- **Villagers** — 34 NPCs with portraits, hearts, birthdays and gift ideas.
+- **Bundles** — Community Center items, quality, progress and rewards.
+- **Adventurer's Guild** — the 12 monster-slaying goals and rewards.
+- **Goals** — your own goals with automatic progress, a task checklist, JSON import/export.
 
-Запуск собранного файла без аргументов поднимает локальный сервер на `127.0.0.1:8777` и открывает браузер; закрытие консольного окна останавливает приложение. CLI сохраняется: `StardewTracker.exe info`, `build --out report.html`, `serve --port 9000 --no-open`.
+## Privacy and security
 
-В standalone-сборке `goals.json` и `report.html` пишутся в каталог данных ОС, потому что папка приложения доступна только для чтения:
+- The save is parsed locally. The app sends nothing anywhere: no analytics, no telemetry, no update checks.
+- The server listens on `127.0.0.1` only. Access from your network needs an explicit `--host 0.0.0.0`. On loopback it also rejects foreign `Host` headers (DNS-rebinding protection) and never sends CORS permissions.
+- XML containing `DOCTYPE` / `ENTITY` is rejected as unsafe.
+- Danger-zone solutions are not part of the page source or the state sent by the server; the page asks for them only after you agree, and forgets them when you leave the section. (This protects against accidental spoilers; it is not a secret.)
+- `goals.json` is written atomically and a `.bak` is kept. Your saves, goals and reports are git-ignored.
 
-- Windows — `%APPDATA%\StardewTracker`
-- macOS — `~/Library/Application Support/StardewTracker`
-- Linux — `${XDG_DATA_HOME:-~/.local/share}/StardewTracker`
+A detailed review is in [`docs/AUDIT.md`](docs/AUDIT.md) (in Russian).
 
-Расположение переопределяется переменной `STARDEW_TRACKER_HOME`. Если `goals.json` уже есть в версии для исходников, скопируйте его в этот каталог. Сейвы по-прежнему ищутся автоматически в стандартных папках Stardew Valley.
+## Feedback
 
-Файл не подписан: Windows SmartScreen и macOS Gatekeeper могут показать предупреждение. В Windows нажмите «Подробнее → Выполнить всё равно», в macOS — «Открыть» в контекстном меню либо `xattr -d com.apple.quarantine StardewTracker`. Сборка консольная: окно с логами остаётся открытым, пока работает сервер.
+This is a beta and I would love to hear from you — what works, what is confusing, what is missing, which part of your save looks wrong.
 
-## Разделы
+- ✉️ **[repro4chful@gmail.com](mailto:repro4chful@gmail.com)** — questions and suggestions
+- 🐞 **[GitHub issues](https://github.com/KyuuketsukiAkado/stardew-tracker/issues/new/choose)** — bugs and feature requests (please say which game version your save is from and which build you use; **never attach your save publicly if you do not want to share your farm's details**)
 
-- **Обзор и Сегодня** — дата, игровое время, текущая погода, ближайшие события и полезный план на день.
-- **Перфекция** — категории официального рейтинга Stardew Valley 1.6, веса, послабления, навыки, обелиски и звёздные капли.
-- **Музей** — 95 артефактов и минералов; найденные, но ещё не сданные предметы подсвечены отдельно; фильтр «Где искать» (шахты, пляж, жеоды, рыбалка, пустыня…).
-- **Рыба** — 72 вида коллекции 1.6 (включая 3 вида медуз) + 5 «легендарных II» из задания Ки отдельной пометкой; фильтры по месту (например, «Шахты»), времени суток, сезону, погоде и снасти.
-- **Отправка, готовка, крафт** — 154 товара для полной отправки, 81 блюдо и 150 рецептов; у каждого рецепта точный источник (уровень навыка, дружба, дата выпуска «Королевы соуса», магазин, задание, мистер Ки) и фильтр по источнику.
-- **Обязательные условия** — трекер читает из сейва, что уже открыто (остров, Комната Ки, Пещера Черепа, канализация, Тайный лес, этажи шахт, навыки, сердца…), и помечает 🔒 всё, что пока нельзя получить, с подсказкой «Как открыть». Сводка «Ключи и доступы» — на странице «Сегодня»; фильтр «Доступно мне / Требует открытия» — во всех коллекциях.
-- **Секреты · danger zone** — решения 10 особых заданий мистера Ки, цепочки «Таинственный Ки», секретных записок и обрывков дневника острова. Вход только после явного подтверждения, подсказка и решение раскрываются отдельно; разделы о ещё не открытых местах помечены предупреждением. К раскрытому решению добавляется визуал: иконки нужных предметов, собственные схемы мест (куст у площадки, клад у Железной дороги, порядок ракушек в шоу русалки, настройка флейта-блоков и т. д.) и ссылка на страницу вики со скриншотами. Скриншоты игры в проект не встраиваются — это правило ТЗ (права ConcernedApe), а внешняя ссылка открывается браузером, приложение само ничего не загружает.
-- **Жители** — 34 NPC, портреты, сердца, дни рождения и подарки.
-- **Бандлы** — предметы, качество, прогресс и награды Community Center с оригинальными иконками.
-- **Гильдия** — 12 целей истребления монстров и награды.
-- **Цели** — пользовательские цели с авто-прогрессом и чеклист задач; импорт/экспорт JSON.
+## Known limitations
 
-Списки поддерживают поиск и фильтры; коллекции можно показывать плитками или подробным списком. На главной есть быстрые переходы по четырём понятным игровым темам — план фермы, прогресс, коллекции и личное; на широком экране разделы сгруппированы в верхней панели с пятью группами (план, прогресс, коллекции, люди и личное, danger zone) и вторым рядом подразделов со счётчиками, а на телефоне и планшете доступны из компактного селектора. Пиктограммы интерфейса — векторные значки Lucide (ISC), встроены в страницу и не требуют внешних запросов. Оформление «Холодный Bento»: светлая тема B2 Frost Deco («Иней») по умолчанию и тёмная B1 Night Run («Ночь»); переключатель в шапке (светлая → тёмная → как в системе). Раскладка — 12-колоночная bento-сетка с плитками, контейнер расширяется до 1840 px на больших мониторах. Цвета прогресса единообразны: зелёный — готово, золотой — есть прогресс, красный — нужно действие, серый — ещё не выполнено, синий — подсказки, сиреневый 🔒 — требует открытия. На карточках бандлов главной можно открыть комнату напрямую, а подсказка покажет незавершённые бандлы и позволит перейти к каждому. Интерфейс поддерживает русский и английский языки.
+- The redesign is still in progress: the overview, *Today* and navigation are done; collection pages and the rest are being redesigned next.
+- Multiplayer: only the host is counted.
+- The perfection percentage has not been compared with the number shown by the game itself. Obelisk and Golden Clock names are not verified on real saves.
+- Saves from 1.5.6 lack some data (for example tomorrow's weather); those fields stay empty.
 
-## Сохранения и конфиденциальность
-
-Обычно сейвы находятся в `%APPDATA%\StardewValley\Saves\<Ферма>_<ID>\<Ферма>_<ID>`. Приложение читает XML локально. `goals.json` сохраняется рядом со скриптом (в standalone-сборке — в каталоге данных ОС); перед его перезаписью создаётся `goals.json.bak`, а сама запись атомарна. Локальные сейвы, цели и отчёт исключены из git.
-
-Сервер не делает исходящих запросов, не отдаёт CORS-разрешений и по умолчанию доступен только с этого компьютера; на loopback он принимает только заголовки `Host` `127.0.0.1`, `localhost` и `::1` (защита от DNS-rebinding), поэтому обращение под другим именем — например, через туннель — потребует явного `--host`. XML-документы с `DOCTYPE`/`ENTITY` отклоняются как небезопасные. Подробный аудит и список исправлений — в [`docs/AUDIT.md`](docs/AUDIT.md).
-
-## Пометки предметов и подсказки
-
-В списках коллекций нажмите ☆, чтобы сохранить предмет на потом, или ✎, чтобы добавить короткую заметку (до 280 символов). В разделе **Пометки** собраны все закладки и заметки; данные сохраняются в `goals.json` и входят в его импорт/экспорт. В автономном отчёте пометки хранятся в localStorage браузера.
-
-Кнопка `i` раскрывает подсказку: у рыбы — сезон, время, погоду, места, сложность и размер; у музейных предметов — распространённые источники; у рецептов — способ открытия и ингредиенты. Для bundle-предметов закладка доступна прямо на карточке.
-
-## Разработка
+## Development
 
 ```bash
 python3 -m unittest discover -s tests -v
 python3 tests/make_test_save.py /tmp/saves
 python3 tracker.py info --saves-dir /tmp/saves
-python3 tracker.py build --saves-dir /tmp/saves --out /tmp/report.html
 ```
 
-Тесты используют только `unittest` и синтетический XML-сейв: 275 тестов.
-CI прогоняет их на Python 3.9, 3.11 и 3.13, а отдельный quality-job проверяет `ruff`, формат,
-`mypy`, `bandit` и покрытие не ниже 85%.
+The tests use only `unittest` and a synthetic save. CI runs them on Python 3.9, 3.11 and 3.13 and checks `ruff`, formatting, `mypy`, `bandit` and coverage of at least 85 %:
 
 ```bash
 python3 -m pip install -r requirements-dev.txt
 ruff check .
-ruff format --check stardew_tracker tracker.py tests tools
+ruff format --check stardew_tracker tracker.py tests packaging/build_app.py tools
 mypy
 bandit -q -r stardew_tracker tracker.py build_data.py tools
 coverage run -m unittest discover -s tests && coverage report
-python tools/build_demo.py --check        # демо docs/index.html должно быть актуально
+python tools/build_demo.py --check        # docs/index.html must be up to date
 ```
 
-Демо `docs/index.html` — автономный отчёт по тестовой ферме; его генерирует `tools/build_demo.py`
-(без текущего времени, часового пояса, локальных путей и `goals.json`, поэтому результат
-воспроизводим). После правок `assets/dashboard.html` или `data/` пересоберите его командой
-`python tools/build_demo.py` и закоммитьте результат — CI проверяет актуальность.
+- `docs/index.html` is a standalone demo report for a fictional farm, generated by `tools/build_demo.py` (deterministic: no clock, time zone, local paths or `goals.json`). Rebuild it with `python tools/build_demo.py` after changing `assets/dashboard.html` or `data/`.
+- The page is a single template, `assets/dashboard.html` (inline CSS and JavaScript). With Node.js installed, the test suite also syntax-checks its script. [`tools/ui_smoke.js`](tools/ui_smoke.js) renders every page in a headless DOM (`npm install jsdom` first) — handy for catching script errors without a browser.
+- The code is a package, `stardew_tracker/` (save finder, XML parser, reference data, state, report, HTTP server, CLI, i18n). `tracker.py` is a compatibility entry point.
 
-Код разделён на пакет `stardew_tracker/` (поиск сейва, XML-парсер, справочники, состояние,
-рендер, HTTP-сервер, CLI). `tracker.py` — совместимая точка входа и реэкспорт публичного API,
-поэтому старые команды и скрипты продолжают работать. Автономный JavaScript шаблона
-проверяется `node --check` (если Node.js установлен).
+### Building the app yourself
 
-## Данные и игровые спрайты
+```bash
+python3 -m pip install -r requirements-build.txt
+python3 packaging/build_app.py          # Windows: build_app.bat
+```
 
-`data/` и пиксельные атласы `assets/sprites/` подготовлены из локальных файлов Stardew Valley 1.6.15 скриптом `build_data.py` (без зависимостей). Для пересборки укажите распакованную папку `Content`:
+The **Build app** workflow in GitHub Actions builds Windows, macOS and Linux binaries; pushing a `v*` tag publishes them as a release (tags with a hyphen, such as `v0.4.0-beta.2`, become pre-releases). Release notes come from `.github/release-notes/<tag>.md`.
+
+## Data and game sprites
+
+`data/` and the pixel atlases in `assets/sprites/` were prepared from local Stardew Valley 1.6.15 files with `build_data.py` (no dependencies). To rebuild, point it at an unpacked `Content` folder:
 
 ```bash
 python3 build_data.py --content-dir "/path/to/Stardew Valley/Content (unpacked)"
 ```
 
-Приложение не требует установленной игры для своей работы. Игровые названия и графические ассеты принадлежат их правообладателю и включены в этот проект только для его локального интерфейса.
+The app does not need the game installed. Game names and graphics belong to their owner and are included only for this project's local interface.
 
-## Credits / Attribution
+## Credits and attribution
 
-- Stardew Valley, её названия, игровые данные и графические спрайты — © ConcernedApe. Это неофициальный фанатский проект, не связан с ConcernedApe и не одобрен им.
-- Поля сохранений сверялись со [Stardew Checkup](https://github.com/MouseyPounds/stardew-checkup); список предметов для полной отправки выведен из проекта Stardew Checkup (MIT, MouseyPounds).
-- Код проекта распространяется по лицензии MIT (см. [`LICENSE`](LICENSE)).
+- Stardew Valley, its names, game data and sprites are © ConcernedApe. This is an unofficial fan project; it is not affiliated with or endorsed by ConcernedApe.
+- Save fields were cross-checked against [Stardew Checkup](https://github.com/MouseyPounds/stardew-checkup); the full-shipment item list is derived from Stardew Checkup (MIT, MouseyPounds).
+- Interface icons are [Lucide](https://lucide.dev) (ISC), embedded in the page.
+- Project code is MIT-licensed — see [`LICENSE`](LICENSE).
 
-## Файлы проекта
+## Project files
 
 ```text
-tracker.py                 совместимый CLI-фасад (python tracker.py ...)
-stardew_tracker/           пакет: парсер, состояние, рендер, сервер, CLI
-build_data.py              сборка локальных справочников и атласов спрайтов
-data/*.json                двуязычные данные 1.6.15
-assets/dashboard.html      интерфейс (inline CSS/JS)
-assets/sprites/*.png       игровые пиксельные атласы
-saves/                     необязательная папка для сейвов (игнорируется git)
-goals.json                 локальные цели и задачи (игнорируется git)
-data/recipe_sources.json   точные источники рецептов (сверены с вики 1.6)
-data/secrets.json          контент danger zone: задания Ки, записки, секреты, иконки, ссылки на вики
-tests/                     275 тестов и генератор тестового сейва
-docs/index.html            автономная демонстрационная сборка (генерируется tools/build_demo.py)
-tools/build_demo.py        детерминированная пересборка демо и проверка его актуальности
-docs/AUDIT.md              аудит, находки и AQA-отчёт
-pyproject.toml             настройки ruff/mypy/coverage и метаданные
-requirements-dev.txt       инструменты разработки и CI
-requirements-build.txt     PyInstaller для standalone-сборки
-packaging/                 spec PyInstaller и скрипт сборки приложения
-TZ.md                      подробное техническое задание и формат сейва
+tracker.py                 compatibility CLI entry point (python tracker.py ...)
+stardew_tracker/           package: parser, state, report, server, CLI, i18n
+build_data.py              builds the local reference data and sprite atlases
+data/*.json                bilingual data for 1.6.15
+assets/dashboard.html      the interface (inline CSS/JS)
+assets/sprites/*.png       game pixel atlases
+tests/                     tests and the synthetic save generator
+docs/index.html            standalone demo (generated by tools/build_demo.py)
+docs/AUDIT.md              audit, findings and QA report (Russian)
+tools/                     build_demo.py (demo), ui_smoke.js (optional DOM smoke test)
+packaging/                 PyInstaller spec and the app build script
+TZ.md                      detailed specification and save format notes (Russian)
 ```

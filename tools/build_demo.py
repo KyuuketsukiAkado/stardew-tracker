@@ -4,7 +4,8 @@
     python tools/build_demo.py            # перезаписать docs/index.html
     python tools/build_demo.py --check    # только проверить, что файл актуален (для CI)
 
-Демо — это автономный отчёт по тестовой ферме (данные фейковые). Раньше его
+Демо — это автономный отчёт по вымышленной ферме Sunny Acres (данные фейковые;
+английские имена: демо открывают англоязычные посетители GitHub Pages). Раньше его
 пересобирали руками, и он отставал от ``assets/dashboard.html`` и справочников,
 а в файл попадали время сборки и путь вроде ``/tmp/...``. Здесь всё, что
 зависит от времени, часового пояса, пути и локальных ``goals.json``, заменено
@@ -30,8 +31,10 @@ from stardew_tracker import build_state, default_goals, render  # noqa: E402
 DEMO_PATH = os.path.join(ROOT, "docs", "index.html")
 # Всё, что в настоящем состоянии зависит от окружения, — константы.
 DEMO_META = {
-    "save_path": "demo/Тестовая_345678901/Тестовая_345678901",
-    "save_name": "Тестовая_345678901",
+    "farm": "Sunny Acres",
+    "farmer": "Riley",
+    "save_path": "demo/Sunny_Acres_345678901/Sunny_Acres_345678901",
+    "save_name": "Sunny_Acres_345678901",
     "save_mtime": 1794355200,
     "mtime_str": "2026-11-11 00:00:00",
     "generated": "2026-11-11 00:00:00",
@@ -69,18 +72,18 @@ def is_current(path: str = DEMO_PATH) -> bool:
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="Сборка демо docs/index.html")
-    parser.add_argument("--check", action="store_true", help="не писать файл, а проверить его актуальность")
-    parser.add_argument("--out", default=DEMO_PATH, help="куда писать (по умолчанию docs/index.html)")
+    parser = argparse.ArgumentParser(description="Build the demo docs/index.html")
+    parser.add_argument("--check", action="store_true", help="do not write the file, only check that it is up to date")
+    parser.add_argument("--out", default=DEMO_PATH, help="where to write (default: docs/index.html)")
     args = parser.parse_args(argv)
 
     if args.check:
         if is_current(args.out):
-            print(f"OK: {os.path.relpath(args.out, ROOT)} актуален")
+            print(f"OK: {os.path.relpath(args.out, ROOT)} is up to date")
             return 0
         print(
-            f"УСТАРЕЛ: {os.path.relpath(args.out, ROOT)} не соответствует assets/dashboard.html и data/.\n"
-            "Выполните `python tools/build_demo.py` и закоммитьте результат.",
+            f"STALE: {os.path.relpath(args.out, ROOT)} does not match assets/dashboard.html and data/.\n"
+            "Run `python tools/build_demo.py` and commit the result.",
             file=sys.stderr,
         )
         return 1
@@ -89,7 +92,7 @@ def main(argv: list[str] | None = None) -> int:
     os.makedirs(os.path.dirname(os.path.abspath(args.out)), exist_ok=True)
     with open(args.out, "w", encoding="utf-8", newline="\n") as handle:
         handle.write(html)
-    print(f"Готово: {os.path.relpath(args.out, ROOT)} ({len(html) // 1024} КБ)")
+    print(f"Done: {os.path.relpath(args.out, ROOT)} ({len(html) // 1024} KB)")
     return 0
 
 

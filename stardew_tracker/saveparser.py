@@ -18,6 +18,7 @@ from typing import Any
 from . import xmlutil as xml
 from .constants import SEASONS
 from .errors import SaveError
+from .i18n import L
 from .xmlutil import norm_id
 
 _CACHE_LIMIT = 16
@@ -77,30 +78,50 @@ def _file_sig(path: str) -> tuple[str, int, int]:
     except FileNotFoundError as exc:
         raise SaveError(
             "no_saves",
-            f"Файл сохранения не найден: {path}",
-            "Файл был перемещён или удалён.",
+            L(f"Save file not found: {path}", f"Файл сохранения не найден: {path}"),
+            L("The file was moved or deleted.", "Файл был перемещён или удалён."),
             [
-                "Проверьте путь к папке Saves игры.",
-                'Укажите актуальный файл через --save "путь\\к\\сейву".',
+                L("Check the path to the game's Saves folder.", "Проверьте путь к папке Saves игры."),
+                L(
+                    'Pass the current file with --save "path\\to\\save".',
+                    'Укажите актуальный файл через --save "путь\\к\\сейву".',
+                ),
             ],
         ) from exc
     except PermissionError as exc:
         raise SaveError(
             "permission_denied",
-            "Нет прав на чтение файла сохранения",
-            f"Операционная система запретила чтение файла: {absolute}",
+            L("No permission to read the save file", "Нет прав на чтение файла сохранения"),
+            L(
+                f"The operating system denied reading the file: {absolute}",
+                f"Операционная система запретила чтение файла: {absolute}",
+            ),
             [
-                "Проверьте права доступа к файлу и папке сохранения.",
-                "Подождите пару секунд, если игра прямо сейчас записывает сейв, и нажмите «Обновить».",
-                "Попробуйте скопировать папку сейва в подпапку saves/ рядом с tracker.py.",
+                L(
+                    "Check the permissions of the file and the save folder.",
+                    "Проверьте права доступа к файлу и папке сохранения.",
+                ),
+                L(
+                    'If the game is writing the save right now, wait a couple of seconds and press "Refresh".',
+                    "Подождите пару секунд, если игра прямо сейчас записывает сейв, и нажмите «Обновить».",
+                ),
+                L(
+                    "Try copying the save folder into a saves/ subfolder next to tracker.py.",
+                    "Попробуйте скопировать папку сейва в подпапку saves/ рядом с tracker.py.",
+                ),
             ],
         ) from exc
     except OSError as exc:
         raise SaveError(
             "io_error",
-            "Не удалось прочитать файл сохранения",
+            L("Could not read the save file", "Не удалось прочитать файл сохранения"),
             f"{absolute}: {exc}",
-            ["Проверьте доступность диска и целостность файла сохранения."],
+            [
+                L(
+                    "Check that the drive is available and the save file is intact.",
+                    "Проверьте доступность диска и целостность файла сохранения.",
+                )
+            ],
         ) from exc
     return (absolute, stat.st_mtime_ns, stat.st_size)
 
@@ -428,19 +449,30 @@ def _parse_uncached(signature: tuple[str, int, int]) -> dict[str, Any]:
     except PermissionError as exc:
         raise SaveError(
             "permission_denied",
-            "Нет прав на чтение файла сохранения",
-            f"Не удалось открыть для чтения: {signature[0]}",
+            L("No permission to read the save file", "Нет прав на чтение файла сохранения"),
+            L(f"Could not open for reading: {signature[0]}", f"Не удалось открыть для чтения: {signature[0]}"),
             [
-                "Убедитесь, что у текущего пользователя Windows/Linux есть доступ на чтение файла.",
-                "Если игра сохраняется прямо в этот момент, подождите 2–3 секунды.",
+                L(
+                    "Make sure the current Windows/Linux user can read the file.",
+                    "Убедитесь, что у текущего пользователя Windows/Linux есть доступ на чтение файла.",
+                ),
+                L(
+                    "If the game is saving at this very moment, wait 2-3 seconds.",
+                    "Если игра сохраняется прямо в этот момент, подождите 2–3 секунды.",
+                ),
             ],
         ) from exc
     except OSError as exc:
         raise SaveError(
             "io_error",
-            "Не удалось прочитать файл сохранения",
+            L("Could not read the save file", "Не удалось прочитать файл сохранения"),
             f"{signature[0]}: {exc}",
-            ["Проверьте доступность диска и целостность файла сохранения."],
+            [
+                L(
+                    "Check that the drive is available and the save file is intact.",
+                    "Проверьте доступность диска и целостность файла сохранения.",
+                )
+            ],
         ) from exc
 
     try:
@@ -448,21 +480,36 @@ def _parse_uncached(signature: tuple[str, int, int]) -> dict[str, Any]:
     except ET.ParseError as exc:
         raise SaveError(
             "corrupt_save",
-            "Файл сохранения не распознан (ошибка XML)",
-            f"Файл {signature[0]} не является корректным XML сохранения Stardew Valley ({exc}).",
+            L("The save file was not recognised (XML error)", "Файл сохранения не распознан (ошибка XML)"),
+            L(
+                f"The file {signature[0]} is not a valid Stardew Valley save XML ({exc}).",
+                f"Файл {signature[0]} не является корректным XML сохранения Stardew Valley ({exc}).",
+            ),
             [
-                "Убедитесь, что выбран основной файл <Ферма>_<ID>, а не другой файл или архив.",
-                "Если игра вылетела во время записи, проверьте соседний резервный файл <Ферма>_<ID>_old.",
+                L(
+                    "Make sure you picked the main <Farm>_<ID> file, not another file or an archive.",
+                    "Убедитесь, что выбран основной файл <Ферма>_<ID>, а не другой файл или архив.",
+                ),
+                L(
+                    "If the game crashed while saving, check the neighbouring backup file <Farm>_<ID>_old.",
+                    "Если игра вылетела во время записи, проверьте соседний резервный файл <Ферма>_<ID>_old.",
+                ),
             ],
         ) from exc
 
     if xml.ln(root) != "SaveGame":
         raise SaveError(
             "corrupt_save",
-            "Файл не похож на сохранение Stardew Valley",
-            f"Корневой тег документа — <{xml.ln(root)}>, ожидался <SaveGame>.",
+            L("The file does not look like a Stardew Valley save", "Файл не похож на сохранение Stardew Valley"),
+            L(
+                f"The document's root tag is <{xml.ln(root)}>, expected <SaveGame>.",
+                f"Корневой тег документа — <{xml.ln(root)}>, ожидался <SaveGame>.",
+            ),
             [
-                "Выберите файл сохранения вида %APPDATA%\\StardewValley\\Saves\\<Ферма>_<ID>\\<Ферма>_<ID>.",
+                L(
+                    "Pick a save file such as %APPDATA%\\StardewValley\\Saves\\<Farm>_<ID>\\<Farm>_<ID>.",
+                    "Выберите файл сохранения вида %APPDATA%\\StardewValley\\Saves\\<Ферма>_<ID>\\<Ферма>_<ID>.",
+                ),
             ],
         )
 
@@ -498,8 +545,8 @@ def _parse_uncached(signature: tuple[str, int, int]) -> dict[str, Any]:
 
     data: dict[str, Any] = {
         "player_count": len(players),
-        "name": xml.txt(xml.kid(host, "name")) or xml.deep_text(host, "name", "Фермер"),
-        "farm_name": xml.txt(xml.kid(host, "farmName")) or xml.deep_text(host, "farmName", "Ферма"),
+        "name": xml.txt(xml.kid(host, "name")) or xml.deep_text(host, "name", "Farmer"),
+        "farm_name": xml.txt(xml.kid(host, "farmName")) or xml.deep_text(host, "farmName", "Farm"),
         "money": xml.first_int(xml.kid(host, "money")) or 0,
         "total_earned": xml.first_int(xml.kid(host, "totalMoneyEarned")) or 0,
         "day": xml.first_int(xml.kid(host, "dayOfMonth")) or xml.first_int(lookup.get("dayOfMonth")) or 1,
@@ -546,13 +593,28 @@ def _parse_uncached(signature: tuple[str, int, int]) -> dict[str, Any]:
     }
 
     if not data["friendship"]:
-        warnings.append("Не нашёл friendshipData — раздел «Люди» будет пустым.")
+        warnings.append(
+            L(
+                "friendshipData not found - the People section will be empty.",
+                "Не нашёл friendshipData — раздел «Люди» будет пустым.",
+            )
+        )
     if not data["fishCaught"]:
-        warnings.append("Не нашёл fishCaught — рыбалка будет показана как «не поймано».")
+        warnings.append(
+            L(
+                'fishCaught not found - fishing will be shown as "not caught".',
+                "Не нашёл fishCaught — рыбалка будет показана как «не поймано».",
+            )
+        )
     if not museum:
-        warnings.append("Музей: не нашёл museumPieces (возможно, ещё ничего не сдано).")
+        warnings.append(
+            L(
+                "Museum: museumPieces not found (maybe nothing has been donated yet).",
+                "Музей: не нашёл museumPieces (возможно, ещё ничего не сдано).",
+            )
+        )
     if not bundles:
-        warnings.append("Не нашёл состояние бандлов Community Center.")
+        warnings.append(L("Community Center bundle state not found.", "Не нашёл состояние бандлов Community Center."))
 
     data["warnings"] = warnings
     _cache_put(signature, data)

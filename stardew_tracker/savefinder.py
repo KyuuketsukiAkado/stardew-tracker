@@ -6,21 +6,42 @@ import os
 
 from .constants import SEASON_RU  # noqa: F401  (реэкспорт для совместимости)
 from .errors import SaveError
+from .i18n import L
 from .paths import FROZEN, SAVES_DIR
 
 _SKIP_NAMES = frozenset({"SaveGameInfo", "startup_preferences"})
 _SKIP_SUFFIXES = ("_old", "_old.bak", ".bak", ".tmp")
 
-_NO_SAVE_STEPS = [
-    'Укажите путь вручную: python tracker.py serve --save "путь\\к\\сейву"',
-    "В Windows сейвы обычно лежат в %APPDATA%\\StardewValley\\Saves\\<Ферма>_<id>\\<Ферма>_<id>",
-    "Для демо-проверки можно создать тестовый сейв: python tests/make_test_save.py saves",
-]
-_NO_SAVE_STEPS_APP = [
-    'Укажите путь вручную: StardewTracker serve --save "путь\\к\\сейву"',
-    "В Windows сейвы обычно лежат в %APPDATA%\\StardewValley\\Saves\\<Ферма>_<id>\\<Ферма>_<id>",
-    "Запустите StardewTracker info, чтобы проверить автопоиск сохранений.",
-]
+_SAVE_LOCATION_EN = r"On Windows saves usually live in %APPDATA%\StardewValley\Saves\<Farm>_<id>\<Farm>_<id>"
+_SAVE_LOCATION_RU = r"В Windows сейвы обычно лежат в %APPDATA%\StardewValley\Saves\<Ферма>_<id>\<Ферма>_<id>"
+
+
+def _no_save_steps() -> list[str]:
+    """Steps shown when no save is found (built per call so they follow the language)."""
+
+    if FROZEN:
+        return [
+            L(
+                'Give the path yourself: StardewTracker serve --save "path\\to\\save"',
+                'Укажите путь вручную: StardewTracker serve --save "путь\\к\\сейву"',
+            ),
+            L(_SAVE_LOCATION_EN, _SAVE_LOCATION_RU),
+            L(
+                "Run StardewTracker info to check the automatic save search.",
+                "Запустите StardewTracker info, чтобы проверить автопоиск сохранений.",
+            ),
+        ]
+    return [
+        L(
+            'Give the path yourself: python tracker.py serve --save "path\\to\\save"',
+            'Укажите путь вручную: python tracker.py serve --save "путь\\к\\сейву"',
+        ),
+        L(_SAVE_LOCATION_EN, _SAVE_LOCATION_RU),
+        L(
+            "For a demo you can create a test save: python tests/make_test_save.py saves",
+            "Для демо-проверки можно создать тестовый сейв: python tests/make_test_save.py saves",
+        ),
+    ]
 
 
 def candidate_save_dirs() -> list[str]:
@@ -85,16 +106,29 @@ def _listdir(path: str) -> list[str]:
     except PermissionError as exc:
         raise SaveError(
             "permission_denied",
-            "Нет прав на чтение папки сохранений",
-            f"Операционная система запретила доступ к папке: {path}",
-            ["Проверьте права доступа к папке или скопируйте сейвы в доступную директорию."],
+            L("No permission to read the saves folder", "Нет прав на чтение папки сохранений"),
+            L(
+                f"The operating system denied access to the folder: {path}",
+                f"Операционная система запретила доступ к папке: {path}",
+            ),
+            [
+                L(
+                    "Check the folder permissions or copy the saves to a folder you can read.",
+                    "Проверьте права доступа к папке или скопируйте сейвы в доступную директорию.",
+                )
+            ],
         ) from exc
     except OSError as exc:
         raise SaveError(
             "io_error",
-            "Не удалось прочитать папку сохранений",
+            L("Could not read the saves folder", "Не удалось прочитать папку сохранений"),
             f"{path}: {exc}",
-            ["Проверьте доступность диска и правильность пути."],
+            [
+                L(
+                    "Check that the drive is available and the path is correct.",
+                    "Проверьте доступность диска и правильность пути.",
+                )
+            ],
         ) from exc
 
 
@@ -150,12 +184,18 @@ def find_saves(saves_dir: str | None = None, explicit: str | None = None) -> lis
         else:
             raise SaveError(
                 "no_saves",
-                f"Путь не найден: {explicit}",
-                "Указанный файл или папка сохранения не существует.",
+                L(f"Path not found: {explicit}", f"Путь не найден: {explicit}"),
+                L(
+                    "The save file or folder you specified does not exist.",
+                    "Указанный файл или папка сохранения не существует.",
+                ),
                 [
-                    "Проверьте правильность пути в аргументе --save.",
-                    "В Windows сохранения обычно лежат в %APPDATA%\\StardewValley\\Saves\\<Ферма>_<ID>\\<Ферма>_<ID>.",
-                    "Запустите `python tracker.py info`, чтобы проверить автопоиск.",
+                    L("Check the path you passed to --save.", "Проверьте правильность пути в аргументе --save."),
+                    L(_SAVE_LOCATION_EN + ".", _SAVE_LOCATION_RU + "."),
+                    L(
+                        "Run `python tracker.py info` to check the automatic save search.",
+                        "Запустите `python tracker.py info`, чтобы проверить автопоиск.",
+                    ),
                 ],
             )
 
@@ -179,7 +219,10 @@ def no_saves_error() -> SaveError:
 
     return SaveError(
         "no_saves",
-        "Не нашёл ни одного файла сохранения",
-        "В стандартных папках Stardew Valley и папке ./saves сохранения не обнаружены.",
-        list(_NO_SAVE_STEPS_APP if FROZEN else _NO_SAVE_STEPS),
+        L("No save file found", "Не нашёл ни одного файла сохранения"),
+        L(
+            "No saves were found in the standard Stardew Valley folders or in ./saves.",
+            "В стандартных папках Stardew Valley и папке ./saves сохранения не обнаружены.",
+        ),
+        _no_save_steps(),
     )

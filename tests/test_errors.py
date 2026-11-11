@@ -15,11 +15,22 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, ROOT)
 
 import stardew_tracker  # noqa: E402
-from stardew_tracker import DataError, SaveError, TrackerError, cli, server  # noqa: E402
+from stardew_tracker import DataError, SaveError, TrackerError, cli, i18n, server  # noqa: E402
+from stardew_tracker.i18n import L  # noqa: E402
+
+
+def _pin_language(case: unittest.TestCase, lang: str = "en") -> None:
+    i18n.set_language(lang)
+    case.addCleanup(i18n.set_language, None)
 
 
 def _error() -> SaveError:
-    return SaveError("io_error", "Не читается", "Диск недоступен", ["Проверьте диск", "Перезапустите"])
+    return SaveError(
+        "io_error",
+        L("Cannot read", "Не читается"),
+        L("Disk unavailable", "Диск недоступен"),
+        [L("Check the disk", "Проверьте диск"), L("Restart", "Перезапустите")],
+    )
 
 
 class TestErrorHierarchy(unittest.TestCase):
@@ -41,19 +52,32 @@ class TestErrorHierarchy(unittest.TestCase):
             self.fail("исключение должно было сработать")
 
     def test_message_and_dict_keep_their_format(self):
+        _pin_language(self, "en")
         error = _error()
         self.assertEqual(
             str(error),
-            "Ошибка: Не читается\n  Диск недоступен\nЧто сделать:\n  1. Проверьте диск\n  2. Перезапустите",
+            "Error: Cannot read\n  Disk unavailable\nWhat to do:\n  1. Check the disk\n  2. Restart",
         )
+        payload = error.to_dict()
         self.assertEqual(
-            error.to_dict(),
+            {key: payload[key] for key in ("kind", "title", "detail", "steps")},
             {
                 "kind": "io_error",
-                "title": "Не читается",
-                "detail": "Диск недоступен",
-                "steps": ["Проверьте диск", "Перезапустите"],
+                "title": "Cannot read",
+                "detail": "Disk unavailable",
+                "steps": ["Check the disk", "Restart"],
             },
+        )
+        # The page receives both languages and picks its own.
+        self.assertEqual(payload["i18n"]["en"]["title"], "Cannot read")
+        self.assertEqual(payload["i18n"]["ru"]["title"], "Не читается")
+        self.assertEqual(payload["i18n"]["ru"]["steps"], ["Проверьте диск", "Перезапустите"])
+
+    def test_message_follows_the_console_language(self):
+        _pin_language(self, "ru")
+        self.assertEqual(
+            str(_error()),
+            "Ошибка: Не читается\n  Диск недоступен\nЧто сделать:\n  1. Проверьте диск\n  2. Перезапустите",
         )
 
     def test_data_error_points_at_the_data_folder(self):
@@ -64,12 +88,13 @@ class TestErrorHierarchy(unittest.TestCase):
 
 class TestCliRunMapsTrackerErrors(unittest.TestCase):
     def test_tracker_error_prints_message_without_traceback_and_exits_1(self):
+        _pin_language(self, "en")
         stderr = io.StringIO()
         with mock.patch.object(cli, "main", side_effect=_error()), contextlib.redirect_stderr(stderr):
             with self.assertRaises(SystemExit) as context:
                 cli.run()
         self.assertEqual(context.exception.code, 1)
-        self.assertIn("Ошибка: Не читается", stderr.getvalue())
+        self.assertIn("Error: Cannot read", stderr.getvalue())
         self.assertNotIn("Traceback", stderr.getvalue())
 
     def test_exit_code_of_main_is_passed_through(self):

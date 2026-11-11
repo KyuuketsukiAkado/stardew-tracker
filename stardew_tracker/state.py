@@ -39,6 +39,7 @@ from .unlocks import (
     museum_tag_options,
     recipe_kind_options,
 )
+from .version import __version__
 
 _STATE_CACHE_LIMIT = 8
 _STATE_CACHE: OrderedDict[tuple[str, int, int], dict[str, Any]] = OrderedDict()
@@ -176,6 +177,7 @@ def _build_meta(raw: dict[str, Any], selected: str, save_mtime: int, saves_found
         "generated": time.strftime("%Y-%m-%d %H:%M:%S"),
         "warnings": raw["warnings"],
         "saves_found": saves_found,
+        "app_version": __version__,
     }
 
 

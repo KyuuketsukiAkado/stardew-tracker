@@ -76,7 +76,8 @@ class TestResponsiveStyles(unittest.TestCase):
     def test_localized_brand_logo_is_inline_vector(self):
         html = TEMPLATE.read_text(encoding="utf-8")
         self.assertIn('class="brand-mark"', html)
-        self.assertIn('id="brandTitle">Stardew Трекер</span>', html)
+        # English first: the static markup is English, the script switches it to Russian on demand.
+        self.assertIn('id="brandTitle">Stardew Tracker</span>', html)
         self.assertIn('brand: "Stardew Трекер"', html)
         self.assertIn('brand: "Stardew Tracker"', html)
         self.assertIn('appTitle: "Stardew Трекер — прогресс фермы"', html)
@@ -189,8 +190,9 @@ class TestResponsiveStyles(unittest.TestCase):
         self.assertIn("function greetingTitle(meta)", html)
         self.assertIn('${t("greeting")}, <em>${esc(farmer)}</em>!', html)
         self.assertIn('meta.farmer || ""', html)
-        self.assertIn('farmerFallback: "фермер"', html)
-        self.assertIn('farmerFallback: "farmer"', html)
+        # No gendered noun as a fallback: without a farmer name the greeting has no name at all.
+        self.assertNotIn("farmerFallback", html)
+        self.assertIn('`${t("greeting")}!`', html)
         self.assertIn('id="welcomeTitle"', html)
         self.assertIn("overflow-wrap: anywhere", css_block(self.css, ".welcome-row h1"))
         self.assertIn("min-width: 0", css_block(self.css, ".welcome-row > div:first-child"))

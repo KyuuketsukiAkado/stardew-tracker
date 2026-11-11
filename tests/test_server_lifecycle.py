@@ -18,6 +18,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, ROOT)
 sys.path.insert(0, os.path.join(ROOT, "tests"))
 
+from langpin import pin_english, unpin  # noqa: E402
 from make_test_save import write_test_save  # noqa: E402
 
 from stardew_tracker import (  # noqa: E402
@@ -25,6 +26,14 @@ from stardew_tracker import (  # noqa: E402
     cli,
     server,
 )
+
+
+def setUpModule():
+    pin_english()
+
+
+def tearDownModule():
+    unpin()
 
 
 class FakeHTTPD:
@@ -62,7 +71,7 @@ class TestServe(unittest.TestCase):
         self.assertTrue(FakeHTTPD.instances[0].served)
         self.assertTrue(FakeHTTPD.instances[0].closed)
         self.assertIn("Тестовая", output.getvalue())
-        self.assertIn("Остановлено", output.getvalue())
+        self.assertIn("Stopped", output.getvalue())
 
     def test_serve_waiting_mode_without_save(self):
         empty = os.path.join(self.tmp, "empty")
@@ -74,8 +83,8 @@ class TestServe(unittest.TestCase):
             contextlib.redirect_stderr(errors),
         ):
             server.serve(port=0, saves_dir=empty, open_browser=False, watch=False)
-        self.assertIn("режиме ожидания", output.getvalue())
-        self.assertIn("Не нашёл", errors.getvalue())
+        self.assertIn("waiting for a save", output.getvalue())
+        self.assertIn("No save file found", errors.getvalue())
 
     def test_explicit_missing_save_is_fatal(self):
         with mock.patch.object(server, "TrackerHTTPServer", FakeHTTPD):
@@ -103,14 +112,14 @@ class TestWatchLoop(unittest.TestCase):
                     stat = os.stat(save)
                     os.utime(save, ns=(stat.st_atime_ns, stat.st_mtime_ns + 1_000_000_000))
                     deadline = time.time() + 5
-                    while time.time() < deadline and "сейв обновлён" not in output.getvalue():
+                    while time.time() < deadline and "save updated" not in output.getvalue():
                         time.sleep(0.02)
                 finally:
                     stop.set()
                     thread.join(timeout=5)
             self.assertFalse(thread.is_alive())
             self.assertEqual(app.state["meta"]["save_path"], before)
-            self.assertIn("сейв обновлён", output.getvalue())
+            self.assertIn("save updated", output.getvalue())
         finally:
             shutil.rmtree(tmp, ignore_errors=True)
 
@@ -139,7 +148,7 @@ class TestCliRun(unittest.TestCase):
             output = io.StringIO()
             with contextlib.redirect_stdout(output):
                 self.assertEqual(cli.main(["info", "--saves-dir", tmp]), 0)
-            self.assertIn("Подсказка", output.getvalue())
+            self.assertIn("Hint", output.getvalue())
         finally:
             shutil.rmtree(tmp, ignore_errors=True)
 

@@ -1,3 +1,4 @@
+# Development and CI tools. Pinned versions keep results reproducible.
 # Только инструменты разработки и CI. Само приложение работает без зависимостей.
 ruff==0.17.4
 mypy==1.19.1
