@@ -1,12 +1,12 @@
 <!doctype html>
-<html lang="ru">
+<html lang="en">
   <head>
     <meta charset="utf-8" />
     <meta
       name="viewport"
       content="width=device-width,initial-scale=1,viewport-fit=cover"
     />
-    <title>Stardew Трекер — прогресс фермы</title>
+    <title>Stardew Tracker — Farm Progress</title>
     <style>
       /* ===== Дизайн-система «Холодный Bento» =====
          Утверждена по A/B-тесту: светлая — B2 · Frost Deco («Иней»), тёмная — B1 · Night Run («Ночь»).
@@ -2496,6 +2496,87 @@
       .legend-line {
         margin: 0 0 var(--gap);
       }
+      /* Вторая (чужая) подпись названия: в английском интерфейсе скрыта, в русском — английское название. */
+      html[lang="en"] .en {
+        display: none;
+      }
+      /* Плашка бета-версии: куда писать вопросы и предложения */
+      .beta-banner {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 6px 14px;
+        max-width: 1840px;
+        margin: 14px auto 0;
+        padding: 10px 14px 10px 16px;
+        width: calc(100% - 2 * var(--page-x));
+        border-radius: 18px;
+        background: var(--info-soft);
+        box-shadow: inset 0 0 0 1px var(--info-line);
+        color: var(--text);
+        font-size: 14px;
+      }
+      .beta-banner a {
+        color: var(--accent-strong);
+        font-weight: 650;
+        text-decoration: underline;
+      }
+      .beta-tag {
+        padding: 4px 11px;
+        border-radius: 999px;
+        background: var(--seg-on-bg);
+        color: var(--seg-on-fg);
+        font: 600 var(--t0) / 1 var(--font-display);
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        white-space: nowrap;
+      }
+      .beta-banner button {
+        margin-left: auto;
+        padding: 2px 10px;
+        border: 0;
+        background: transparent;
+        box-shadow: none;
+        font-size: 20px;
+        line-height: 1.2;
+      }
+      .beta-banner.hidden {
+        display: none;
+      }
+      /* Выбор языка при первом запуске */
+      .lang-dialog {
+        width: min(480px, 100%);
+      }
+      .lang-dialog h2 {
+        font: 700 var(--t4) / 1.1 var(--font-display);
+        letter-spacing: 0.02em;
+        text-transform: uppercase;
+      }
+      .lang-options {
+        display: flex;
+        gap: 12px;
+        margin: 18px 0 14px;
+      }
+      .lang-options button {
+        flex: 1;
+        padding: 16px 12px;
+        border-radius: 18px;
+        font-size: var(--t2);
+        font-weight: 650;
+      }
+      .lang-options button.active {
+        background: var(--seg-on-bg);
+        border-color: var(--seg-on-bg);
+        color: var(--seg-on-fg);
+      }
+      .lang-remember {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        color: var(--muted);
+        font-size: 14px;
+        cursor: pointer;
+      }
       /* Сетки: двенадцать колонок на десктопе, без «сирот» на средних ширинах */
       @media (min-width: 1100px) {
         .tile.s3 {
@@ -3161,13 +3242,13 @@
             stroke-linecap="round"
           />
         </svg>
-            <span id="brandTitle">Stardew Трекер</span>
+            <span id="brandTitle">Stardew Tracker</span>
           </a>
-          <nav id="nav" class="groups" aria-label="Разделы"></nav>
+          <nav id="nav" class="groups" aria-label="Sections"></nav>
           <div id="hdrRight" class="header-tools"></div>
         </div>
         <div class="subnav">
-          <nav id="subnav" class="subnav-links" aria-label="Подразделы"></nav>
+          <nav id="subnav" class="subnav-links" aria-label="Subsections"></nav>
           <div class="farm">
             <b id="farmName">Stardew Valley Tracker</b>
             <div id="farmSub"></div>
@@ -3177,10 +3258,11 @@
         <select
           id="mobileNav"
           class="mobile-nav"
-          aria-label="Навигация"
+          aria-label="Navigation"
         ></select>
       </div>
       <main class="main">
+        <div id="betaBanner" class="beta-banner hidden" role="note"></div>
         <div id="view" class="content"></div>
       </main>
     </div>
@@ -3191,6 +3273,30 @@
       aria-live="polite"
       aria-atomic="true"
     ></div>
+    <div
+      id="langModal"
+      class="note-modal hidden"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="langTitle"
+      aria-describedby="langHint"
+    >
+      <div class="note-dialog lang-dialog">
+        <h2 id="langTitle">Choose your language · Выберите язык</h2>
+        <p id="langHint" class="sub">
+          You can change it any time with the EN / RU button at the top.<br />
+          Язык можно сменить в любой момент кнопкой EN / RU вверху.
+        </p>
+        <div class="lang-options">
+          <button type="button" data-lang="en" lang="en">English</button>
+          <button type="button" data-lang="ru" lang="ru">Русский</button>
+        </div>
+        <label class="lang-remember">
+          <input type="checkbox" id="langRemember" checked />
+          <span>Remember my choice · Запомнить выбор</span>
+        </label>
+      </div>
+    </div>
     <div
       id="noteModal"
       class="note-modal hidden"
@@ -3205,11 +3311,11 @@
         <textarea
           id="noteText"
           maxlength="280"
-          placeholder="Короткая заметка…"
+          placeholder="Short note…"
         ></textarea>
         <div class="actions">
-          <button type="button" id="noteCancel">Отмена</button
-          ><button type="button" id="noteSave" class="active">Сохранить</button>
+          <button type="button" id="noteCancel">Cancel</button
+          ><button type="button" id="noteSave" class="active">Save</button>
         </div>
       </div>
     </div>
@@ -3252,13 +3358,25 @@
             }
           },
         };
+      // English first: Russian only if the user picked it or the browser prefers it.
+      function systemLanguage() {
+        const list =
+          navigator.languages && navigator.languages.length
+            ? navigator.languages
+            : [navigator.language || "en"];
+        return String(list[0] || "en").toLowerCase().startsWith("ru") ? "ru" : "en";
+      }
+      function storedLanguage() {
+        const value = LS.get("lang", null);
+        return value === "en" || value === "ru" ? value : null;
+      }
       // «frost» — прежнее имя светлой темы B2: сохранённый выбор переезжает в «light».
       function normalizeTheme(value) {
         if (value === "frost") return "light";
         return ["light", "dark", "auto"].includes(value) ? value : "light";
       }
       const prefs = {
-        lang: LS.get("lang", "ru") === "en" ? "en" : "ru",
+        lang: storedLanguage() || systemLanguage(),
         view: LS.get("view", "list") === "grid" ? "grid" : "list",
         theme: normalizeTheme(LS.get("theme", "light")),
       };
@@ -3341,6 +3459,11 @@
           noSave: "Сейв не загружен",
           restore: "Обновить",
           language: "EN",
+          betaTag: "Бета",
+          betaText: "Это бета-версия. Вопросы, баги и предложения — пишите на почту",
+          betaOr: "или",
+          betaIssues: "создайте issue на GitHub",
+          dismiss: "Закрыть",
           goalHint: "Пользовательские цели и задачи сохраняются в goals.json.",
           offlineGoalsHint:
             "В автономном отчёте цели и задачи доступны только для просмотра; пометки хранятся в этом браузере.",
@@ -3389,7 +3512,6 @@
           sections: "Навигация",
           colorCode: "Цветовые статусы",
           greeting: "Привет",
-          farmerFallback: "фермер",
           statusDone: "Готово",
           statusProgress: "Есть прогресс",
           statusAction: "Нужно действие",
@@ -3469,6 +3591,11 @@
           noSave: "No save loaded",
           restore: "Refresh",
           language: "RU",
+          betaTag: "Beta",
+          betaText: "This is a beta. Questions, bugs and suggestions are very welcome — write to",
+          betaOr: "or",
+          betaIssues: "open a GitHub issue",
+          dismiss: "Dismiss",
           goalHint: "Custom goals and tasks are saved in goals.json.",
           offlineGoalsHint:
             "Goals and tasks are read-only in this offline report; annotations are stored in this browser.",
@@ -3517,8 +3644,7 @@
           sections: "Navigation",
           colorCode: "Color guide",
           greeting: "Hello",
-          farmerFallback: "farmer",
-          statusDone: "Complete",
+            statusDone: "Complete",
           statusProgress: "In progress",
           statusAction: "Needs attention",
           statusIdle: "Not done yet",
@@ -3679,7 +3805,7 @@
         searchPeople: "Поиск жителя…",
         dangerTitle: "Danger zone: спойлеры!",
         dangerLead:
-          "Здесь решения заданий мистера Ки, секретных записок и тайн долины. Это лишает игру самой приятной части — догадаться самой.",
+          "Здесь решения заданий мистера Ки, секретных записок и тайн долины. Это лишает игру самой приятной части — догадаться самому.",
         dangerPoints: [
           "Всё скрыто: каждая подсказка и решение открываются отдельно по клику.",
           "Сначала идёт мягкая подсказка, полное решение — вторым шагом.",
@@ -4692,14 +4818,14 @@
           .join("")}</div></section>`;
       }
       function greetingTitle(meta) {
-        const farmer = String(meta.farmer || "").trim() || t("farmerFallback"),
+        const farmer = String(meta.farmer || "").trim(),
           kicker = [
             meta.farm ? esc(meta.farm) : t("overview"),
             `${esc((seasons[meta.season] || [meta.season, meta.season])[EN ? 1 : 0])} ${esc(meta.day)}`,
             yearText(meta.year),
           ].join(" · "),
           details = `${esc(meta.clock)} · ${weatherLabel(meta.weather || "")} · ${Number(meta.money || 0).toLocaleString(EN ? "en-US" : "ru-RU")}g`;
-        return `<div class="page-head welcome-row"><div><p class="kicker welcome-eyebrow">${kicker}</p><h1 id="welcomeTitle">${t("greeting")}, <em>${esc(farmer)}</em>!</h1><div class="sub">${details}</div></div></div>`;
+        return `<div class="page-head welcome-row"><div><p class="kicker welcome-eyebrow">${kicker}</p><h1 id="welcomeTitle">${farmer ? `${t("greeting")}, <em>${esc(farmer)}</em>!` : `${t("greeting")}!`}</h1><div class="sub">${details}</div></div></div>`;
       }
       function bundleRoomAnchor(room) {
         const key = String(room.key || room.en || room.ru)
@@ -5432,10 +5558,12 @@
             if (e.target === modal) closeNote();
           };
         document.onkeydown = (e) => {
-          const modal = $("#noteModal");
+          const langOpen = !$("#langModal").classList.contains("hidden"),
+            modal = langOpen ? $("#langModal") : $("#noteModal");
           if (!modal || modal.classList.contains("hidden")) return;
           if (e.key === "Escape") {
-            closeNote();
+            if (langOpen) langChoose?.(prefs.lang);
+            else closeNote();
             return;
           }
           if (e.key === "Tab") {
@@ -5586,11 +5714,53 @@
             }
           };
       }
+      const FEEDBACK_EMAIL = "repro4chful@gmail.com";
+      const ISSUES_URL = "https://github.com/KyuuketsukiAkado/stardew-tracker/issues";
+      // Pre-release builds show where to send feedback; the user can dismiss it per version.
+      function betaBanner() {
+        const el = $("#betaBanner"),
+          version = String((S && S.meta && S.meta.app_version) || "");
+        if (!el) return;
+        if (!/alpha|beta|rc|dev/i.test(version) || LS.get("betaDismissed", "") === version) {
+          el.classList.add("hidden");
+          el.innerHTML = "";
+          return;
+        }
+        el.classList.remove("hidden");
+        el.innerHTML = `<span class="beta-tag" title="v${esc(version)}">${t("betaTag")}</span><span>${t("betaText")} <a href="mailto:${FEEDBACK_EMAIL}">${FEEDBACK_EMAIL}</a> ${t("betaOr")} <a href="${ISSUES_URL}" target="_blank" rel="noopener noreferrer">${t("betaIssues")}</a>.</span><button type="button" id="betaClose" aria-label="${t("dismiss")}" title="${t("dismiss")}">×</button>`;
+        $("#betaClose").onclick = () => {
+          LS.set("betaDismissed", version);
+          betaBanner();
+        };
+      }
+      // First visit: ask which language to use (the system language is suggested) and remember it.
+      let langChoose = null;
+      function langGate() {
+        const modal = $("#langModal");
+        if (!modal || storedLanguage()) return;
+        const options = [...modal.querySelectorAll("[data-lang]")],
+          suggested = options.find((b) => b.dataset.lang === prefs.lang) || options[0];
+        options.forEach((b) => b.classList.toggle("active", b === suggested));
+        langChoose = (lang) => {
+          prefs.lang = lang;
+          EN = lang === "en";
+          if ($("#langRemember").checked) LS.set("lang", lang);
+          modal.classList.add("hidden");
+          document.body.classList.remove("modal-open");
+          langChoose = null;
+          render();
+        };
+        options.forEach((b) => (b.onclick = () => langChoose(b.dataset.lang)));
+        modal.classList.remove("hidden");
+        document.body.classList.add("modal-open");
+        suggested.focus();
+      }
       function render() {
         document.documentElement.lang = EN ? "en" : "ru";
         document.title = t("appTitle");
         header();
         nav();
+        betaBanner();
         let v = $("#view");
         if (!S) {
           v.innerHTML = errorView();
@@ -5673,6 +5843,7 @@
       });
       if (!S && MODE === "live") fetch("/api/refresh").then(pull);
       render();
+      langGate();
       focusBundleTarget();
       if (MODE === "live") setInterval(pull, 3000);
     </script>

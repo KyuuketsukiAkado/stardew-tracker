@@ -32,7 +32,7 @@ class TestDemoContent(unittest.TestCase):
 
     def test_it_is_a_static_report_of_the_test_farm(self):
         self.assertIn('window.__MODE__ = "static";', self.html)
-        self.assertIn("Тестовая", self.html)
+        self.assertIn("Sunny Acres", self.html)
         self.assertGreater(self.html.count("data:image/png;base64,"), 6)
 
     def test_nothing_local_leaks_into_the_file(self):
@@ -98,7 +98,7 @@ class TestFreshnessCheck(unittest.TestCase):
         self.assertEqual(self.run_main("--out", self.target)[0], 0)
         code, out, _err = self.run_main("--check", "--out", self.target)
         self.assertEqual(code, 0)
-        self.assertIn("актуален", out)
+        self.assertIn("up to date", out)
 
     def test_changed_file_is_stale(self):
         self.run_main("--out", self.target)
