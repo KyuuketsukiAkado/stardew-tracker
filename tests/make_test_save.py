@@ -108,7 +108,33 @@ def _dict_int(d):
     return "".join(f"<item><key><string>(O){k}</string></key>{_int(v)}</item>" for k, v in d.items())
 
 
-def build_xml():
+_PAD_OBJECT = (
+    "<item><key><Vector2><X>{x}</X><Y>{y}</Y></Vector2></key><value>"
+    '<Object xsi:type="Object"><isLostItem>false</isLostItem><category>-9</category>'
+    "<hasBeenInInventory>true</hasBeenInInventory><name>Wood Fence</name><parentSheetIndex>322</parentSheetIndex>"
+    "<itemId>322</itemId><specialItem>false</specialItem><isRecipe>false</isRecipe><quality>0</quality>"
+    "<stack>1</stack><tileLocation><X>{x}</X><Y>{y}</Y></tileLocation><owner>0</owner><type>Crafting</type>"
+    "<canBeSetDown>true</canBeSetDown><canBeGrabbed>true</canBeGrabbed><isOn>true</isOn><price>1</price>"
+    "<boundingBox><X>{x}</X><Y>{y}</Y><Width>64</Width><Height>64</Height></boundingBox>"
+    "<uniqueID>1</uniqueID></Object></value></item>"
+)
+
+
+def _pad_location(count):
+    """Огромная посторонняя локация: имитирует раздутый реальный сейв."""
+
+    objects = "".join(_PAD_OBJECT.format(x=i % 300, y=i // 300) for i in range(count))
+    return f'<GameLocation xsi:type="GameLocation"><name>Padding</name><objects>{objects}</objects></GameLocation>'
+
+
+def build_xml(pad_objects=0, root_tail=""):
+    """XML сейва.
+
+    ``pad_objects`` добавляет тысячи посторонних объектов в ``<locations>``
+    (~35 узлов на объект), а ``root_tail`` дописывает теги в конец корня — туда
+    же, где игра хранит ``perfectionWaivers`` и ``goldenWalnutsFound``.
+    """
+
     friends = "".join(
         f"<item><key><string>{k}</string></key><value><Friendship>"
         f"<Points>{p}</Points><GiftsToday>{gt}</GiftsToday>"
@@ -200,19 +226,20 @@ def build_xml():
         <boolean>false</boolean><boolean>false</boolean><boolean>false</boolean></areasComplete>
       <bundles>{bundles}</bundles>
     </GameLocation>
+    {_pad_location(pad_objects) if pad_objects else ""}
   </locations>
-  <goldenWalnutsFound>74</goldenWalnutsFound>
+  <goldenWalnutsFound>74</goldenWalnutsFound>{root_tail}
 </SaveGame>
 """
 
 
-def write_test_save(base_dir):
+def write_test_save(base_dir, pad_objects=0, root_tail=""):
     """Создаёт <base_dir>/Тестовая_345678901/Тестовая_345678901 и возвращает путь к сейву."""
     folder = os.path.join(base_dir, "Тестовая_345678901")
     os.makedirs(folder, exist_ok=True)
     path = os.path.join(folder, "Тестовая_345678901")
     with open(path, "w", encoding="utf-8") as fh:
-        fh.write(build_xml())
+        fh.write(build_xml(pad_objects, root_tail))
     with open(os.path.join(folder, "SaveGameInfo"), "w", encoding="utf-8") as fh:
         fh.write("<SaveGame/>")
     return path
@@ -230,6 +257,12 @@ def _safe_output() -> None:
 
 if __name__ == "__main__":
     _safe_output()
-    target = sys.argv[1] if len(sys.argv) > 1 else "saves"
-    p = write_test_save(os.path.abspath(target))
-    print("Создан тестовый сейв:", p)
+    args = sys.argv[1:]
+    pad = 0
+    if "--pad-objects" in args:
+        index = args.index("--pad-objects")
+        pad = int(args[index + 1])
+        del args[index : index + 2]
+    target = args[0] if args else "saves"
+    p = write_test_save(os.path.abspath(target), pad_objects=pad)
+    print("Создан тестовый сейв:", p, f"({os.path.getsize(p) // 1024} КБ)")
