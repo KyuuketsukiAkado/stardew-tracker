@@ -48,6 +48,60 @@ def compute_counts(
     return counts
 
 
+# Порядок слагаемых в итоговом проценте. Он сохранён от прежней формулы
+# намеренно: ``walnut_room_pct`` берёт ``int(raw_pct)``, а сумма чисел с плавающей
+# точкой зависит от порядка (…99999999 против 50.0 на границе целого).
+_SUM_ORDER = (
+    "obelisks",
+    "gold_clock",
+    "monsters",
+    "stardrops",
+    "shipped",
+    "friends",
+    "cooking",
+    "crafting",
+    "fish",
+    "walnuts",
+    "skills",
+)
+
+
+def _category(
+    key: str,
+    ru: str,
+    en: str,
+    *,
+    have: float | int,
+    total: float | int,
+    weight: int,
+    fraction: float,
+    done: bool,
+    go: str,
+    sp: list[int],
+) -> tuple[dict[str, Any], float]:
+    """Строка категории и её точный (неокруглённый) вклад в процент.
+
+    Вес записан один раз: и отображаемое ``earned``, и итоговая сумма считаются
+    из ``weight * fraction`` — раньше те же веса дублировались в формуле
+    процента, и правка одного места тихо расходилась со вторым.
+    """
+
+    exact = weight * fraction
+    row = {
+        "key": key,
+        "ru": ru,
+        "en": en,
+        "have": have,
+        "total": total,
+        "weight": weight,
+        "earned": round(exact, 2),
+        "done": done,
+        "go": go,
+        "sp": sp,
+    }
+    return row, exact
+
+
 def build_perfection(
     counts: dict[str, list[float | int]],
     *,
@@ -74,155 +128,151 @@ def build_perfection(
     craft_perf_total = max(1, len(craft_perf_rows))
     great_friends_done = sum(1 for person in people if person["perf_done"])
     great_friends_total = max(1, len(people))
+    slayer_hero = bool(monsters_state["slayer_hero"])
 
-    categories: list[dict[str, Any]] = [
-        {
-            "key": "shipped",
-            "ru": "Отправка урожая и находок",
-            "en": "Produce & Forage Shipped",
-            "have": counts["shipped"][0],
-            "total": counts["shipped"][1],
-            "weight": 15,
-            "earned": round(15.0 * _frac(*counts["shipped"]), 2),
-            "done": counts["shipped"][0] >= counts["shipped"][1],
-            "go": "shipped",
-            "sp": [0, 24],
-        },
-        {
-            "key": "obelisks",
-            "ru": "Обелиски на ферме",
-            "en": "Obelisks on Farm",
-            "have": num_obelisks,
-            "total": 4,
-            "weight": 4,
-            "earned": float(num_obelisks),
-            "done": num_obelisks >= 4,
-            "go": "perfection",
-            "sp": [0, 688],
-        },
-        {
-            "key": "gold_clock",
-            "ru": "Золотые часы на ферме",
-            "en": "Golden Clock on Farm",
-            "have": 1 if has_gold_clock else 0,
-            "total": 1,
-            "weight": 10,
-            "earned": 10.0 if has_gold_clock else 0.0,
-            "done": has_gold_clock,
-            "go": "perfection",
-            "sp": [1, 79],
-        },
-        {
-            "key": "monsters",
-            "ru": "Герой-истребитель чудовищ",
-            "en": "Monster Slayer Hero",
-            "have": counts["monsters"][0],
-            "total": len(monster_rows),
-            "weight": 10,
-            "earned": 10.0 if monsters_state["slayer_hero"] else 0.0,
-            "done": monsters_state["slayer_hero"],
-            "go": "perfection",
-            "sp": [0, 526],
-        },
-        {
-            "key": "friends",
-            "ru": "Великие друзья (макс. ♥)",
-            "en": "Great Friends",
-            "have": great_friends_done,
-            "total": great_friends_total,
-            "weight": 11,
-            "earned": round(11.0 * _frac(great_friends_done, great_friends_total), 2),
-            "done": great_friends_done >= great_friends_total,
-            "go": "people",
-            "sp": [0, 458],
-        },
-        {
-            "key": "skills",
-            "ru": "Уровень фермера (все навыки 10)",
-            "en": "Farmer Level (Skills)",
-            "have": farmer_level,
-            "total": 25,
-            "weight": 5,
-            "earned": round(5.0 * _frac(farmer_level, 25), 2),
-            "done": farmer_level >= 25,
-            "go": "perfection",
-            "sp": [1, 96],
-        },
-        {
-            "key": "stardrops",
-            "ru": "Все звёздные капли",
-            "en": "Found All Stardrops",
-            "have": 7 if all_stardrops else sum(1 for row in stardrop_rows if row["done"]),
-            "total": 7,
-            "weight": 10,
-            "earned": 10.0 if all_stardrops else 0.0,
-            "done": all_stardrops,
-            "go": "perfection",
-            "sp": [0, 434],
-        },
-        {
-            "key": "cooking",
-            "ru": "Приготовленные блюда",
-            "en": "Cooking Recipes Made",
-            "have": counts["cooking"][0],
-            "total": counts["cooking"][1],
-            "weight": 10,
-            "earned": round(10.0 * _frac(*counts["cooking"]), 2),
-            "done": counts["cooking"][0] >= counts["cooking"][1],
-            "go": "cooking",
-            "sp": [0, 195],
-        },
-        {
-            "key": "crafting",
-            "ru": "Созданные предметы (крафт)",
-            "en": "Crafting Recipes Made",
-            "have": craft_perf_done,
-            "total": craft_perf_total,
-            "weight": 10,
-            "earned": round(10.0 * _frac(craft_perf_done, craft_perf_total), 2),
-            "done": craft_perf_done >= craft_perf_total,
-            "go": "crafting",
-            "sp": [2, 13],
-        },
-        {
-            "key": "fish",
-            "ru": "Пойманная рыба",
-            "en": "Fish Caught",
-            "have": counts["fish"][0],
-            "total": counts["fish"][1],
-            "weight": 10,
-            "earned": round(10.0 * _frac(*counts["fish"]), 2),
-            "done": counts["fish"][0] >= counts["fish"][1],
-            "go": "fish",
-            "sp": [0, 128],
-        },
-        {
-            "key": "walnuts",
-            "ru": "Золотые грецкие орехи",
-            "en": "Golden Walnuts Found",
-            "have": walnuts_have,
-            "total": WALNUTS_TOTAL,
-            "weight": 5,
-            "earned": round(5.0 * _frac(walnuts_have, WALNUTS_TOTAL), 2),
-            "done": walnuts_have >= WALNUTS_TOTAL,
-            "go": "perfection",
-            "sp": [0, 73],
-        },
+    specs = [
+        _category(
+            "shipped",
+            "Отправка урожая и находок",
+            "Produce & Forage Shipped",
+            have=counts["shipped"][0],
+            total=counts["shipped"][1],
+            weight=15,
+            fraction=_frac(*counts["shipped"]),
+            done=counts["shipped"][0] >= counts["shipped"][1],
+            go="shipped",
+            sp=[0, 24],
+        ),
+        _category(
+            "obelisks",
+            "Обелиски на ферме",
+            "Obelisks on Farm",
+            have=num_obelisks,
+            total=4,
+            weight=4,
+            fraction=_frac(num_obelisks, 4),
+            done=num_obelisks >= 4,
+            go="perfection",
+            sp=[0, 688],
+        ),
+        _category(
+            "gold_clock",
+            "Золотые часы на ферме",
+            "Golden Clock on Farm",
+            have=1 if has_gold_clock else 0,
+            total=1,
+            weight=10,
+            fraction=1.0 if has_gold_clock else 0.0,
+            done=has_gold_clock,
+            go="perfection",
+            sp=[1, 79],
+        ),
+        _category(
+            "monsters",
+            "Герой-истребитель чудовищ",
+            "Monster Slayer Hero",
+            have=counts["monsters"][0],
+            total=len(monster_rows),
+            weight=10,
+            fraction=1.0 if slayer_hero else 0.0,
+            done=monsters_state["slayer_hero"],
+            go="perfection",
+            sp=[0, 526],
+        ),
+        _category(
+            "friends",
+            "Великие друзья (макс. ♥)",
+            "Great Friends",
+            have=great_friends_done,
+            total=great_friends_total,
+            weight=11,
+            fraction=_frac(great_friends_done, great_friends_total),
+            done=great_friends_done >= great_friends_total,
+            go="people",
+            sp=[0, 458],
+        ),
+        _category(
+            "skills",
+            "Уровень фермера (все навыки 10)",
+            "Farmer Level (Skills)",
+            have=farmer_level,
+            total=25,
+            weight=5,
+            fraction=_frac(farmer_level, 25),
+            done=farmer_level >= 25,
+            go="perfection",
+            sp=[1, 96],
+        ),
+        _category(
+            "stardrops",
+            "Все звёздные капли",
+            "Found All Stardrops",
+            have=7 if all_stardrops else sum(1 for row in stardrop_rows if row["done"]),
+            total=7,
+            weight=10,
+            fraction=1.0 if all_stardrops else 0.0,
+            done=all_stardrops,
+            go="perfection",
+            sp=[0, 434],
+        ),
+        _category(
+            "cooking",
+            "Приготовленные блюда",
+            "Cooking Recipes Made",
+            have=counts["cooking"][0],
+            total=counts["cooking"][1],
+            weight=10,
+            fraction=_frac(*counts["cooking"]),
+            done=counts["cooking"][0] >= counts["cooking"][1],
+            go="cooking",
+            sp=[0, 195],
+        ),
+        _category(
+            "crafting",
+            "Созданные предметы (крафт)",
+            "Crafting Recipes Made",
+            have=craft_perf_done,
+            total=craft_perf_total,
+            weight=10,
+            fraction=_frac(craft_perf_done, craft_perf_total),
+            done=craft_perf_done >= craft_perf_total,
+            go="crafting",
+            sp=[2, 13],
+        ),
+        _category(
+            "fish",
+            "Пойманная рыба",
+            "Fish Caught",
+            have=counts["fish"][0],
+            total=counts["fish"][1],
+            weight=10,
+            fraction=_frac(*counts["fish"]),
+            done=counts["fish"][0] >= counts["fish"][1],
+            go="fish",
+            sp=[0, 128],
+        ),
+        _category(
+            "walnuts",
+            "Золотые грецкие орехи",
+            "Golden Walnuts Found",
+            have=walnuts_have,
+            total=WALNUTS_TOTAL,
+            weight=5,
+            fraction=_frac(walnuts_have, WALNUTS_TOTAL),
+            done=walnuts_have >= WALNUTS_TOTAL,
+            go="perfection",
+            sp=[0, 73],
+        ),
     ]
+    categories = [row for row, _exact in specs]
+    exact_by_key = {row["key"]: exact for row, exact in specs}
+    # Не ``sum()``: с Python 3.12 он суммирует числа с плавающей точкой с
+    # компенсацией ошибки и на границе округления (53,05) даёт другой процент,
+    # чем прежнее сложение «слева направо» — и разный на разных версиях Python.
+    raw_pct = 0.0
+    for key in _SUM_ORDER:
+        raw_pct += exact_by_key[key]
 
-    raw_pct = (
-        num_obelisks
-        + (10.0 if has_gold_clock else 0.0)
-        + (10.0 if monsters_state["slayer_hero"] else 0.0)
-        + (10.0 if all_stardrops else 0.0)
-        + 15.0 * _frac(*counts["shipped"])
-        + 11.0 * _frac(great_friends_done, great_friends_total)
-        + 10.0 * _frac(*counts["cooking"])
-        + 10.0 * _frac(craft_perf_done, craft_perf_total)
-        + 10.0 * _frac(*counts["fish"])
-        + 5.0 * _frac(walnuts_have, WALNUTS_TOTAL)
-        + 5.0 * _frac(farmer_level, 25)
-    )
     waivers = int(raw["perfection_waivers"] or 0)
     adjusted_pct = min(100.0, raw_pct + waivers)
 

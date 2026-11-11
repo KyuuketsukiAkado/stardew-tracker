@@ -8,8 +8,8 @@ import sys
 import time
 import webbrowser
 
-from .errors import SaveError
-from .render import build_report
+from .errors import TrackerError
+from .report import build_report
 from .savefinder import find_saves
 from .server import serve
 from .state import build_state
@@ -137,13 +137,15 @@ def run() -> None:
 
     configure_stdio()
     try:
-        raise SystemExit(main())
-    except SaveError:
-        # SaveError — это SystemExit, и его сообщение уже сформировано.
-        raise
+        code = main()
+    except TrackerError as exc:
+        # Сообщение с шагами решения уже сформировано — без трассировки стека.
+        print(exc, file=sys.stderr)
+        raise SystemExit(1) from exc
     except KeyboardInterrupt:
         print("\nОстановлено.")
         raise SystemExit(130) from None
     except Exception as exc:
         print(f"Непредвиденная ошибка: {type(exc).__name__}: {exc}", file=sys.stderr)
         raise SystemExit(1) from exc
+    raise SystemExit(code)

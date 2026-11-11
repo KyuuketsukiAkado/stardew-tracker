@@ -5,7 +5,11 @@
 * :mod:`stardew_tracker.savefinder` — поиск сейвов;
 * :mod:`stardew_tracker.saveparser` — разбор XML;
 * :mod:`stardew_tracker.state` — сборка состояния дашборда;
-* :mod:`stardew_tracker.render` — HTML-отчёт;
+* :mod:`stardew_tracker.rows` — строки разделов (рыба, музей, рецепты, люди…);
+* :mod:`stardew_tracker.unlocks` — обязательные условия получения;
+* :mod:`stardew_tracker.report` — HTML-страница и автономный отчёт (функция
+  ``render`` экспортируется отсюда, но модуль называется иначе, чтобы она не
+  заслоняла его);
 * :mod:`stardew_tracker.server` — локальный HTTP API;
 * :mod:`stardew_tracker.cli` — командная строка.
 
@@ -16,11 +20,11 @@ from __future__ import annotations
 
 from .catalog import item_info, item_row
 from .constants import OBELISKS, SEASON_RU, SEASONS, SPRITE_FILES, STARDROPS
-from .errors import DataError, SaveError
+from .errors import DataError, SaveError, TrackerError
 from .gamedata import clear_cache as clear_data_cache
 from .gamedata import load_json
 from .goals import default_goals, load_goals, normalize_goals, save_goals
-from .render import build_report, render
+from .report import build_report, render
 from .savefinder import candidate_save_dirs, find_saves, looks_like_save, safe_mtime
 from .saveparser import clear_cache as clear_parse_cache
 from .saveparser import parse_save
@@ -39,6 +43,7 @@ __all__ = [
     "DataError",
     "SaveError",
     "TrackerApp",
+    "TrackerError",
     "TrackerHTTPServer",
     "__version__",
     "abs_day",

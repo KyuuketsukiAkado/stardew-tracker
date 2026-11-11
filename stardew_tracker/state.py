@@ -7,10 +7,15 @@ import os
 import threading
 import time
 from collections import OrderedDict
-from typing import Any
+from typing import Any, NamedTuple
 
 from .catalog import item_info
-from .collections import (
+from .constants import SEASON_RU
+from .errors import SaveError
+from .gamedata import load_json
+from .goals import load_goals
+from .perfection import build_perfection, compute_counts
+from .rows import (
     build_bundles,
     build_cooking_rows,
     build_crafting_rows,
@@ -23,22 +28,17 @@ from .collections import (
     build_skills,
     build_stardrops,
 )
-from .constants import SEASON_RU
-from .errors import SaveError
-from .gamedata import load_json
-from .goals import load_goals
-from .perfection import build_perfection, compute_counts
-from .requirements import (
+from .savefinder import find_saves, no_saves_error
+from .saveparser import _file_sig, cached_save, parse_save, read_save_summary
+from .timeutil import abs_day, fmt_clock, minutes_of_day
+from .today import build_today
+from .unlocks import (
     UnlockContext,
     build_unlocks,
     location_filter_options,
     museum_tag_options,
     recipe_kind_options,
 )
-from .savefinder import find_saves, no_saves_error
-from .saveparser import _file_sig, cached_save, parse_save, read_save_summary
-from .timeutil import abs_day, fmt_clock, minutes_of_day
-from .today import build_today
 
 _STATE_CACHE_LIMIT = 8
 _STATE_CACHE: OrderedDict[tuple[str, int, int], dict[str, Any]] = OrderedDict()
@@ -108,6 +108,95 @@ def _secret_sections(
     return sections
 
 
+class _Reference(NamedTuple):
+    """Справочники из ``data/*.json``, нужные для сборки состояния."""
+
+    items: dict[str, Any]
+    fish: dict[str, Any]
+    museum: dict[str, Any]
+    artifact_locations: dict[str, Any]
+    recipes: dict[str, Any]
+    npcs: dict[str, Any]
+    bundles: dict[str, Any]
+    shipping: list[Any]
+    monsters_config: list[Any]
+    recipe_sources: dict[str, Any]
+    secrets: dict[str, Any]
+    big_craftables: dict[str, Any]
+
+
+def _load_reference() -> _Reference:
+    """Все справочники одним местом (каждый кэшируется в :mod:`gamedata`)."""
+
+    return _Reference(
+        items=load_json("items.json"),
+        fish=load_json("fish.json"),
+        museum=load_json("museum.json"),
+        artifact_locations=load_json("artifact_locations.json"),
+        recipes=load_json("recipes.json"),
+        npcs=load_json("npcs.json"),
+        bundles=load_json("bundles.json"),
+        shipping=load_json("shipping.json"),
+        monsters_config=load_json("monsters.json").get("goals") or [],
+        recipe_sources=load_json("recipe_sources.json"),
+        secrets=load_json("secrets.json"),
+        big_craftables=load_json("big_craftables.json"),
+    )
+
+
+def _build_meta(raw: dict[str, Any], selected: str, save_mtime: int, saves_found: int) -> dict[str, Any]:
+    """Шапка состояния: ферма, дата, погода, путь и время сейва."""
+
+    return {
+        "farm": raw["farm_name"],
+        "farmer": raw["name"],
+        "players": raw["player_count"],
+        "season": raw["season"],
+        "season_ru": SEASON_RU.get(raw["season"], raw["season"]),
+        "day": raw["day"],
+        "year": raw["year"],
+        "clock": fmt_clock(raw["time"]),
+        "weather": raw["weather"],
+        "weather_tomorrow": raw["weather_tomorrow"],
+        "island_weather": raw["island_weather"],
+        "money": raw["money"],
+        "total_earned": raw["total_earned"],
+        "walnuts": raw["walnuts"],
+        "save_path": selected,
+        "save_name": os.path.basename(os.path.dirname(selected)) or os.path.basename(selected),
+        "save_mtime": save_mtime,
+        "mtime_str": time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(save_mtime)),
+        "game_version": raw["game_version"],
+        "generated": time.strftime("%Y-%m-%d %H:%M:%S"),
+        "warnings": raw["warnings"],
+        "saves_found": saves_found,
+    }
+
+
+def _build_alerts(
+    need_museum: list[dict[str, Any]], upcoming: list[dict[str, Any]], unmatched: list[str]
+) -> dict[str, Any]:
+    """Короткие напоминания: не сданное в музей, ближайшие дни рождения, «потерянные» рецепты."""
+
+    return {
+        "museum_found_not_donated": [
+            {"id": row["id"], "ru": row["ru"], "en": row["en"], "sp": row["sp"]} for row in need_museum
+        ],
+        "birthdays_week": [
+            {
+                "key": person["key"],
+                "p_idx": person["p_idx"],
+                "ru": person["ru"],
+                "en": person["en"],
+                "until": person["until"],
+                "birth": person["birth"],
+            }
+            for person in upcoming
+        ],
+        "unmatched_craft": len(unmatched),
+    }
+
+
 def build_state(save_path: str | None = None, saves_dir: str | None = None) -> dict[str, Any]:
     """Полное состояние дашборда для самого свежего (или явно выбранного) сейва."""
 
@@ -121,19 +210,7 @@ def build_state(save_path: str | None = None, saves_dir: str | None = None) -> d
     if cached is not None:
         return _cached_copy(cached, len(paths))
 
-    items = load_json("items.json")
-    fish = load_json("fish.json")
-    museum = load_json("museum.json")
-    artifact_locations = load_json("artifact_locations.json")
-    recipes = load_json("recipes.json")
-    npcs = load_json("npcs.json")
-    bundles = load_json("bundles.json")
-    shipping = load_json("shipping.json")
-    monsters_config = load_json("monsters.json").get("goals") or []
-
-    recipe_sources = load_json("recipe_sources.json")
-    secrets = load_json("secrets.json")
-
+    ref = _load_reference()
     raw = parse_save(selected)
     current_abs_day = abs_day(raw["season"], raw["day"], raw["year"])
     current_minutes = minutes_of_day(raw["time"])
@@ -141,21 +218,21 @@ def build_state(save_path: str | None = None, saves_dir: str | None = None) -> d
     ctx = UnlockContext(raw, hearts)
 
     fish_rows = build_fish_rows(
-        fish,
-        items,
+        ref.fish,
+        ref.items,
         raw,
         raw["season"],
         current_minutes,
         raw["weather"],
         ctx,
     )
-    museum_rows = build_museum_rows(museum, artifact_locations, items, raw, ctx)
-    ship_rows = build_shipping_rows(shipping, items, raw, raw["season"], ctx)
-    cook_rows = build_cooking_rows(recipes, items, raw, ctx, recipe_sources.get("cooking"))
-    craft_rows, unmatched = build_crafting_rows(recipes, raw, ctx, recipe_sources.get("crafting"))
-    people = build_people(npcs.get("npcs", {}), items, raw, current_abs_day)
-    bundle_rooms = build_bundles(bundles, raw)
-    monster_rows, monsters_state = build_monsters(monsters_config, raw)
+    museum_rows = build_museum_rows(ref.museum, ref.artifact_locations, ref.items, raw, ctx)
+    ship_rows = build_shipping_rows(ref.shipping, ref.items, raw, raw["season"], ctx)
+    cook_rows = build_cooking_rows(ref.recipes, ref.items, raw, ctx, ref.recipe_sources.get("cooking"))
+    craft_rows, unmatched = build_crafting_rows(ref.recipes, raw, ctx, ref.recipe_sources.get("crafting"))
+    people = build_people(ref.npcs.get("npcs", {}), ref.items, raw, current_abs_day)
+    bundle_rooms = build_bundles(ref.bundles, raw)
+    monster_rows, monsters_state = build_monsters(ref.monsters_config, raw)
     skills_list, farmer_level = build_skills(raw)
     obelisk_rows = build_obelisks(raw)
     has_gold_clock = "Gold Clock" in raw["farm_buildings"]
@@ -197,30 +274,7 @@ def build_state(save_path: str | None = None, saves_dir: str | None = None) -> d
     )
 
     state: dict[str, Any] = {
-        "meta": {
-            "farm": raw["farm_name"],
-            "farmer": raw["name"],
-            "players": raw["player_count"],
-            "season": raw["season"],
-            "season_ru": SEASON_RU.get(raw["season"], raw["season"]),
-            "day": raw["day"],
-            "year": raw["year"],
-            "clock": fmt_clock(raw["time"]),
-            "weather": raw["weather"],
-            "weather_tomorrow": raw["weather_tomorrow"],
-            "island_weather": raw["island_weather"],
-            "money": raw["money"],
-            "total_earned": raw["total_earned"],
-            "walnuts": raw["walnuts"],
-            "save_path": selected,
-            "save_name": os.path.basename(os.path.dirname(selected)) or os.path.basename(selected),
-            "save_mtime": save_mtime,
-            "mtime_str": time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(save_mtime)),
-            "game_version": raw["game_version"],
-            "generated": time.strftime("%Y-%m-%d %H:%M:%S"),
-            "warnings": raw["warnings"],
-            "saves_found": len(paths),
-        },
+        "meta": _build_meta(raw, selected, save_mtime, len(paths)),
         "counts": counts,
         "fish": fish_rows,
         "museum": museum_rows,
@@ -237,33 +291,17 @@ def build_state(save_path: str | None = None, saves_dir: str | None = None) -> d
         },
         "perfection": perfection_state,
         "today": today_state,
-        "unlocks": build_unlocks(ctx, [fish_rows, museum_rows, ship_rows, cook_rows, craft_rows], secrets),
+        "unlocks": build_unlocks(ctx, [fish_rows, museum_rows, ship_rows, cook_rows, craft_rows], ref.secrets),
         "filters": {
             "fish_locations": location_filter_options(),
             "museum_tags": museum_tag_options(),
             "recipe_kinds": recipe_kind_options(),
         },
         "secrets": {
-            "sections": _secret_sections(secrets, items, load_json("big_craftables.json")),
+            "sections": _secret_sections(ref.secrets, ref.items, ref.big_craftables),
             "qi_orders_completed": sorted(order for order in raw["special_orders"] if order.startswith("QiChallenge")),
         },
-        "alerts": {
-            "museum_found_not_donated": [
-                {"id": row["id"], "ru": row["ru"], "en": row["en"], "sp": row["sp"]} for row in need_museum
-            ],
-            "birthdays_week": [
-                {
-                    "key": person["key"],
-                    "p_idx": person["p_idx"],
-                    "ru": person["ru"],
-                    "en": person["en"],
-                    "until": person["until"],
-                    "birth": person["birth"],
-                }
-                for person in upcoming
-            ],
-            "unmatched_craft": len(unmatched),
-        },
+        "alerts": _build_alerts(need_museum, upcoming, unmatched),
         "goals": load_goals(),
     }
 

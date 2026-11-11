@@ -16,10 +16,10 @@ from typing import Any
 from urllib.parse import parse_qs, urlsplit
 
 from .constants import SPRITE_FILES
-from .errors import SaveError
+from .errors import SaveError, TrackerError
 from .goals import GOALS_LOCK, goals_signature, load_goals, normalize_goals, save_goals
 from .paths import SPRITES_DIR
-from .render import render
+from .report import render
 from .savefinder import find_saves
 from .saveparser import clear_cache as clear_parse_cache
 from .state import build_state, clear_state_cache, list_saves_info
@@ -580,8 +580,7 @@ def watch_loop(app: TrackerApp, stop: threading.Event, interval: float = 2.0) ->
                         if app.set_state_if_current(state, current_save, current_dir):
                             print(f"[{time.strftime('%H:%M:%S')}] сейв обновлён -> состояние пересобрано")
         except SaveError as exc:
-            # SaveError наследуется от SystemExit: без явного перехвата поток
-            # наблюдателя молча умирал при исчезновении сейва.
+            # Ошибки сейва показываем в интерфейсе (set_error), а не только в консоли.
             app.set_error(exc)
             if str(exc) != last_message:
                 last_message = str(exc)
@@ -623,15 +622,25 @@ def serve(
         threading.Thread(target=watch_loop, args=(app, stop), daemon=True).start()
 
     httpd: TrackerHTTPServer | None = None
+    last_error: OSError | None = None
     for candidate in range(port, port + 12):
         try:
             httpd = TrackerHTTPServer((host, candidate), app)
             port = candidate
             break
-        except OSError:
-            continue
+        except OSError as exc:
+            last_error = exc
     if httpd is None:
-        sys.exit("Не удалось занять порт")
+        stop.set()
+        raise TrackerError(
+            "port_busy",
+            "Не удалось занять порт",
+            f"Порты {port}–{port + 11} на {host or 'всех интерфейсах'} недоступны: {last_error}",
+            [
+                "Закройте другой экземпляр трекера или укажите свободный порт: --port 9000.",
+                "Если порт занят системой, выберите номер выше 1024.",
+            ],
+        )
 
     browser_host = "127.0.0.1" if host in ("0.0.0.0", "::", "") else host  # nosec B104 - сравнение, не bind
     url = f"http://{browser_host}:{port}/"

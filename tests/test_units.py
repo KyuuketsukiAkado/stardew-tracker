@@ -32,7 +32,7 @@ from stardew_tracker import (  # noqa: E402
 from stardew_tracker.catalog import item_info, item_row  # noqa: E402
 from stardew_tracker.cli import build_parser, main  # noqa: E402
 from stardew_tracker.perfection import build_perfection, compute_counts  # noqa: E402
-from stardew_tracker.render import _inline_sprites_css, render  # noqa: E402
+from stardew_tracker.report import _inline_sprites_css, render  # noqa: E402
 from stardew_tracker.saveparser import parse_save  # noqa: E402
 from stardew_tracker.state import build_state  # noqa: E402
 

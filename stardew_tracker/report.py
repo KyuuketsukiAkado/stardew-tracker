@@ -1,4 +1,9 @@
-"""Вставка состояния в HTML-шаблон и сборка автономного отчёта."""
+"""HTML-страница дашборда: вставка состояния в шаблон и автономный отчёт.
+
+Модуль называется ``report``, а не ``render``: пакет экспортирует функцию
+``render``, и одноимённый модуль она бы заслоняла (``stardew_tracker.render``
+оказывался функцией, а не модулем).
+"""
 
 from __future__ import annotations
 
@@ -12,6 +17,7 @@ from typing import Any
 
 from .constants import SPRITE_CSS_VARS
 from .paths import REPORT, SPRITES_DIR, TEMPLATE
+from .state import build_state
 
 _SPRITE_CACHE: dict[str, str] = {}
 _SPRITE_LOCK = threading.RLock()
@@ -108,8 +114,6 @@ def build_report(
     out_path: str | None = None,
 ) -> tuple[dict[str, Any], str]:
     """Собирает автономный HTML и возвращает ``(state, путь)``."""
-
-    from .state import build_state
 
     state = build_state(save, saves_dir)
     html = render(state, "static")

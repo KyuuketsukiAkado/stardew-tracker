@@ -1,4 +1,4 @@
-"""Обязательные условия получения предметов (stardew_tracker.requirements) и danger zone."""
+"""Обязательные условия получения предметов (stardew_tracker.unlocks) и danger zone."""
 
 from __future__ import annotations
 
@@ -13,7 +13,7 @@ sys.path.insert(0, os.path.join(ROOT, "tests"))
 
 from make_test_save import write_test_save  # noqa: E402
 
-from stardew_tracker import requirements as req  # noqa: E402
+from stardew_tracker import unlocks as req  # noqa: E402
 from stardew_tracker.gamedata import load_json  # noqa: E402
 from stardew_tracker.saveparser import clear_cache, parse_save  # noqa: E402
 from stardew_tracker.state import build_state, clear_state_cache  # noqa: E402
