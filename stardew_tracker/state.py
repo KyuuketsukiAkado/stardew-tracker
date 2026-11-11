@@ -78,6 +78,12 @@ def _cached_copy(cached: dict[str, Any], saves_found: int) -> dict[str, Any]:
     return state
 
 
+def secret_sections() -> list[dict[str, Any]]:
+    """Разделы danger zone целиком. Не зависят от сейва, только от справочников."""
+
+    return _secret_sections(load_json("secrets.json"), load_json("items.json"), load_json("big_craftables.json"))
+
+
 def _secret_sections(
     secrets: dict[str, Any], items: dict[str, Any], big_craftables: dict[str, Any]
 ) -> list[dict[str, Any]]:
