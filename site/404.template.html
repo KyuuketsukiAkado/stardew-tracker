@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en" data-lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="color-scheme" content="light" />
+    <title>Page not found — Stardew Tracker</title>
+    <meta name="robots" content="noindex" />
+    <style>
+      :root {
+        color-scheme: light;
+        --bg: #e8eef4;
+        --text: #0f1b2b;
+        --muted: #465c78;
+        --accent-strong: #1f5590;
+        --btn-bg: #0f1b2b;
+        --btn-fg: #e8eef4;
+        --font-display: "Bahnschrift", "DIN Pro", "DIN Alternate", "Roboto Condensed", "Arial Narrow", system-ui, sans-serif;
+        --font-text: "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, Roboto, "Helvetica Neue", Arial, sans-serif;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        display: grid;
+        place-items: center;
+        min-height: 100vh;
+        margin: 0;
+        padding: 24px;
+        background: radial-gradient(1000px 600px at 100% 0, #cfe0f2, transparent 60%), radial-gradient(800px 500px at 0 100%, #dde3f6, transparent 60%), var(--bg);
+        color: var(--text);
+        font: 16px/1.6 var(--font-text);
+      }
+      main {
+        max-width: 560px;
+      }
+      h1 {
+        margin: 0 0 12px;
+        font: 700 clamp(44px, 10vw, 80px) / 1.1 var(--font-display);
+        font-variation-settings: "wdth" 75;
+        font-stretch: condensed;
+        text-transform: uppercase;
+      }
+      p {
+        margin: 0 0 24px;
+        color: var(--muted);
+      }
+      a.button {
+        display: inline-block;
+        padding: 16px 28px;
+        border-radius: 999px;
+        background: var(--btn-bg);
+        color: var(--btn-fg);
+        font: 700 16px/1 var(--font-display);
+        letter-spacing: 0.12em;
+        text-decoration: none;
+        text-transform: uppercase;
+      }
+      a.button:focus-visible {
+        outline: 3px solid var(--accent-strong);
+        outline-offset: 3px;
+      }
+      [data-lang="en"] [lang="ru"],
+      [data-lang="ru"] [lang="en"] {
+        display: none !important;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1><span lang="en">Page not found</span><span lang="ru">Страница не найдена</span></h1>
+      <p>
+        <span lang="en">There is nothing at this address. The tracker's home page has the download and the story.</span>
+        <span lang="ru">По этому адресу ничего нет. На главной странице трекера — рассказ о проекте и загрузка.</span>
+      </p>
+      <a class="button" href="{{SITE_URL}}"><span lang="en">Go to the home page</span><span lang="ru">На главную</span></a>
+    </main>
+    <script>
+      // Same language rule as the home page: the saved choice, otherwise the browser's language.
+      (function () {
+        var saved = null;
+        try { saved = localStorage.getItem("lang"); } catch (e) { /* private mode */ }
+        var first = String((navigator.languages && navigator.languages[0]) || navigator.language || "en").toLowerCase();
+        var lang = saved === "en" || saved === "ru" ? saved : first.indexOf("ru") === 0 ? "ru" : "en";
+        document.documentElement.setAttribute("data-lang", lang);
+        document.documentElement.lang = lang;
+        if (lang === "ru") document.title = "Страница не найдена — Stardew Tracker";
+      })();
+    </script>
+  </body>
+</html>

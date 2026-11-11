@@ -28,6 +28,7 @@ OWNER = "KyuuketsukiAkado"
 REPO = "stardew-tracker"
 EMAIL = "repro4chful@gmail.com"
 TEMPLATE = os.path.join(ROOT, "site", "index.template.html")
+TEMPLATE_404 = os.path.join(ROOT, "site", "404.template.html")
 SCREENSHOTS = os.path.join(ROOT, "docs", "screenshots")
 PLACEHOLDER = re.compile(r"\{\{([A-Z_]+)\}\}")
 
@@ -56,15 +57,15 @@ def values(version: str = __version__) -> dict[str, str]:
     }
 
 
-def render_page(version: str = __version__) -> str:
-    with open(TEMPLATE, encoding="utf-8") as handle:
+def render_page(version: str = __version__, template: str = TEMPLATE) -> str:
+    with open(template, encoding="utf-8") as handle:
         template = handle.read()
     filled = values(version)
 
     def replace(match: re.Match[str]) -> str:
         name = match.group(1)
         if name not in filled:
-            raise KeyError(f"unknown placeholder {{{{{name}}}}} in {TEMPLATE}")
+            raise KeyError(f"unknown placeholder {{{{{name}}}}} in {template}")
         return filled[name]
 
     return PLACEHOLDER.sub(replace, template)
@@ -80,6 +81,11 @@ def build(out: str, version: str = __version__) -> list[str]:
     with open(os.path.join(out, "index.html"), "w", encoding="utf-8", newline="\n") as handle:
         handle.write(render_page(version))
     written.append("index.html")
+
+    # GitHub Pages serves this for unknown addresses (otherwise visitors get an unstyled error).
+    with open(os.path.join(out, "404.html"), "w", encoding="utf-8", newline="\n") as handle:
+        handle.write(render_page(version, TEMPLATE_404))
+    written.append("404.html")
 
     # Plain static files: Pages must not run Jekyll over them.
     with open(os.path.join(out, ".nojekyll"), "w", encoding="utf-8") as handle:

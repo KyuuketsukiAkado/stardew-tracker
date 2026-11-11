@@ -52,6 +52,8 @@ def user_data_dir(
 
 
 FROZEN = bool(getattr(sys, "frozen", False))
+# How a person starts the program: shown in error messages ("Run `<COMMAND> info`").
+COMMAND = "StardewTracker" if FROZEN else "python tracker.py"
 PROJECT_ROOT = resource_root(frozen=FROZEN, meipass=getattr(sys, "_MEIPASS", None))
 WRITABLE_ROOT = user_data_dir() if FROZEN else PROJECT_ROOT
 

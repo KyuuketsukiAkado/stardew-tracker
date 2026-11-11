@@ -4,7 +4,8 @@
 
 ## Unreleased
 
-- **Landing page on GitHub Pages** (`site/`, built by `tools/build_site.py`, published by the new **Pages** workflow): a short "what and why", screenshots, a download button that picks Windows / macOS / Linux for the visitor, and the feedback address. The page is plain HTML with no external requests, in English with a Russian switch, and its download links follow the app version automatically.
+- **Landing page on GitHub Pages** (`site/`, built by `tools/build_site.py`, published by the new **Pages** workflow): a short "what and why", screenshots, a download button that picks Windows / macOS / Linux for the visitor, and the feedback address. The page is plain HTML with no external requests, always in the light Frost look, in English with a Russian switch (own title, description and screenshots), and its download links follow the app version automatically. A styled 404 page is included.
+- Packaged-app messages name the right command: error hints say `StardewTracker info` instead of `python tracker.py info`, and the permission hint points at the real saves folder.
 
 ## v0.4.0-beta.2 — English by default, language chooser (2026-11-11)
 
