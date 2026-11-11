@@ -41,9 +41,14 @@ def parse_xml(data: bytes) -> ET.Element:
 def ln(el: ET.Element | None) -> str:
     """Локальное имя тега (без namespace)."""
 
-    if el is None or not isinstance(el.tag, str):
+    if el is None:
         return ""
-    return el.tag.rsplit("}", 1)[-1]
+    tag = el.tag
+    if not isinstance(tag, str):
+        return ""
+    # Горячий путь: на большом сейве функция вызывается миллионы раз, а
+    # namespace в тегах почти не встречается — rsplit нужен только с «}».
+    return tag.rsplit("}", 1)[-1] if "}" in tag else tag
 
 
 def lattr(el: ET.Element, name: str) -> str | None:
@@ -93,6 +98,34 @@ def deep(el: ET.Element | None, name: str, limit: int | None = None) -> ET.Eleme
 
 def deep_text(el: ET.Element | None, name: str, default: str = "") -> str:
     return txt(deep(el, name)) or default
+
+
+def index_children(el: ET.Element | None) -> dict[str, ET.Element]:
+    """``локальное имя -> первый прямой потомок``: один проход по детям корня."""
+
+    index: dict[str, ET.Element] = {}
+    for child in el if el is not None else ():
+        index.setdefault(ln(child), child)
+    return index
+
+
+def index_descendants(el: ET.Element | None) -> dict[str, ET.Element]:
+    """``локальное имя -> первое вхождение`` на любой глубине за ОДИН обход.
+
+    Заменяет серию вызовов :func:`deep`: каждый такой вызов проходил по всему
+    дереву (миллионы узлов у большого сейва), а индекс делает это один раз.
+    Порядок «первого вхождения» совпадает с порядком документа.
+    """
+
+    by_tag: dict[object, ET.Element] = {}
+    for sub in el.iter() if el is not None else ():
+        if sub.tag not in by_tag:
+            by_tag[sub.tag] = sub
+    index: dict[str, ET.Element] = {}
+    for key, first in by_tag.items():
+        if isinstance(key, str):
+            index.setdefault(key.rsplit("}", 1)[-1] if "}" in key else key, first)
+    return index
 
 
 def first_int(el: ET.Element | None) -> int | None:

@@ -16,14 +16,56 @@ from collections import OrderedDict
 from typing import Any
 
 from . import xmlutil as xml
+from .constants import SEASONS
 from .errors import SaveError
 from .xmlutil import norm_id
 
 _CACHE_LIMIT = 16
 _PARSE_CACHE: OrderedDict[tuple[str, int, int], dict[str, Any]] = OrderedDict()
 _CACHE_LOCK = threading.RLock()
-_PARSE_BUILD_LOCK = threading.Lock()
+# Блокировка на каждый файл, а не одна на все: разбор большого чужого сейва
+# (например, для списка ферм) не должен задерживать разбор активного.
+_PARSE_LOCKS: dict[str, threading.Lock] = {}
+_PARSE_LOCKS_GUARD = threading.Lock()
 _NUMBER_RE = re.compile(r"^-?\d+$")
+# Допустимая разница mtime между ``SaveGameInfo`` и основным файлом сейва.
+_SUMMARY_MAX_SKEW_SECONDS = 300
+
+
+def _parse_lock(path: str) -> threading.Lock:
+    with _PARSE_LOCKS_GUARD:
+        lock = _PARSE_LOCKS.get(path)
+        if lock is None:
+            lock = _PARSE_LOCKS[path] = threading.Lock()
+        return lock
+
+
+class _TagLookup:
+    """Поиск тегов корня сейва без повторных обходов всего дерева.
+
+    Большинство нужных значений — прямые потомки ``<SaveGame>``: они берутся
+    из индекса детей корня за ~50 шагов. Только если тега там нет (старые или
+    нестандартные сейвы), один раз строится индекс всех потомков. Раньше на
+    каждый такой тег делался отдельный полный обход: на сейве в 25 МБ это
+    ~5 из 7 секунд разбора, а тег с лимитом в 5000 узлов (``perfectionWaivers``
+    лежит после огромного ``<locations>``) просто не находился.
+    """
+
+    def __init__(self, root: ET.Element):
+        self._root = root
+        self._top = xml.index_children(root)
+        self._deep: dict[str, ET.Element] | None = None
+
+    def get(self, name: str) -> ET.Element | None:
+        element = self._top.get(name)
+        if element is not None:
+            return element
+        if self._deep is None:
+            self._deep = xml.index_descendants(self._root)
+        return self._deep.get(name)
+
+    def text(self, name: str, default: str = "") -> str:
+        return xml.txt(self.get(name)) or default
 
 
 def _file_sig(path: str) -> tuple[str, int, int]:
@@ -103,16 +145,13 @@ def normalize_weather_code(value: str) -> str:
     return ""
 
 
-def _players(root: ET.Element) -> list[ET.Element]:
+def _players(root: ET.Element, lookup: _TagLookup) -> list[ET.Element]:
     """Основной фермер + farmhands мультиплеера."""
 
     players = xml.kid_all(root, "player")
-    farmhands = xml.kid(root, "farmhands")
-    if farmhands is None:
-        # В некоторых сейвах farmhands лежит глубже и/или после очень
-        # длинного <player>. Раньше обход ограничивался 4000 узлами и мог
-        # пропустить мультиплеерных фермеров.
-        farmhands = xml.deep(root, "farmhands")
+    # В некоторых сейвах farmhands лежит глубже и/или после очень длинного
+    # <player>; lookup найдёт его на любой глубине без лимита узлов.
+    farmhands = lookup.get("farmhands")
     if farmhands is not None:
         for element in farmhands:
             if xml.ln(element) in ("Farmer", "player") and xml.txt(xml.kid(element, "name")):
@@ -270,11 +309,9 @@ def _parse_axe_level(host: ET.Element) -> int | None:
     return None
 
 
-def _parse_special_orders(root: ET.Element) -> set[str]:
+def _parse_special_orders(lookup: _TagLookup) -> set[str]:
     orders: set[str] = set()
-    element = xml.kid(root, "completedSpecialOrders")
-    if element is None:
-        element = xml.deep(root, "completedSpecialOrders")
+    element = lookup.get("completedSpecialOrders")
     for sub in element.iter() if element is not None else []:
         text = xml.txt(sub)
         if text and sub is not element:
@@ -362,9 +399,9 @@ def parse_save(path: str) -> dict[str, Any]:
         return cached
 
     # Один и тот же сейв могут запросить HTTP-поток, наблюдатель и CLI.
-    # Сериализуем разбор, чтобы не делать одну и ту же работу N раз и чтобы
-    # все вызывающие получили один и тот же кэшированный объект.
-    with _PARSE_BUILD_LOCK:
+    # Сериализуем разбор КОНКРЕТНОГО файла, чтобы не делать одну и ту же
+    # работу N раз и чтобы все вызывающие получили один кэшированный объект.
+    with _parse_lock(signature[0]):
         cached = _cache_get(signature)
         if cached is not None:
             return cached
@@ -416,7 +453,8 @@ def _parse_uncached(signature: tuple[str, int, int]) -> dict[str, Any]:
             ],
         )
 
-    players = _players(root)
+    lookup = _TagLookup(root)
+    players = _players(root, lookup)
     host = players[0]
     warnings: list[str] = []
 
@@ -431,10 +469,7 @@ def _parse_uncached(signature: tuple[str, int, int]) -> dict[str, Any]:
     has_skull_key = _flag(host, "hasSkullKey")
     if has_skull_key:
         deepest_mine = max(120, deepest_mine)
-    farm_type_el = xml.kid(root, "whichFarm")
-    if farm_type_el is None:
-        farm_type_el = xml.deep(root, "whichFarm", limit=5000)
-    farm_type = xml.first_int(farm_type_el)
+    farm_type = xml.first_int(lookup.get("whichFarm"))
     max_stamina = xml.first_int(xml.kid(host, "maxStamina")) or 270
 
     museum: dict[str, int] = {}
@@ -443,7 +478,7 @@ def _parse_uncached(signature: tuple[str, int, int]) -> dict[str, Any]:
     areas_complete = _parse_locations(root, museum, bundles, buildings)
 
     walnuts: int | None = None
-    walnuts_el = xml.deep(root, "goldenWalnutsFound")
+    walnuts_el = lookup.get("goldenWalnutsFound")
     if walnuts_el is not None and xml.txt(walnuts_el).lstrip("-").isdigit():
         walnuts = int(xml.txt(walnuts_el))
 
@@ -453,10 +488,10 @@ def _parse_uncached(signature: tuple[str, int, int]) -> dict[str, Any]:
         "farm_name": xml.txt(xml.kid(host, "farmName")) or xml.deep_text(host, "farmName", "Ферма"),
         "money": xml.first_int(xml.kid(host, "money")) or 0,
         "total_earned": xml.first_int(xml.kid(host, "totalMoneyEarned")) or 0,
-        "day": xml.first_int(xml.kid(host, "dayOfMonth")) or xml.first_int(xml.deep(root, "dayOfMonth")) or 1,
-        "season": (xml.txt(xml.kid(host, "currentSeason")) or xml.deep_text(root, "currentSeason", "spring")).lower(),
-        "year": xml.first_int(xml.kid(host, "year")) or xml.first_int(xml.deep(root, "year")) or 1,
-        "time": xml.first_int(xml.kid(host, "timeOfDay")) or xml.first_int(xml.deep(root, "timeOfDay")) or 600,
+        "day": xml.first_int(xml.kid(host, "dayOfMonth")) or xml.first_int(lookup.get("dayOfMonth")) or 1,
+        "season": (xml.txt(xml.kid(host, "currentSeason")) or lookup.text("currentSeason", "spring")).lower(),
+        "year": xml.first_int(xml.kid(host, "year")) or xml.first_int(lookup.get("year")) or 1,
+        "time": xml.first_int(xml.kid(host, "timeOfDay")) or xml.first_int(lookup.get("timeOfDay")) or 600,
         "weather": weather,
         "weather_tomorrow": weather_tomorrow,
         "island_weather": island_weather,
@@ -473,7 +508,7 @@ def _parse_uncached(signature: tuple[str, int, int]) -> dict[str, Any]:
         "areasComplete": areas_complete,
         "farm_buildings": buildings,
         "walnuts": walnuts,
-        "perfection_waivers": xml.first_int(xml.deep(root, "perfectionWaivers", limit=5000)) or 0,
+        "perfection_waivers": xml.first_int(lookup.get("perfectionWaivers")) or 0,
         "skills": skills,
         "xp": xp,
         "mastery_xp": stats_values.get("MasteryExp", 0),
@@ -492,8 +527,8 @@ def _parse_uncached(signature: tuple[str, int, int]) -> dict[str, Any]:
         "house_level": xml.first_int(xml.kid(host, "houseUpgradeLevel")) or 0,
         "axe_level": _parse_axe_level(host),
         "farm_type": farm_type,
-        "special_orders": _parse_special_orders(root),
-        "game_version": xml.deep_text(root, "gameVersion", "") or xml.deep_text(root, "gameVersionLabel", ""),
+        "special_orders": _parse_special_orders(lookup),
+        "game_version": lookup.text("gameVersion") or lookup.text("gameVersionLabel"),
     }
 
     if not data["friendship"]:
@@ -508,3 +543,51 @@ def _parse_uncached(signature: tuple[str, int, int]) -> dict[str, Any]:
     data["warnings"] = warnings
     _cache_put(signature, data)
     return data
+
+
+def cached_save(path: str) -> dict[str, Any] | None:
+    """Уже разобранный сейв из кэша или ``None`` — без чтения самого файла."""
+
+    try:
+        signature = _file_sig(path)
+    except SaveError:
+        return None
+    return _cache_get(signature)
+
+
+def read_save_summary(path: str) -> dict[str, Any] | None:
+    """Краткая сводка сейва из соседнего ``SaveGameInfo`` (десятки КБ).
+
+    Игра пишет этот файл вместе с сейвом, и именно из него строит свой экран
+    загрузки: имя, ферма, деньги и дата. Для списка ферм этого достаточно, а
+    полный разбор каждого сейва (секунды и сотни МБ памяти у большого файла)
+    не нужен. ``None`` — файла нет, он устарел или не распознан; тогда
+    вызывающий код откатывается на полный разбор.
+    """
+
+    info_path = os.path.join(os.path.dirname(os.path.abspath(path)), "SaveGameInfo")
+    try:
+        if abs(os.path.getmtime(info_path) - os.path.getmtime(path)) > _SUMMARY_MAX_SKEW_SECONDS:
+            return None
+        if os.path.getsize(info_path) > 8_000_000:
+            return None
+        with open(info_path, "rb") as handle:
+            root = xml.parse_xml(handle.read())
+    except (OSError, ET.ParseError):
+        return None
+
+    name = xml.txt(xml.kid(root, "name"))
+    farm_name = xml.txt(xml.kid(root, "farmName"))
+    season = xml.txt(xml.kid(root, "currentSeason")).lower()
+    day = xml.first_int(xml.kid(root, "dayOfMonth"))
+    year = xml.first_int(xml.kid(root, "year"))
+    if not name or not farm_name or season not in SEASONS or day is None or year is None:
+        return None
+    return {
+        "name": name,
+        "farm_name": farm_name,
+        "season": season,
+        "day": day,
+        "year": year,
+        "money": xml.first_int(xml.kid(root, "money")) or 0,
+    }

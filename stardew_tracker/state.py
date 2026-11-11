@@ -36,7 +36,7 @@ from .requirements import (
     recipe_kind_options,
 )
 from .savefinder import find_saves, no_saves_error
-from .saveparser import _file_sig, parse_save
+from .saveparser import _file_sig, cached_save, parse_save, read_save_summary
 from .timeutil import abs_day, fmt_clock, minutes_of_day
 from .today import build_today
 
@@ -277,7 +277,9 @@ def list_saves_info(saves_dir: str | None = None, explicit: str | None = None) -
     out: list[dict[str, Any]] = []
     for path in find_saves(saves_dir=saves_dir, explicit=explicit):
         try:
-            parsed = parse_save(path)
+            # Дёшево -> дорого: уже разобранный сейв, затем ``SaveGameInfo``
+            # (десятки КБ) и только в крайнем случае полный разбор файла.
+            parsed = cached_save(path) or read_save_summary(path) or parse_save(path)
             mtime = int(os.path.getmtime(path))
             out.append(
                 {
