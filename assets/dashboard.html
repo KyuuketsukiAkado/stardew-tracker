@@ -1363,7 +1363,7 @@
         align-self: end;
       }
       .icon-grid {
-        grid-template-columns: repeat(auto-fill, minmax(136px, 1fr));
+        grid-template-columns: repeat(auto-fill, minmax(min(100%, 144px), 1fr));
       }
       .grid-item {
         min-width: 0;
@@ -1708,6 +1708,42 @@
         padding: 0 3px;
         min-width: 19px;
         font-size: 10px;
+      }
+      /* Коллекции, «Сегодня» и «Пометки»: кнопки вместе, включая подсказку.
+         Бандлы сохраняют свою раскладку до отдельного этапа. */
+      .collection-controls {
+        display: inline-flex;
+        flex: none;
+        align-items: center;
+        gap: 4px;
+        white-space: nowrap;
+      }
+      .collection-controls .annotation-actions {
+        flex: none;
+        margin-top: 0;
+      }
+      .collection-controls .annotation-actions button,
+      .collection-controls .acq-tip > summary,
+      .unlock-item .acq-tip > summary {
+        box-sizing: border-box;
+        display: grid;
+        place-items: center;
+        width: 40px;
+        min-width: 40px;
+        height: 40px;
+        min-height: 40px;
+        padding: 0;
+      }
+      /* Подпись источника остаётся в aria-label/title; на узкой плитке виден «?». */
+      .collection-controls .museum-source-toggle {
+        font-size: 0;
+      }
+      .collection-controls .museum-source-toggle > span {
+        font-size: 16px;
+      }
+      .collection-controls .tip-pop,
+      .unlock-item .tip-pop {
+        top: 40px;
       }
       /* ===== Danger zone: спойлеры ===== */
       .danger-banner {
@@ -3069,11 +3105,21 @@
           grid-column: 2;
           justify-content: flex-start;
         }
+        /* Статус и все три действия остаются в одной строке (вариант B). */
+        .collection-row > .right,
+        .today-list .collection-row > .right {
+          grid-column: 1 / -1;
+        }
+        .collection-row > .right > .status-badge {
+          flex: 1 1 0;
+          min-width: 0;
+          max-width: none;
+        }
         .item-icon {
           --cell: 28px;
         }
         .icon-grid {
-          grid-template-columns: repeat(2, minmax(0, 1fr));
+          grid-template-columns: repeat(auto-fill, minmax(min(100%, 144px), 1fr));
         }
         .actions {
           width: 100%;
@@ -4395,9 +4441,13 @@
           (S?.goals?.annotations || {})[key] || { marked: false, note: "" }
         );
       }
-      function annotationTools(key) {
+      function annotationPreview(key) {
+        const note = annotation(key).note;
+        return note ? `<span class="note-preview">${esc(note)}</span>` : "";
+      }
+      function annotationTools(key, showPreview = true) {
         let a = annotation(key);
-        return `<span class="annotation-actions"><button type="button" data-mark="${esc(key)}" class="${a.marked ? "marked" : ""}" aria-pressed="${!!a.marked}" aria-label="${a.marked ? t("unmark") : t("mark")}" title="${a.marked ? t("unmark") : t("mark")}">${a.marked ? "★" : "☆"}</button><button type="button" data-note="${esc(key)}" class="${a.note ? "has-note" : ""}" aria-label="${t("note")}" title="${t("note")}">✎</button></span>${a.note ? `<span class="note-preview">${esc(a.note)}</span>` : ""}`;
+        return `<span class="annotation-actions"><button type="button" data-mark="${esc(key)}" class="${a.marked ? "marked" : ""}" aria-pressed="${!!a.marked}" aria-label="${a.marked ? t("unmark") : t("mark")}" title="${a.marked ? t("unmark") : t("mark")}">${a.marked ? "★" : "☆"}</button><button type="button" data-note="${esc(key)}" class="${a.note ? "has-note" : ""}" aria-label="${t("note")}" title="${t("note")}">✎</button></span>${showPreview ? annotationPreview(key) : ""}`;
       }
       // "600 1100 1800 2600" -> [[360, 660], [1080, 1560]] (минуты от полуночи;
       // время после полуночи в игре идёт как 25:00, 26:00).
@@ -5109,7 +5159,7 @@
               .map((r) => {
                 const key = markKey(r, section),
                   status = rowStatus(r, type);
-                return `<div class="grid-item ${rowStateClass(r, status)}">${itemIcon(r.sp)}<span class="name">${nm(r)}</span>${museumSourcePreview(r)}<span class="badge ${status.className}" aria-label="${status.label}" title="${status.label}">${status.marker}</span><div class="item-footer">${annotationTools(key)}${acquisitionDetails(r, type)}</div></div>`;
+                return `<div class="grid-item ${rowStateClass(r, status)}">${itemIcon(r.sp)}<span class="name">${nm(r)}</span>${museumSourcePreview(r)}<span class="badge ${status.className}" aria-label="${status.label}" title="${status.label}">${status.marker}</span><div class="item-footer"><div class="collection-controls">${annotationTools(key, false)}${acquisitionDetails(r, type)}</div>${annotationPreview(key)}</div></div>`;
               })
               .join("") || `<div class="empty">${t("noResults")}</div>`
           }</div>`;
@@ -5163,7 +5213,7 @@
                 meta.push(`<span class="chip blue">${esc(t("nightMarketOnly"))}</span>`);
               const lockChip = reqChip(r);
               if (lockChip) meta.unshift(lockChip);
-              return `<div class="row ${rowStateClass(r, status)} ${a.marked ? "is-marked" : ""}">${itemIcon(r.sp)}<div class="row-main"><div class="name">${nm(r)}</div>${museumSourcePreview(r)}<div class="meta">${meta.join("")}</div></div><div class="right"><span class="badge status-badge ${status.className}" aria-label="${status.label}">${status.marker} ${status.label}</span>${annotationTools(key)}${acquisitionDetails(r, type)}</div></div>`;
+              return `<div class="row collection-row ${rowStateClass(r, status)} ${a.marked ? "is-marked" : ""}">${itemIcon(r.sp)}<div class="row-main"><div class="name">${nm(r)}</div>${museumSourcePreview(r)}<div class="meta">${meta.join("")}</div></div><div class="right"><span class="badge status-badge ${status.className}" aria-label="${status.label}">${status.marker} ${status.label}</span><div class="collection-controls">${annotationTools(key, false)}${acquisitionDetails(r, type)}</div>${annotationPreview(key)}</div></div>`;
             })
             .join("") || `<div class="empty">${t("noResults")}</div>`
         }</div>`;
@@ -5460,7 +5510,7 @@
             ? `<div class="rows">${entries
                 .map((e) => {
                   let a = annotation(e.key);
-                  return `<div class="row is-marked">${itemIcon(e.row.sp)}<div class="row-main"><div class="name">${nm(e.row)}</div><div class="meta"><span class="chip blue">${esc(e.label)}</span>${a.marked ? `<span class="chip warn">★ ${t("mark")}</span>` : ""}</div>${a.note ? `<span class="note-preview">${esc(a.note)}</span>` : ""}</div><div class="right">${annotationTools(e.key)}${acquisitionDetails(e.row, e.type)}<button data-go="${e.key.startsWith("bundle:") ? "bundles" : esc(e.key.split(":")[0])}" title="${t("all")}">↗</button></div></div>`;
+                  return `<div class="row collection-row is-marked">${itemIcon(e.row.sp)}<div class="row-main"><div class="name">${nm(e.row)}</div><div class="meta"><span class="chip blue">${esc(e.label)}</span>${a.marked ? `<span class="chip warn">★ ${t("mark")}</span>` : ""}</div>${a.note ? `<span class="note-preview">${esc(a.note)}</span>` : ""}</div><div class="right"><div class="collection-controls">${annotationTools(e.key, false)}${acquisitionDetails(e.row, e.type)}</div><button data-go="${e.key.startsWith("bundle:") ? "bundles" : esc(e.key.split(":")[0])}" title="${t("all")}">↗</button></div></div>`;
                 })
                 .join("")}</div>`
             : `<div class="empty">${t("noAnnotations")}</div>`

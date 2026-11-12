@@ -28,6 +28,33 @@ class TestResponsiveStyles(unittest.TestCase):
     def media(self, width):
         return css_block(self.css, f"@media (max-width: {width}px)")
 
+    def test_collection_touch_targets_stay_grouped_without_enlarging_bundles(self):
+        controls = css_block(self.css, ".collection-controls {")
+        self.assertIn("display: inline-flex", controls)
+        self.assertIn("white-space: nowrap", controls)
+        targets = css_block(self.css, ".collection-controls .annotation-actions button,")
+        self.assertIn(".unlock-item .acq-tip > summary", self.css)
+        for dimension in ("width", "min-width", "height", "min-height"):
+            self.assertIn(f"{dimension}: 40px", targets)
+        self.assertIn("top: 40px", css_block(self.css, ".collection-controls .tip-pop,"))
+        self.assertIn("min-width: 19px", css_block(self.css, ".bundle-item .annotation-actions button {"))
+        self.assertIn("width: 26px", css_block(self.css, ".acq-tip summary {"))
+        self.assertIn("minmax(min(100%, 144px), 1fr)", css_block(self.css, ".icon-grid {"))
+        phone = self.media(450)
+        self.assertIn("grid-column: 1 / -1", css_block(phone, ".collection-row > .right,"))
+        self.assertIn("flex: 1 1 0", css_block(phone, ".collection-row > .right > .status-badge {"))
+        self.assertIn("minmax(min(100%, 144px), 1fr)", css_block(phone, ".icon-grid {"))
+        html = TEMPLATE.read_text(encoding="utf-8")
+        self.assertIn(
+            '<div class="collection-controls">${annotationTools(key, false)}${acquisitionDetails(r, type)}', html
+        )
+        self.assertIn(
+            '<div class="collection-controls">${annotationTools(e.key, false)}${acquisitionDetails(e.row, e.type)}',
+            html,
+        )
+        self.assertIn("${annotationPreview(key)}", html)
+        self.assertIn("aria-pressed=", html)
+
     def test_tablet_navigation_and_columns(self):
         tablet = self.media(900)
         # Пилюли групп и подразделов прячутся, остаётся доступный селектор разделов.
