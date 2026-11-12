@@ -368,6 +368,27 @@ class _BaseHandler(BaseHTTPRequestHandler):
             },
         )
 
+    def _origin_allowed(self) -> bool:
+        """Reject browser POSTs from another origin, even if their response is blocked by CORS."""
+
+        origin = self.headers.get("Origin")
+        if origin is None:  # CLI clients do not send an Origin header.
+            return True
+        host = self.headers.get("Host")
+        if not host:
+            return False
+        try:
+            parsed = urlsplit(origin.strip())
+        except ValueError:
+            return False
+        return (
+            parsed.scheme == "http"
+            and parsed.netloc.lower() == host.strip().lower()
+            and not parsed.path
+            and not parsed.query
+            and not parsed.fragment
+        )
+
     def _etag_matches(self, etag: str) -> bool:
         header = self.headers.get("If-None-Match", "")
         candidates = {token.strip().removeprefix("W/") for token in header.split(",")}
@@ -521,7 +542,8 @@ class _BaseHandler(BaseHTTPRequestHandler):
                 413, {"error": self._text("Request too large; the limit is 1 MB", "Слишком большой запрос; лимит 1 МБ")}
             )
             return None
-        if length and "application/json" not in self.headers.get("Content-Type", "").lower():
+        content_type = self.headers.get("Content-Type", "").partition(";")[0].strip().lower()
+        if length and content_type != "application/json":
             self._json(
                 415,
                 {
@@ -546,6 +568,17 @@ class _BaseHandler(BaseHTTPRequestHandler):
     def do_POST(self) -> None:
         if not self._host_allowed():
             self._reject_host()
+            return
+        if not self._origin_allowed():
+            self._json(
+                403,
+                {
+                    "error": self._text(
+                        "Foreign Origin header: open the tracker at its own address",
+                        "Чужой заголовок Origin: откройте трекер по его собственному адресу",
+                    )
+                },
+            )
             return
         path = urlsplit(self.path).path
         payload = self._read_payload()

@@ -5599,14 +5599,16 @@
           live = MODE === "live";
         let metrics = Object.keys(S.counts)
           .filter((k) => Array.isArray(S.counts[k]))
-          .map((k) => `<option value="${k}">${metricLabel(k)}</option>`)
+          .map((k) => `<option value="${esc(k)}">${esc(metricLabel(k))}</option>`)
           .join("");
         return `${title(t("goals"), t(live ? "goalHint" : "offlineGoalsHint"), live ? `<div class="actions"><a class="badge" href="/api/goals/export">⇩ ${t("export")}</a><button type="button" id="importGoals" class="badge import-button">⇧ ${t("import")}</button><input id="goalsFile" type="file" accept="application/json" class="hidden"></div>` : "")}${colorLegend()}${live ? `<div class="form"><input id="goalTitle" type="text" maxlength="120" aria-label="${t("title")}" placeholder="${t("title")}"><select id="goalMetric" aria-label="${t("metric")}">${metrics}</select><input id="goalTarget" type="number" min="1" step="1" title="${t("goalTargetHint")}" aria-label="${t("total")}" placeholder="${t("total")}" style="width:100px"><button type="button" id="addGoal">+ ${t("addGoal")}</button></div>` : ""}${
           G.goals
             .map((g) => {
-              let c = S.counts[g.metric] || [0, 0],
+              let c = Object.prototype.hasOwnProperty.call(S.counts, g.metric) && Array.isArray(S.counts[g.metric])
+                  ? S.counts[g.metric]
+                  : [0, 0],
                 target = +g.target || c[1];
-              return `<div class="card goal"><div class="goal-head"><b>${esc(g.title)}</b><span class="badge ${c[0] >= target ? "ok" : c[0] > 0 ? "warn" : "no"}">${c[0]} / ${target}</span></div><div class="sub">${metricLabel(g.metric)}</div>${meter(c[0], target)}${live ? `<button type="button" data-delgoal="${esc(g.id)}" aria-label="${t("deleteGoal")}" title="${t("deleteGoal")}" style="margin-top:8px">×</button>` : ""}</div>`;
+              return `<div class="card goal"><div class="goal-head"><b>${esc(g.title)}</b><span class="badge ${c[0] >= target ? "ok" : c[0] > 0 ? "warn" : "no"}">${c[0]} / ${target}</span></div><div class="sub">${esc(metricLabel(g.metric))}</div>${meter(c[0], target)}${live ? `<button type="button" data-delgoal="${esc(g.id)}" aria-label="${t("deleteGoal")}" title="${t("deleteGoal")}" style="margin-top:8px">×</button>` : ""}</div>`;
             })
             .join("") || `<div class="empty">${t("noGoals")}</div>`
         }<section class="card" style="margin-top:14px"><h2 class="panel-title">${t("task")} <span class="badge ${G.tasks.length > 0 && G.tasks.every((x) => x.done) ? "ok" : G.tasks.some((x) => x.done) ? "warn" : "no"}">${G.tasks.filter((x) => !x.done).length}/${G.tasks.length}</span></h2>${live ? `<div class="form"><input id="taskTitle" type="text" maxlength="120" aria-label="${t("title")}" placeholder="${t("title")}"><button type="button" id="addTask">+ ${t("addTask")}</button></div>` : ""}${G.tasks.map((a) => `<div class="task ${a.done ? "done" : ""}"><input type="checkbox" data-task="${esc(a.id)}" aria-label="${esc(a.title)}" ${a.done ? "checked" : ""} ${live ? "" : "disabled"}><span style="flex:1;${a.done ? "text-decoration:line-through;color:var(--state-done)" : ""}">${esc(a.title)}</span>${live ? `<button type="button" data-deltask="${esc(a.id)}" aria-label="${t("deleteTask")}" title="${t("deleteTask")}">×</button>` : ""}</div>`).join("") || `<div class="empty">${t("noTasks")}</div>`}</section>`;

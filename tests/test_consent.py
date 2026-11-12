@@ -385,14 +385,44 @@ class TestHttp(ConsentCase):
         self.assertEqual((status, body["ready"]), (200, False))
 
     def test_changing_permission_needs_a_json_post_from_this_computer(self):
-        # no JSON content type -> refused; a foreign Host header -> refused
-        connection = HTTPConnection("127.0.0.1", self.port, timeout=5)
-        connection.request("POST", "/api/consent", body='{"allow": true}', headers={"Content-Type": "text/plain"})
-        self.assertEqual(connection.getresponse().status, 415)
-        connection.close()
+        # A browser-simple text/plain content type may contain a JSON-looking parameter.
+        # A substring check accepts it and lets a foreign page change consent without CORS.
+        for content_type in ("text/plain", "text/plain; x=application/json", "application/jsonp"):
+            connection = HTTPConnection("127.0.0.1", self.port, timeout=5)
+            connection.request("POST", "/api/consent", body='{"allow": true}', headers={"Content-Type": content_type})
+            self.assertEqual(connection.getresponse().status, 415, content_type)
+            connection.close()
         status, _ = self.call("POST", "/api/consent", {"allow": True}, headers={"Host": "evil.example"})
         self.assertEqual(status, 403)
+        for origin in ("https://evil.example", "http://localhost:12345", "null"):
+            status, _ = self.call("POST", "/api/consent", {"allow": True}, headers={"Origin": origin})
+            self.assertEqual(status, 403, origin)
         self.assertFalse(consent.standard_allowed())
+
+    def test_foreign_origin_cannot_write_goals(self):
+        status, _ = self.call(
+            "POST",
+            "/api/goals",
+            {"goals": [{"id": "foreign", "title": "No", "metric": "fish", "target": 1}], "tasks": []},
+            headers={"Origin": "https://evil.example"},
+        )
+        self.assertEqual(status, 403)
+        self.assertFalse(os.path.exists(paths.GOALS_FILE))
+
+    def test_same_origin_json_post_with_charset_still_works(self):
+        connection = HTTPConnection("127.0.0.1", self.port, timeout=5)
+        connection.request(
+            "POST",
+            "/api/consent",
+            body='{"allow": true}',
+            headers={
+                "Content-Type": "application/json; charset=utf-8",
+                "Origin": f"http://127.0.0.1:{self.port}",
+            },
+        )
+        self.assertEqual(connection.getresponse().status, 200)
+        connection.close()
+        self.assertTrue(consent.standard_allowed())
 
 
 class TestWatcherAndLanguage(ConsentCase):

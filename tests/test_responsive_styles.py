@@ -327,7 +327,8 @@ class TestResponsiveStyles(unittest.TestCase):
         self.assertIn('let EN = prefs.lang === "en"', html)
         self.assertIn('EN = prefs.lang === "en"', html)
         self.assertIn("metricLabel(k)", html)
-        self.assertIn("${metricLabel(g.metric)}", html)
+        self.assertIn("${esc(metricLabel(g.metric))}", html)
+        self.assertNotIn("${metricLabel(g.metric)}", html)
         self.assertIn('t(live ? "goalHint" : "offlineGoalsHint")', html)
         self.assertIn('document.documentElement.lang = EN ? "en" : "ru"', html)
 
