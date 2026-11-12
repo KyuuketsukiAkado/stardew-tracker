@@ -905,31 +905,28 @@
         vertical-align: middle;
         flex: none;
       }
+      /* Размер, лист и смещение спрайта считаются от одной клетки --cell, а
+         itemIcon() передаёт только номер колонки и строки (--ix, --iy). Раньше
+         смещение было в пикселях для 32 px, и уменьшенная до 28 px иконка
+         на телефоне показывала кусок соседнего предмета. */
       .item-icon {
-        width: 32px;
-        height: 32px;
-        background-size: 768px 1248px;
+        --cell: 32px;
+        width: var(--cell);
+        height: var(--cell);
+        background-size: calc(var(--cell) * 24) calc(var(--cell) * 39);
+        background-position: calc(var(--ix, 0) * var(--cell) * -1) calc(var(--iy, 0) * var(--cell) * -1);
       }
       .item-icon.sheet1 {
-        background-size: 256px 640px;
+        background-size: calc(var(--cell) * 8) calc(var(--cell) * 20);
       }
+      /* Большие предметы: клетка 16×32, строка листа — две клетки по высоте. */
       .item-icon.sheet2 {
-        width: 32px;
-        height: 64px;
-        background-size: 256px 2944px;
+        height: calc(var(--cell) * 2);
+        background-size: calc(var(--cell) * 8) calc(var(--cell) * 92);
+        background-position: calc(var(--ix, 0) * var(--cell) * -1) calc(var(--iy, 0) * var(--cell) * -2);
       }
       .item-icon.small {
-        width: 28px;
-        height: 28px;
-        background-size: 672px 1092px;
-      }
-      .item-icon.small.sheet1 {
-        background-size: 224px 560px;
-      }
-      .item-icon.small.sheet2 {
-        width: 28px;
-        height: 56px;
-        background-size: 224px 2576px;
+        --cell: 28px;
       }
       .row > .item-icon,
       .row > .portrait,
@@ -3073,17 +3070,7 @@
           justify-content: flex-start;
         }
         .item-icon {
-          width: 28px;
-          height: 28px;
-          background-size: 672px 1092px;
-        }
-        .item-icon.sheet1 {
-          background-size: 224px 560px;
-        }
-        .item-icon.sheet2 {
-          width: 28px;
-          height: 56px;
-          background-size: 224px 2576px;
+          --cell: 28px;
         }
         .icon-grid {
           grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -4362,13 +4349,11 @@
           return `<span class="ui-icon" style="background-position:-32px 0"></span>`;
         let sh = +sp[0],
           idx = +sp[1],
-          cw = 16,
-          ch = sh === 2 ? 32 : 16,
           cols = sh === 0 ? 24 : 8,
-          scale = small ? 1.75 : 2,
           cls = sh === 0 ? "" : " sheet" + sh;
         if (sh < 0 || sh > 2) return "";
-        let style = `background-image:var(${sprVars[sh]});background-position:-${(idx % cols) * cw * scale}px -${Math.floor(idx / cols) * ch * scale}px`;
+        // Только колонка и строка: пиксели считает CSS от размера клетки (--cell).
+        let style = `background-image:var(${sprVars[sh]});--ix:${idx % cols};--iy:${Math.floor(idx / cols)}`;
         return `<span class="item-icon${cls}${small ? " small" : ""}" style="${style}" aria-hidden="true"></span>`;
       }
       function uiIcon(i) {
