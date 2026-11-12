@@ -1034,6 +1034,7 @@
         grid-template-columns: repeat(auto-fill, minmax(275px, 1fr));
       }
       .bundle {
+        min-width: 0;
         background: var(--surface);
         border: 1px solid var(--line);
         border-radius: var(--radius);
@@ -3177,7 +3178,7 @@
           width: auto;
         }
         .bundles {
-          grid-template-columns: 1fr;
+          grid-template-columns: minmax(0, 1fr);
         }
         .people {
           grid-template-columns: 1fr;

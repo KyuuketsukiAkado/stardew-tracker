@@ -120,3 +120,32 @@ jobs:
           name: coverage
           path: coverage.xml
           if-no-files-found: ignore
+
+  browser-smoke:
+    name: JS-интерфейс и Chrome
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      # Не добавляем npm-зависимости в приложение: инструменты нужны только CI.
+      # playwright-core не скачивает браузер, используем Chrome из образа runner.
+      - name: Установка необязательных JS-инструментов
+        run: |
+          npm install --prefix "$RUNNER_TEMP/stardew-browser-smoke" --no-save --no-package-lock jsdom@31.0.0 playwright-core@1.65.0
+          echo "NODE_PATH=$RUNNER_TEMP/stardew-browser-smoke/node_modules" >> "$GITHUB_ENV"
+
+      - name: UI smoke (jsdom)
+        run: node tools/ui_smoke.js
+
+      - name: Visual + keyboard smoke (Chrome)
+        run: |
+          CHROME_PATH="$(command -v google-chrome-stable || command -v google-chrome || true)"
+          if [ -z "$CHROME_PATH" ]; then
+            echo 'Chrome not found on the CI runner' >&2
+            exit 1
+          fi
+          CHROME_PATH="$CHROME_PATH" node tools/visual_smoke.js

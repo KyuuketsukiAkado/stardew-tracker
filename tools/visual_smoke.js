@@ -118,11 +118,18 @@ const cases = [
               const rect = el.getBoundingClientRect();
               return rect.width < 40 || rect.height < 40;
             }).length;
-            return { overflow, small, wrongIcons, smallUnlocks };
+            const overflowElements = overflow > 1 ? [...document.querySelectorAll("body *")]
+              .filter((el) => {
+                const rect = el.getBoundingClientRect();
+                return rect.width > 0 && rect.right > innerWidth + 1 && rect.left < innerWidth;
+              })
+              .slice(0, 8)
+              .map((el) => ({ element: el.tagName.toLowerCase(), className: String(el.className).slice(0, 80), right: Math.round(el.getBoundingClientRect().right), text: (el.textContent || "").trim().slice(0, 45) })) : [];
+            return { overflow, small, wrongIcons, smallUnlocks, overflowElements };
           });
           routesChecked++;
           smallControls += result.small;
-          if (result.overflow > 1) failures.push(`${lang}/${theme}/${width}/${route}: ${result.overflow}px horizontal overflow`);
+          if (result.overflow > 1) failures.push(`${lang}/${theme}/${width}/${route}: ${result.overflow}px horizontal overflow ${JSON.stringify(result.overflowElements)}`);
           if (result.wrongIcons) failures.push(`${lang}/${theme}/${width}/${route}: ${result.wrongIcons} icons show the wrong sprite cell`);
           if (result.smallUnlocks) failures.push(`${lang}/${theme}/${width}/${route}: ${result.smallUnlocks} undersized unlock tips`);
           const touch = await page.evaluate(collectionTargets);
