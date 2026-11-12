@@ -4,6 +4,11 @@
 
 ## Unreleased
 
+## v0.4.0-beta.3 — phone usability and safer save discovery (2026-11-12)
+
+- **Permission before scanning for saves.** On first launch the app lists the standard save folders and asks for consent before looking in them. You can choose another folder instead or withdraw permission later from Folders; nothing is uploaded.
+- **40×40 px item controls.** ☆, ✎ and information hints in the museum, fish, shipping, cooking, crafting, Today and Saved items are easier to tap. Bundle items now open their 40×40 px actions when selected; Enter/Space, Tab and Escape work with visible focus. The saved annotation keys and progress calculations are unchanged.
+- **Browser checks in CI.** The existing jsdom UI smoke and real-Chrome visual/keyboard smoke now run automatically on the synthetic demo. The first Linux CI run exposed a 23 px overflow in the bundle grid at 320 px; narrow cards and grid tracks are fixed without weakening the test.
 - **Fixed wrong item pictures on phones.** At 450 px and narrower, item icons shrank to 28 px while their sprite offsets stayed at 32 px, so lists showed parts of neighbouring sprites (every fish and shipping icon, almost the whole museum). Icons now pass only the sprite column and row, and the CSS works out size, sheet scale and offset from one cell size, so any resize stays aligned. `tools/visual_smoke.js` checks every icon on every route.
 - **Overview leads with one thing you can do today.** A "You can do today" card sits right under the greeting: a villager's birthday without a gift yet, items already found but not donated to the museum, or a fish biting now in a place the save shows as unlocked (in that order). Close bundles are never offered there, because "2 left" does not mean you own the items. When nothing qualifies the card says so plainly. The choice is made in Python (`today.next_action`); fish rows gain `open_locs`.
 - **Calmer metrics:** perfection, museum and fish are three neutral tiles instead of a bright hero and a coloured museum tile; status colour appears only on the progress bar (gold in progress, green complete), always next to the number. Shipping, cooking and crafting tiles follow the same style. Links to museum, fish and perfection stay.
