@@ -69,7 +69,7 @@ const phoneUA = "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWeb
         if (mobile && (result.primary !== "#look" || !result.mobile || !result.artHidden || result.proofTop > 900 || result.headerAlignment > 15)) {
           failures.push(`${width}/${lang}: phone did not lead to a nearby app preview ${JSON.stringify(result)}`);
         }
-        if (!mobile && (!result.primary.includes("StardewTracker-windows-v") || result.artHidden)) {
+        if (!mobile && (!/StardewTracker-(windows|macos|linux)-v/.test(result.primary) || result.artHidden)) {
           failures.push(`${width}/${lang}: desktop download or illustration missing`);
         }
         if (mobile) {
