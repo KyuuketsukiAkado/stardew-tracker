@@ -1095,7 +1095,7 @@
       .overview-bundle-link {
         display: block;
         min-width: 0;
-        padding-right: 27px;
+        padding-right: 46px;
         color: inherit;
       }
       .overview-bundle-link:hover .overview-bundle-head b {
@@ -1208,44 +1208,85 @@
       }
       .bundle-room .bundle-items {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+        grid-template-columns: repeat(auto-fit, minmax(min(100%, 142px), 1fr));
         align-items: stretch;
         gap: 7px;
       }
       .bundle-room .bundle-item {
-        display: grid;
-        grid-template-columns: 28px minmax(0, 1fr);
-        grid-template-rows: minmax(30px, auto) 26px;
-        align-items: center;
-        align-content: stretch;
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        flex-wrap: nowrap;
         width: 100%;
-        min-height: 72px;
-        gap: 4px 5px;
+        min-height: 60px;
+        gap: 4px;
         padding: 5px 6px;
       }
-      .bundle-room .bundle-item > .item-icon {
-        grid-row: 1;
-        grid-column: 1;
-        justify-self: center;
+      .bundle-room .bundle-item.expanded {
+        border-color: var(--blue);
+        background: var(--info-soft);
       }
-      .bundle-room .bundle-item > .name {
-        grid-row: 1;
-        grid-column: 2;
-        align-self: center;
+      .bundle-item-trigger {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        width: 100%;
+        min-height: 44px;
+        padding: 0;
+        border: 0;
+        background: transparent;
+        color: inherit;
+        font-size: inherit;
+        text-align: left;
+      }
+      .bundle-room .bundle-item:not(.expanded) .bundle-item-trigger {
+        flex: 1;
+      }
+      .bundle-item-trigger:hover:not(:disabled) {
+        border: 0;
+        background: var(--info-soft);
+      }
+      .bundle-item-trigger .item-icon {
         flex: none;
+      }
+      .bundle-item-trigger .name {
+        flex: 1 1 auto;
         overflow-wrap: anywhere;
       }
-      .bundle-room .bundle-item > .acq-tip {
-        grid-row: 2;
-        grid-column: 1;
+      .bundle-item-chevron {
+        flex: none;
+        color: var(--state-info);
+        font-size: 16px;
       }
-      .bundle-room .bundle-item > .annotation-actions {
-        grid-row: 2;
-        grid-column: 2;
-        justify-self: end;
+      .bundle-item-actions {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+        width: 100%;
       }
-      .bundle-room .bundle-item > .note-preview {
-        grid-column: 1 / -1;
+      .bundle-item-actions[hidden] {
+        display: none;
+      }
+      .bundle-room .bundle-item-actions .annotation-actions button,
+      .bundle-room .bundle-item-actions .acq-tip > summary {
+        box-sizing: border-box;
+        display: grid;
+        place-items: center;
+        width: 40px;
+        min-width: 40px;
+        height: 40px;
+        min-height: 40px;
+        padding: 0;
+      }
+      .bundle-room .bundle-item-actions .annotation-actions button {
+        font-size: 18px;
+      }
+      .bundle-room .bundle-item-actions .acq-tip > summary {
+        font-size: 16px;
+      }
+      .bundle-item-actions .tip-pop {
+        top: 40px;
       }
       .reward-card {
         display: flex;
@@ -1743,6 +1784,13 @@
       }
       .collection-controls .tip-pop,
       .unlock-item .tip-pop {
+        top: 40px;
+      }
+      .acq-tip.bundle-tooltip > summary {
+        width: 40px;
+        height: 40px;
+      }
+      .acq-tip.bundle-tooltip .tip-pop {
         top: 40px;
       }
       /* ===== Danger zone: спойлеры ===== */
@@ -4103,6 +4151,12 @@
         mark: "Запомнить",
         unmark: "Убрать пометку",
         note: "Заметка",
+        bundleExpand: "Показать действия",
+        bundleCollapse: "Скрыть действия",
+        bundleQualitySilver: "серебряное качество",
+        bundleQualityGold: "золотое качество",
+        bundleQualityIridium: "иридиевое качество",
+        bundlePosition: "предмет",
         notePrompt: "Короткая заметка",
         saveNote: "Сохранить",
         cancel: "Отмена",
@@ -4132,6 +4186,12 @@
         mark: "Remember",
         unmark: "Unmark",
         note: "Note",
+        bundleExpand: "Show actions",
+        bundleCollapse: "Hide actions",
+        bundleQualitySilver: "silver quality",
+        bundleQualityGold: "gold quality",
+        bundleQualityIridium: "iridium quality",
+        bundlePosition: "item",
         notePrompt: "Short note",
         saveNote: "Save note",
         cancel: "Cancel",
@@ -4371,6 +4431,7 @@
         secretsFailed = false,
         savesCache = null,
         pendingSaves = 0;
+      let expandedBundleItem = "";
       // Фильтры коллекций запоминаются между визитами (localStorage).
       const FILTER_DEFAULTS = {
         place: "",
@@ -4939,10 +5000,11 @@
         target.focus({ preventScroll: true });
         return true;
       }
-      function focusDataControl(attribute, value) {
-        const target = [...document.querySelectorAll(`[${attribute}]`)].find(
-          (element) => element.getAttribute(attribute) === value,
-        );
+      function focusDataControl(attribute, value, ordinal = 0) {
+        const matches = [...document.querySelectorAll(`[${attribute}]`)].filter(
+            (element) => element.getAttribute(attribute) === value,
+          ),
+          target = matches[ordinal] || matches.find((element) => !element.closest("[hidden]"));
         if (target) target.focus();
         else focusViewHeading();
       }
@@ -5493,10 +5555,21 @@
         const name = EN ? reward.en : reward.ru;
         return `<div class="reward-card"><span class="reward-card-label">${t("rewards")}</span><span class="reward-card-icon">${itemIcon(reward.sp, true)}</span><span class="reward-card-name">${esc(name)}${reward.qty > 1 ? ` ×${reward.qty}` : ""}</span></div>`;
       }
+      function bundleItemCard(bundle, item, index) {
+        const key = `bundle:${bundle.slot}:${item.id}`,
+          actionId = `${bundleAnchor(bundle)}-item-${index}-actions`,
+          opened = expandedBundleItem === actionId,
+          name = esc(EN ? item.en : item.ru),
+          quality = item.qual
+            ? t(item.qual >= 3 ? "bundleQualityIridium" : item.qual === 2 ? "bundleQualityGold" : "bundleQualitySilver")
+            : "",
+          accessibleName = `${t(opened ? "bundleCollapse" : "bundleExpand")}: ${name}${item.qty > 1 ? ` ×${item.qty}` : ""}${quality ? ` · ${quality}` : ""} · ${t("bundlePosition")} ${index + 1} · ${esc(EN ? bundle.en : bundle.ru)}`;
+        return `<div class="bundle-item ${item.have ? "have" : ""} ${opened ? "expanded" : ""}"><button type="button" class="bundle-item-trigger" data-bundle-item="${actionId}" aria-expanded="${opened}" aria-controls="${actionId}" aria-label="${accessibleName}" title="${t(opened ? "bundleCollapse" : "bundleExpand")}">${itemIcon(item.sp, true)}<span class="name">${name}${item.qty > 1 ? ` ×${item.qty}` : ""}${item.qual ? ` ${qualityStars(item.qual)} ` : ""}</span><span class="bundle-item-chevron" aria-hidden="true">${opened ? "⌃" : "⌄"}</span></button><div class="bundle-item-actions" id="${actionId}"${opened ? "" : " hidden"}>${annotationTools(key, false)}${acquisitionDetails(item, "shipped")}</div>${annotationPreview(key)}</div>`;
+      }
       function bundleDetailCard(bundle) {
         const status = bundle.complete ? "ok" : bundle.have > 0 ? "warn" : "no",
           label = EN ? bundle.en : bundle.ru;
-        return `<article class="bundle ${bundle.complete ? "complete" : ""}" id="${bundleAnchor(bundle)}" tabindex="-1"><div class="bundle-head">${bundleIcon(bundle.slot)}<div class="bundle-title"><b>${esc(label)}</b><div class="sub">${bundle.have}/${bundle.need}</div></div>${bundleTooltip(bundle)}<span class="badge ${status}">${bundle.complete ? "✓" : `${bundle.have}/${bundle.need}`}</span></div>${meter(bundle.have, bundle.need)}<div class="bundle-items">${bundle.items.map((item) => `<span class="bundle-item ${item.have ? "have" : ""}">${itemIcon(item.sp, true)}<span class="name">${esc(EN ? item.en : item.ru)}${item.qty > 1 ? ` ×${item.qty}` : ""}${item.qual ? ` ${qualityStars(item.qual)} ` : ""}</span>${acquisitionDetails(item, "shipped")}${annotationTools(`bundle:${bundle.slot}:${item.id}`)}</span>`).join("")}</div>${bundle.reward ? rewardCard(bundle.reward) : ""}</article>`;
+        return `<article class="bundle ${bundle.complete ? "complete" : ""}" id="${bundleAnchor(bundle)}" tabindex="-1"><div class="bundle-head">${bundleIcon(bundle.slot)}<div class="bundle-title"><b>${esc(label)}</b><div class="sub">${bundle.have}/${bundle.need}</div></div>${bundleTooltip(bundle)}<span class="badge ${status}">${bundle.complete ? "✓" : `${bundle.have}/${bundle.need}`}</span></div>${meter(bundle.have, bundle.need)}<div class="bundle-items">${bundle.items.map((item, index) => bundleItemCard(bundle, item, index)).join("")}</div>${bundle.reward ? rewardCard(bundle.reward) : ""}</article>`;
       }
       function bundles() {
         const completed = S.bundles.reduce((sum, room) => sum + room.done, 0),
@@ -5921,15 +5994,20 @@
         return saved;
       }
       let noteKeyActive = "",
-        noteTrigger = null;
-      function noteButtonFor(key) {
-        return [...document.querySelectorAll("[data-note]")].find(
+        noteTrigger = null,
+        noteOrdinal = 0;
+      function noteButtonFor(key, ordinal = 0) {
+        const matches = [...document.querySelectorAll("[data-note]")].filter(
           (button) => button.dataset.note === key,
         );
+        return matches[ordinal] || matches.find((button) => !button.closest("[hidden]"));
       }
       function openNote(key, button) {
         noteKeyActive = key;
         noteTrigger = button;
+        noteOrdinal = [...document.querySelectorAll("[data-note]")]
+          .filter((control) => control.dataset.note === key)
+          .indexOf(button);
         let a = annotation(key),
           card = button.closest(".row,.grid-item,.bundle-item"),
           name = card?.querySelector(".name")?.textContent || key;
@@ -5952,16 +6030,18 @@
         if (restoreFocus) {
           const target = noteTrigger?.isConnected
             ? noteTrigger
-            : noteButtonFor(key);
+            : noteButtonFor(key, noteOrdinal);
           target?.focus();
         }
         noteTrigger = null;
+        noteOrdinal = 0;
       }
       async function saveNote() {
         if (!noteKeyActive) return;
         S.goals = S.goals || { goals: [], tasks: [] };
         S.goals.annotations = S.goals.annotations || {};
         const key = noteKeyActive,
+          ordinal = noteOrdinal,
           saveButton = $("#noteSave");
         let a = annotation(key);
         a.note = $("#noteText").value.trim().slice(0, 280);
@@ -5973,7 +6053,7 @@
         if (!saved) return;
         closeNote(false);
         render();
-        const target = noteButtonFor(key) || $("#view h1");
+        const target = noteButtonFor(key, ordinal) || $("#view h1");
         if (target) {
           if (target.tagName === "H1") target.tabIndex = -1;
           target.focus();
@@ -6081,6 +6161,16 @@
             }
           };
         document.querySelectorAll("details.acq-tip").forEach((tip) => {
+          tip.addEventListener("toggle", () => {
+            if (!tip.open || !tip.closest(".bundle-item-actions")) return;
+            const popup = tip.querySelector(".tip-pop");
+            if (!popup) return;
+            popup.style.translate = "";
+            const rect = popup.getBoundingClientRect(),
+              moveRight = Math.max(0, 8 - rect.left),
+              moveLeft = Math.max(0, rect.right + moveRight - (innerWidth - 8));
+            popup.style.translate = `${moveRight - moveLeft}px 0`;
+          });
           tip.addEventListener("pointerleave", () => {
             tip.open = false;
           });
@@ -6105,19 +6195,31 @@
               $("#addTask")?.click();
             }
           };
+        document.querySelectorAll("[data-bundle-item]").forEach(
+          (button) =>
+            (button.onclick = () => {
+              const key = button.dataset.bundleItem;
+              expandedBundleItem = expandedBundleItem === key ? "" : key;
+              render();
+              focusDataControl("data-bundle-item", key);
+            }),
+        );
         document.querySelectorAll("[data-mark]").forEach(
           (b) =>
             (b.onclick = () => {
               S.goals = S.goals || { goals: [], tasks: [] };
               S.goals.annotations = S.goals.annotations || {};
               let key = b.dataset.mark,
+                ordinal = [...document.querySelectorAll("[data-mark]")]
+                  .filter((control) => control.dataset.mark === key)
+                  .indexOf(b),
                 a = annotation(key);
               a.marked = !a.marked;
               if (a.marked || a.note) S.goals.annotations[key] = a;
               else delete S.goals.annotations[key];
               persist();
               render();
-              focusDataControl("data-mark", key);
+              focusDataControl("data-mark", key, ordinal);
             }),
         );
         document
@@ -6183,7 +6285,17 @@
           const langOpen = !$("#langModal").classList.contains("hidden"),
             foldersOpen = !$("#foldersModal").classList.contains("hidden"),
             modal = langOpen ? $("#langModal") : foldersOpen ? $("#foldersModal") : $("#noteModal");
-          if (!modal || modal.classList.contains("hidden")) return;
+          if (!modal || modal.classList.contains("hidden")) {
+            const expanded = document.activeElement?.closest(".bundle-item.expanded");
+            if (e.key === "Escape" && expanded) {
+              e.preventDefault();
+              const key = expanded.querySelector("[data-bundle-item]")?.dataset.bundleItem;
+              expandedBundleItem = "";
+              render();
+              if (key) focusDataControl("data-bundle-item", key);
+            }
+            return;
+          }
           if (e.key === "Escape") {
             if (langOpen) langChoose?.(prefs.lang);
             else if (foldersOpen) closeFolders();
