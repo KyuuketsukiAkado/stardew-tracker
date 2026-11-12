@@ -14,6 +14,7 @@ from .unlocks import (
     evaluate,
     fish_alternatives,
     fish_location_groups,
+    fish_open_locations,
     is_night_market_only,
     museum_alternatives,
     museum_tags,
@@ -90,6 +91,8 @@ def build_fish_rows(
                     "trap": bool(info.get("trap")),
                     "water": info.get("water", ""),
                     "locs": info.get("loc") or [],
+                    # Только места, открытые по сейву: для совета «куда пойти сейчас».
+                    "open_locs": fish_open_locations(uid, info, ctx),
                     "in_season": in_season,
                     "weather_ok": weather_ok,
                     "later_today": later_ok,

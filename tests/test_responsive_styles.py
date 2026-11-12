@@ -317,12 +317,49 @@ class TestResponsiveStyles(unittest.TestCase):
         for token in (
             "function statTile(key, label, iconSp, go, tone, span)",
             "function perfectionTile(span)",
-            'class="tile hero m ${span}"',
+            'class="tile metric m ${span} ${state}"',
             '<span class="stat-icon">${itemIcon(iconSp, true)}</span>',
-            'perfectionTile("s5")',
-            'statTile("museum", t("museum"), [0, 72], "museum", "ice", "s4")',
+            'perfectionTile("s4")',
+            'statTile("museum", t("museum"), [0, 72], "museum", "", "s4")',
         ):
             self.assertIn(token, html)
+        # Метрики спокойные: без яркой hero-заливки и «своего цвета» у каждой плитки.
+        self.assertNotIn('class="tile hero m ${span}"', html)
+        self.assertNotIn('"museum", "ice"', html)
+        for state, token in (("progressing", "--state-progress"), ("complete", "--state-done")):
+            self.assertIn(token, css_block(self.css, f".tile.metric.{state} .bar i {{"))
+
+    def test_overview_leads_with_one_available_action(self):
+        """UX-аудит P1: первое действие раньше цифр; пустое состояние честное."""
+
+        html = TEMPLATE.read_text(encoding="utf-8")
+        overview = html[html.index("function overview()") :]
+        overview = overview[: overview.index("function todayHighlights()")]
+        self.assertLess(overview.index("nextAction()"), overview.index("perfectionTile("))
+        self.assertIn("S.today && S.today.next_action", html)
+        self.assertIn('class="next-action is-empty"', html)
+        self.assertIn('class="next-action-cta"', html)
+        for key in ("nextKicker", "nextNoneTitle", "nextNoneText", "nextMore"):
+            self.assertEqual(html.count(f"{key}:"), 2, key)  # RU и EN
+        # Предложение, а не тревога: синий статус «подсказка», не красный.
+        block = css_block(self.css, ".next-action {")
+        self.assertIn("var(--state-info)", block)
+        self.assertNotIn("--state-action", block)
+        self.assertIn("min-height: 44px", css_block(self.css, ".next-action-cta,"))
+
+    def test_phone_beta_banner_is_compact_but_complete(self):
+        """На телефоне плашка короче, но текст, контакты и кнопка закрытия на месте."""
+
+        html = TEMPLATE.read_text(encoding="utf-8")
+        phone = css_block(self.css, "@media (max-width: 600px)")
+        banner = css_block(phone, ".beta-banner {")
+        self.assertIn("display: block", banner)
+        self.assertIn("font-size: 13px", banner)
+        self.assertIn("position: absolute", css_block(phone, ".beta-banner button {"))
+        self.assertNotIn("display: none", banner)
+        self.assertIn("mailto:${FEEDBACK_EMAIL}", html)
+        self.assertIn("${ISSUES_URL}", html)
+        self.assertIn("grid-column: span 4", css_block(phone, ".bento.metrics .tile {"))
         # Иконка лежит в рамке фиксированного размера, высокие спрайты не сдвигают заголовки.
         icon_box = css_block(self.css, ".stat-icon {")
         self.assertIn("width: 28px", icon_box)
