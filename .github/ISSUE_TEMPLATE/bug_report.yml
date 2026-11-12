@@ -19,7 +19,7 @@ body:
     attributes:
       label: App version and system
       description: The version is in the beta banner and in `StardewTracker --version`.
-      placeholder: "0.4.0-beta.3, Windows 11, StardewTracker.exe"
+      placeholder: "0.4.0-beta.4, Windows 11, StardewTracker.exe"
     validations:
       required: true
   - type: input
