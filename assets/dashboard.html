@@ -2185,11 +2185,12 @@
         color: var(--muted);
         font-size: var(--t1);
       }
+      /* Приветствие тише карточки «Можно сделать сегодня» под ним. */
       .welcome-row {
-        margin-bottom: 36px;
+        margin-bottom: 24px;
       }
       .welcome-row h1 {
-        font-size: clamp(40px, 6.2vw, var(--t8));
+        font-size: clamp(34px, 3.8vw, var(--t6));
         overflow-wrap: anywhere;
       }
       .welcome-row > div:first-child {
@@ -2553,6 +2554,128 @@
       .beta-banner.hidden {
         display: none;
       }
+      .visually-hidden {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        margin: -1px;
+        padding: 0;
+        overflow: hidden;
+        clip: rect(0 0 0 0);
+        white-space: nowrap;
+        border: 0;
+      }
+      /* Первый экран: одно доступное дело. Синий — «подсказка» из легенды статусов,
+         красный здесь не используется: это предложение, а не тревога. */
+      .next-action {
+        margin: 0 0 var(--gap);
+        padding: 22px 26px;
+        border-radius: var(--tile-radius);
+        border-inline-start: 6px solid var(--state-info);
+        background: var(--tile-bg);
+        box-shadow: var(--tile-shadow);
+        color: var(--text);
+      }
+      .next-action-kicker {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin: 0 0 14px;
+        color: var(--state-info);
+        font: 600 var(--t0) / 1.2 var(--font-display);
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+      }
+      .next-action-kicker svg {
+        width: 18px;
+        height: 18px;
+        flex: none;
+        stroke-width: 2;
+      }
+      .next-action-body {
+        display: grid;
+        grid-template-columns: 52px minmax(0, 1fr);
+        gap: 16px;
+        align-items: center;
+      }
+      .next-action-icon {
+        width: 52px;
+        height: 52px;
+        display: grid;
+        place-items: center;
+        border-radius: 16px;
+        background: var(--info-soft);
+      }
+      .next-action h2 {
+        margin: 0;
+        font: 700 var(--t4) / 1.12 var(--font-display);
+        font-stretch: condensed;
+        letter-spacing: 0;
+        overflow-wrap: anywhere;
+      }
+      .next-action-why {
+        margin: 6px 0 0;
+        color: var(--muted);
+        font-size: var(--t1);
+        line-height: 1.45;
+        overflow-wrap: anywhere;
+      }
+      .next-action-links {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px 20px;
+        margin-top: 18px;
+      }
+      .next-action-cta,
+      .next-action-more {
+        display: inline-flex;
+        align-items: center;
+        min-height: 44px;
+        font-weight: 650;
+      }
+      .next-action-cta {
+        padding: 0 22px;
+        border-radius: 999px;
+        background: var(--seg-on-bg);
+        color: var(--seg-on-fg);
+        text-decoration: none;
+      }
+      .next-action-more {
+        color: var(--accent-strong);
+        text-decoration: underline;
+        text-underline-offset: 3px;
+      }
+      .next-action a:focus-visible {
+        outline: 3px solid var(--blue);
+        outline-offset: 3px;
+      }
+      .next-action.is-empty {
+        border-inline-start-color: var(--state-idle);
+      }
+      .next-action.is-empty .next-action-kicker {
+        color: var(--muted);
+      }
+      .next-action.is-empty h2 {
+        font-size: var(--t3);
+      }
+      /* Метрики: нейтральная поверхность, цвет статуса только у полосы, число рядом. */
+      .tile.metric .big {
+        margin-top: 16px;
+        font-size: clamp(34px, 3.4vw, var(--t6));
+      }
+      .tile.metric .bar {
+        margin-top: 16px;
+      }
+      .tile.metric.progressing .bar i {
+        background: var(--state-progress);
+      }
+      .tile.metric.complete .bar i {
+        background: var(--state-done);
+      }
+      .tile.metric.not-started .bar i {
+        background: var(--state-idle);
+      }
       /* Разрешение на поиск сохранений */
       .consent .lead {
         margin: 0 0 20px;
@@ -2792,6 +2915,107 @@
         .note-dialog {
           max-height: calc(100vh - 24px);
           max-height: calc(100dvh - 24px);
+        }
+        /* Телефон: плашка беты короче (текст и контакты те же), приветствие без
+           повтора даты из шапки — первое дело попадает на первый экран. */
+        .beta-banner {
+          position: relative;
+          display: block;
+          margin-top: 8px;
+          padding: 8px 44px 8px 12px;
+          border-radius: 14px;
+          font-size: 13px;
+          line-height: 1.45;
+        }
+        .beta-tag {
+          display: inline-block;
+          margin-right: 6px;
+          padding: 2px 8px;
+          font-size: 11px;
+        }
+        .beta-banner button {
+          position: absolute;
+          top: 2px;
+          right: 2px;
+          width: 40px;
+          height: 40px;
+          min-height: 40px;
+          margin: 0;
+          padding: 0;
+        }
+        .welcome-row {
+          margin: 2px 0 14px;
+        }
+        .welcome-row .welcome-eyebrow,
+        .welcome-row .sub {
+          display: none;
+        }
+        .welcome-row h1 {
+          font-size: 30px;
+        }
+        .next-action {
+          padding: 16px 16px 14px 18px;
+          border-radius: 20px;
+        }
+        .next-action-kicker {
+          margin-bottom: 10px;
+        }
+        .next-action-body {
+          grid-template-columns: 40px minmax(0, 1fr);
+          gap: 12px;
+          align-items: start;
+        }
+        .next-action-icon {
+          width: 40px;
+          height: 40px;
+          border-radius: 12px;
+        }
+        .next-action h2 {
+          font-size: 22px;
+        }
+        .next-action-why {
+          font-size: 14px;
+        }
+        .next-action-links {
+          margin-top: 12px;
+          gap: 4px 16px;
+        }
+        /* Три метрики в один компактный ряд; полное значение — в aria-label. */
+        .bento.metrics {
+          gap: 8px;
+        }
+        .bento.metrics .tile {
+          grid-column: span 4;
+          padding: 12px 10px;
+          border-radius: 16px;
+        }
+        .bento.metrics .tile::before,
+        .bento.metrics .stat-icon,
+        .bento.metrics .t-label > span:last-child,
+        .bento.metrics .stat-sub {
+          display: none;
+        }
+        .bento.metrics .t-label {
+          font-size: 11px;
+          letter-spacing: 0.04em;
+        }
+        .bento.metrics .t-name {
+          display: block;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+        .bento.metrics .big {
+          column-gap: 10px;
+          margin-top: 8px;
+          font-size: 24px;
+        }
+        .bento.metrics .big-unit {
+          font-size: 13px;
+        }
+        .bento.metrics .bar {
+          height: 4px;
+          margin-top: 10px;
         }
       }
       @media (max-width: 450px) {
@@ -4051,6 +4275,33 @@
         wikiWarning:
           "Opens an external site — spoilers there are unprotected",
       });
+      // Первый экран: одно дело, которое точно можно сделать сегодня (S.today.next_action).
+      Object.assign(labels.ru, {
+        nextKicker: "Можно сделать сегодня",
+        nextBirthdayWhy: "Подарок в день рождения даёт в 8 раз больше дружбы.",
+        nextLoves: "Любит",
+        nextMuseumWhy: "Уже найдено, осталось отнести Гюнтеру",
+        nextFishWhy: "Клюёт сейчас, место открыто",
+        nextFishMore: "Ещё видов клюёт сейчас",
+        nextMore: "Весь план на сегодня",
+        nextNoneTitle: "Срочных дел на сегодня нет",
+        nextNoneText:
+          "Нет дня рождения без подарка, находок для музея и новой рыбы в открытых местах. Загляните в полный план или выберите раздел ниже.",
+        metricsTitle: "Общий прогресс",
+      });
+      Object.assign(labels.en, {
+        nextKicker: "You can do today",
+        nextBirthdayWhy: "A birthday gift gives 8× the friendship.",
+        nextLoves: "Loves",
+        nextMuseumWhy: "Already found — just bring them to Gunther",
+        nextFishWhy: "Biting now in a place you can reach",
+        nextFishMore: "More species biting now",
+        nextMore: "Full plan for today",
+        nextNoneTitle: "Nothing urgent today",
+        nextNoneText:
+          "No birthday without a gift, no finds waiting for the museum and no new fish in places you can reach. Check the full plan or pick a section below.",
+        metricsTitle: "Overall progress",
+      });
       const sections = [
         "overview",
         "today",
@@ -4403,12 +4654,14 @@
                 ? "statusProgress"
                 : "statusIdle",
           );
-        return `<section class="tile m ${tone} ${span} ${state}" data-go="${go}" role="link" tabindex="0" aria-label="${esc(label)}: ${v[0]} / ${v[1]} · ${stateText}"><div class="t-label"><span class="t-name"><span class="stat-icon">${itemIcon(iconSp, true)}</span>${label}</span><span>${percent}%</span></div><div class="big"><span class="big-value">${v[0]}</span><span class="big-unit">/${v[1]}</span></div><div class="bar" role="progressbar" aria-label="${t("progress")}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${percent}"><i style="width:${percent}%"></i></div><div class="stat-sub">${Math.max(0, v[1] - v[0])} ${t("left")}</div></section>`;
+        return `<section class="tile metric m ${tone} ${span} ${state}" data-go="${go}" role="link" tabindex="0" aria-label="${esc(label)}: ${v[0]} / ${v[1]} · ${stateText}"><div class="t-label"><span class="t-name"><span class="stat-icon">${itemIcon(iconSp, true)}</span>${label}</span><span>${percent}%</span></div><div class="big"><span class="big-value">${v[0]}</span><span class="big-unit">/${v[1]}</span></div><div class="bar" role="progressbar" aria-label="${t("progress")}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${percent}"><i style="width:${percent}%"></i></div><div class="stat-sub">${Math.max(0, v[1] - v[0])} ${t("left")}</div></section>`;
       }
+      // Спокойная плитка-метрика: цвет только у полосы и по статусу, рядом всегда число.
       function perfectionTile(span) {
         const p = S.perfection,
-          percent = Math.max(0, Math.min(100, Number(p.pct) || 0));
-        return `<section class="tile hero m ${span}" data-go="perfection" role="link" tabindex="0" aria-label="${t("perfection")}: ${p.pct}%"><div class="t-label"><span class="t-name"><span class="stat-icon">${itemIcon([1, 96], true)}</span>${t("perfection")}</span><span aria-hidden="true">★</span></div><div class="big"><span class="big-value">${p.pct}</span><span class="big-unit">%</span></div><div class="bar" role="progressbar" aria-label="${t("progress")}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(percent)}"><i style="width:${percent}%"></i></div><div class="stat-sub">${t("officialCriteria")}</div></section>`;
+          percent = Math.max(0, Math.min(100, Number(p.pct) || 0)),
+          state = percent >= 100 ? "complete" : percent > 0 ? "progressing" : "not-started";
+        return `<section class="tile metric m ${span} ${state}" data-go="perfection" role="link" tabindex="0" aria-label="${t("perfection")}: ${p.pct}%"><div class="t-label"><span class="t-name"><span class="stat-icon">${itemIcon([1, 96], true)}</span>${t("perfection")}</span><span aria-hidden="true">★</span></div><div class="big"><span class="big-value">${p.pct}</span><span class="big-unit">%</span></div><div class="bar" role="progressbar" aria-label="${t("progress")}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(percent)}"><i style="width:${percent}%"></i></div><div class="stat-sub">${t("officialCriteria")}</div></section>`;
       }
       function header() {
         let m = (S && S.meta) || {};
@@ -5023,9 +5276,54 @@
             room.done === room.total ? "ok" : room.done > 0 ? "warn" : "no";
         return `<article class="card overview-bundle-card"><a class="overview-bundle-link" href="#bundles/${bundleRoomAnchor(room)}" aria-label="${t("openBundleRoom")}: ${esc(label)}"><div class="overview-bundle-head"><span class="overview-bundle-icon">${bundleIcon(room.list[0]?.slot)}</span><b>${esc(label)}</b><span class="badge ${state}">${room.done}/${room.total}</span></div>${meter(room.done, room.total)}<span class="bundle-open-hint">${t("openBundleRoom")} →</span></a>${bundleRoomTooltip(room)}</article>`;
       }
+      function ruPlural(n, one, few, many) {
+        const lastTwo = n % 100,
+          last = n % 10;
+        if (lastTwo >= 11 && lastTwo <= 14) return many;
+        return last === 1 ? one : last >= 2 && last <= 4 ? few : many;
+      }
+      // Одно дело из уже рассчитанного плана (выбирает Python, см. today.pick_next_action).
+      // Нет подходящего — спокойное пустое состояние, а не выдуманный совет.
+      function nextAction() {
+        const a = S.today && S.today.next_action,
+          name = (o) => esc(EN ? o.en : o.ru),
+          more = `<a class="next-action-more" href="#today">${t("nextMore")} →</a>`,
+          kicker = `<p class="next-action-kicker">${svgIcon("calendar-check")}<span>${t("nextKicker")}</span></p>`;
+        if (!a)
+          return `<section class="next-action is-empty" aria-labelledby="nextActionTitle">${kicker}<h2 id="nextActionTitle">${t("nextNoneTitle")}</h2><p class="next-action-why">${t("nextNoneText")}</p><div class="next-action-links">${more}</div></section>`;
+        let icon = "",
+          head = "",
+          why = "";
+        if (a.kind === "birthday") {
+          icon = portrait(a.p_idx, true);
+          head = EN
+            ? `It’s ${name(a)}’s birthday — bring a gift`
+            : `У ${name(a)} день рождения — подарите подарок`;
+          why = `${t("nextBirthdayWhy")}${a.loved && a.loved.length ? ` ${t("nextLoves")}: ${a.loved.map(name).join(", ")}.` : ""}`;
+        } else if (a.kind === "museum") {
+          const first = (a.items || [])[0];
+          icon = first ? itemIcon(first.sp, true) : "";
+          head = EN
+            ? `Donate ${a.count} found ${a.count === 1 ? "item" : "items"} to the museum`
+            : `Отнесите в музей ${a.count} ${ruPlural(a.count, "находку", "находки", "находок")}`;
+          why = `${t("nextMuseumWhy")}: ${(a.items || []).map(name).join(", ")}${a.count > (a.items || []).length ? "…" : ""}`;
+        } else {
+          icon = itemIcon(a.sp, true);
+          head = EN ? `Catch: ${name(a)}` : `Поймайте: ${name(a)}`;
+          why = [
+            t("nextFishWhy"),
+            (a.locs || []).map(name).join(", "),
+            a.time ? fishTime(a.time) : "",
+          ]
+            .filter(Boolean)
+            .join(" · ");
+          if (a.count > 1) why += `. ${t("nextFishMore")}: ${a.count - 1}`;
+        }
+        return `<section class="next-action" aria-labelledby="nextActionTitle">${kicker}<div class="next-action-body"><span class="next-action-icon">${icon}</span><div class="next-action-text"><h2 id="nextActionTitle">${head}</h2><p class="next-action-why">${why}</p></div></div><div class="next-action-links"><a class="next-action-cta" href="#${esc(a.route)}">${t(a.route)} →</a>${more}</div></section>`;
+      }
       function overview() {
         const alerts = S.alerts.museum_found_not_donated;
-        return `${greetingTitle(S.meta)}<div class="bento">${perfectionTile("s5")}${statTile("museum", t("museum"), [0, 72], "museum", "ice", "s4")}${statTile("fish", t("fish"), [0, 128], "fish", "", "s3")}<section class="tile s7"><h3>${t("todayPlan")}</h3>${todayHighlights()}</section>${unlocksPanel("s5")}${statTile("shipped", t("shipped"), [0, 24], "shipped", "violet", "s4")}${statTile("cooking", t("cooking"), [0, 194], "cooking", "mint", "s4")}${statTile("crafting", t("crafting"), [2, 13], "crafting", "", "s4")}</div>${colorLegend()}${featureNavigation()}<div class="bento"><section class="tile s12"><h3>${t("foundAlert")} <span class="badge ${alerts.length ? "alert" : "ok"}">${alerts.length}</span></h3><div class="overview-items">${
+        return `${greetingTitle(S.meta)}${nextAction()}<h2 class="visually-hidden">${t("metricsTitle")}</h2><div class="bento metrics">${perfectionTile("s4")}${statTile("museum", t("museum"), [0, 72], "museum", "", "s4")}${statTile("fish", t("fish"), [0, 128], "fish", "", "s4")}</div><div class="bento"><section class="tile s7"><h3>${t("todayPlan")}</h3>${todayHighlights()}</section>${unlocksPanel("s5")}</div><div class="bento metrics">${statTile("shipped", t("shipped"), [0, 24], "shipped", "", "s4")}${statTile("cooking", t("cooking"), [0, 194], "cooking", "", "s4")}${statTile("crafting", t("crafting"), [2, 13], "crafting", "", "s4")}</div>${colorLegend()}${featureNavigation()}<div class="bento"><section class="tile s12"><h3>${t("foundAlert")} <span class="badge ${alerts.length ? "alert" : "ok"}">${alerts.length}</span></h3><div class="overview-items">${
           alerts
             .slice(0, 6)
             .map(

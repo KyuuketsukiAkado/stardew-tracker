@@ -516,6 +516,13 @@ def build_unlocks(
 
 
 # ---- рыба -------------------------------------------------------------------
+def _fish_location_gates(uid: str, loc: Mapping[str, Any]) -> list[str]:
+    name = loc.get("en", "")
+    if name == "Farm":
+        return ["farm_forest"] if uid == "734" else ["farm_beach"]
+    return list(LOCATION_GATES.get(name, []))
+
+
 def fish_alternatives(uid: str, info: Mapping[str, Any]) -> tuple[list[list[str]], list[str]]:
     """``(альтернативы по локациям, общие условия)`` для вида рыбы."""
 
@@ -529,18 +536,23 @@ def fish_alternatives(uid: str, info: Mapping[str, Any]) -> tuple[list[list[str]
 
     alternatives: list[list[str]] = []
     for loc in info.get("loc") or []:
-        name = loc.get("en", "")
-        if name == "Farm":
-            gates = ["farm_forest"] if uid == "734" else ["farm_beach"]
-        else:
-            gates = list(LOCATION_GATES.get(name, []))
-        alternatives.append(gates + common)
+        alternatives.append(_fish_location_gates(uid, loc) + common)
     if not alternatives:
         alternatives.append(list(common))
     # Варианты «на ферме особого типа» — в конец: при равенстве подсказываем
     # общий путь (Тайный лес), а не смену карты фермы.
     alternatives.sort(key=lambda gates: any(gate.startswith("farm_") for gate in gates))
     return alternatives, common
+
+
+def fish_open_locations(uid: str, info: Mapping[str, Any], ctx: UnlockContext | None) -> list[dict[str, Any]]:
+    """Места ловли, доступ к которым по сейву точно открыт (без «неизвестно»)."""
+
+    locs = list(info.get("loc") or [])
+    if ctx is None:
+        return locs
+    _alternatives, common = fish_alternatives(uid, info)
+    return [loc for loc in locs if combine(ctx.status(key) for key in _fish_location_gates(uid, loc) + common) is True]
 
 
 def fish_location_groups(info: Mapping[str, Any]) -> list[str]:
