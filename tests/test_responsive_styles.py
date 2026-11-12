@@ -181,6 +181,8 @@ class TestResponsiveStyles(unittest.TestCase):
         tile = css_block(self.css, ".bundle-room .bundle-item {")
         targets = css_block(self.css, ".bundle-room .bundle-item-actions .annotation-actions button,")
         self.assertIn("display: grid", items)
+        self.assertIn("min-width: 0", css_block(self.css, ".bundle {"))
+        self.assertIn("grid-template-columns: minmax(0, 1fr)", css_block(self.media(450), ".bundles {"))
         self.assertIn("grid-template-columns: repeat(auto-fit, minmax(min(100%, 142px), 1fr))", items)
         self.assertIn("align-items: stretch", items)
         self.assertIn("display: flex", tile)
