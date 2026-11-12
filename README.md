@@ -145,7 +145,7 @@ python3 -m pip install -r requirements-build.txt
 python3 packaging/build_app.py          # Windows: build_app.bat
 ```
 
-The **Build app** workflow in GitHub Actions builds Windows, macOS and Linux binaries; pushing a `v*` tag publishes them as a release (tags with a hyphen, such as `v0.4.0-beta.3`, become pre-releases). Release notes come from `.github/release-notes/<tag>.md`.
+The **Build app** workflow in GitHub Actions builds Windows, macOS and Linux binaries; pushing a `v*` tag publishes them as a release (tags with a hyphen, such as `v0.4.0-beta.4`, become pre-releases). Release notes come from `.github/release-notes/<tag>.md`.
 
 ## Data and game sprites
 

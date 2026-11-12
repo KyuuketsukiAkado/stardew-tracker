@@ -6,6 +6,11 @@
 
 - **Landing page UX:** current beta.3 screenshots from a fictional farm appear before the feature list, with phone-sized images on narrow screens. Phone visitors preview the interface instead of getting a Windows download button; Mac visitors see the Apple Silicon limitation, and unsigned-app guidance remains available in a keyboard-friendly disclosure. CI now checks the rendered site at phone and desktop widths.
 
+## v0.4.0-beta.4 — security patch (2026-11-12)
+
+- Refuse cross-origin HTTP writes to local goals, consent and save-selection endpoints. POST requests now require the exact JSON MIME type rather than a JSON-looking substring in another content type. Same-origin browser actions and CLI requests still work.
+- Escape the metric label of imported goals when rendering HTML, without discarding unknown or older goal metrics. Add regression checks for both issues.
+
 ## v0.4.0-beta.3 — phone usability and safer save discovery (2026-11-12)
 
 - **Permission before scanning for saves.** On first launch the app lists the standard save folders and asks for consent before looking in them. You can choose another folder instead or withdraw permission later from Folders; nothing is uploaded.
