@@ -323,8 +323,17 @@ async function errorLanguage() {
   s.w.close();
 }
 
+async function metricEscaping() {
+  const s = await boot({ storage: prefs("en") });
+  s.w.eval(`S.goals.goals = [{id:"synthetic", title:"Safe title", metric:'<b data-audit="metric">untrusted</b>', target:1}]; route = "goals"; render();`);
+  const goal = s.d.querySelector("#view .card.goal .sub");
+  check("imported goal metric is text, never markup", !!goal && goal.textContent.includes('<b data-audit="metric">') && !goal.querySelector("[data-audit]"));
+  s.w.close();
+}
+
 (async () => {
   await sectionsWalk();
+  await metricEscaping();
   await secrets();
   await languageFlow();
   await betaBanner();
