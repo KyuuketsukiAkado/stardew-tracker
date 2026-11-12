@@ -28,7 +28,7 @@ class TestResponsiveStyles(unittest.TestCase):
     def media(self, width):
         return css_block(self.css, f"@media (max-width: {width}px)")
 
-    def test_collection_touch_targets_stay_grouped_without_enlarging_bundles(self):
+    def test_collection_touch_targets_stay_grouped(self):
         controls = css_block(self.css, ".collection-controls {")
         self.assertIn("display: inline-flex", controls)
         self.assertIn("white-space: nowrap", controls)
@@ -37,7 +37,6 @@ class TestResponsiveStyles(unittest.TestCase):
         for dimension in ("width", "min-width", "height", "min-height"):
             self.assertIn(f"{dimension}: 40px", targets)
         self.assertIn("top: 40px", css_block(self.css, ".collection-controls .tip-pop,"))
-        self.assertIn("min-width: 19px", css_block(self.css, ".bundle-item .annotation-actions button {"))
         self.assertIn("width: 26px", css_block(self.css, ".acq-tip summary {"))
         self.assertIn("minmax(min(100%, 144px), 1fr)", css_block(self.css, ".icon-grid {"))
         phone = self.media(450)
@@ -180,12 +179,33 @@ class TestResponsiveStyles(unittest.TestCase):
     def test_bundle_item_tiles_have_uniform_adaptive_layout(self):
         items = css_block(self.css, ".bundle-room .bundle-items {")
         tile = css_block(self.css, ".bundle-room .bundle-item {")
+        targets = css_block(self.css, ".bundle-room .bundle-item-actions .annotation-actions button,")
         self.assertIn("display: grid", items)
-        self.assertIn("grid-template-columns: repeat(auto-fit, minmax(120px, 1fr))", items)
+        self.assertIn("grid-template-columns: repeat(auto-fit, minmax(min(100%, 142px), 1fr))", items)
         self.assertIn("align-items: stretch", items)
-        self.assertIn("grid-template-rows: minmax(30px, auto) 26px", tile)
-        self.assertIn("min-height: 72px", tile)
-        self.assertIn(".bundle-room .bundle-item > .annotation-actions", self.css)
+        self.assertIn("display: flex", tile)
+        self.assertIn("min-height: 60px", tile)
+        self.assertIn("min-height: 44px", css_block(self.css, ".bundle-item-trigger {"))
+        self.assertIn("flex: 1", css_block(self.css, ".bundle-room .bundle-item:not(.expanded) .bundle-item-trigger {"))
+        self.assertIn("display: none", css_block(self.css, ".bundle-item-actions[hidden] {"))
+        for dimension in ("width", "min-width", "height", "min-height"):
+            self.assertIn(f"{dimension}: 40px", targets)
+        tooltip = css_block(self.css, ".acq-tip.bundle-tooltip > summary {")
+        self.assertIn("width: 40px", tooltip)
+        self.assertIn("height: 40px", tooltip)
+        html = TEMPLATE.read_text(encoding="utf-8")
+        for marker in (
+            "function bundleItemCard(bundle, item, index)",
+            "opened = expandedBundleItem === actionId",
+            'data-bundle-item="${actionId}"',
+            "popup.style.translate = `${moveRight - moveLeft}px 0`",
+            'class="bundle-item-trigger" data-bundle-item=',
+            'aria-expanded="${opened}" aria-controls="${actionId}"',
+            '${annotationTools(key, false)}${acquisitionDetails(item, "shipped")}',
+            'if (e.key === "Escape" && expanded)',
+            'focusDataControl("data-bundle-item", key)',
+        ):
+            self.assertIn(marker, html)
 
     def test_bundle_rewards_are_visually_highlighted(self):
         html = TEMPLATE.read_text(encoding="utf-8")

@@ -36,6 +36,22 @@ function collectionTargets() {
   }
   return { groups: groups.length, tooSmall, split, outside };
 }
+function bundleTargets() {
+  const toggles = [...document.querySelectorAll("#view .bundle-item-trigger")];
+  const headers = [...document.querySelectorAll("#view .bundle-tooltip > summary")];
+  const actions = [...document.querySelectorAll("#view .bundle-item-actions:not([hidden]) button, #view .bundle-item-actions:not([hidden]) summary")];
+  const tooSmall = [...headers, ...actions].filter((el) => {
+    const rect = el.getBoundingClientRect();
+    return rect.width < 40 || rect.height < 40;
+  }).length;
+  const shortToggle = toggles.filter((el) => el.getBoundingClientRect().height < 40).length;
+  const outside = actions.filter((el) => {
+    const card = el.closest(".bundle-item").getBoundingClientRect();
+    const rect = el.getBoundingClientRect();
+    return rect.left < card.left - 1 || rect.right > card.right + 1;
+  }).length;
+  return { toggles: toggles.length, headers: headers.length, actions: actions.length, tooSmall, shortToggle, outside };
+}
 const cases = [
   ["ru", "dark", 320],
   ["ru", "light", 390],
@@ -111,6 +127,10 @@ const cases = [
           if (result.smallUnlocks) failures.push(`${lang}/${theme}/${width}/${route}: ${result.smallUnlocks} undersized unlock tips`);
           const touch = await page.evaluate(collectionTargets);
           if (touch.tooSmall || touch.split || touch.outside) failures.push(`${lang}/${theme}/${width}/${route}: collection controls ${JSON.stringify(touch)}`);
+          const bundle = await page.evaluate(bundleTargets);
+          if (bundle.tooSmall || bundle.shortToggle || bundle.outside || (route === "bundles" && !bundle.toggles)) {
+            failures.push(`${lang}/${theme}/${width}/${route}: bundle controls ${JSON.stringify(bundle)}`);
+          }
         }
         await page.evaluate(() => { location.hash = "museum"; });
         await page.locator("#viewToggle").click();
@@ -151,6 +171,107 @@ const cases = [
         const savedTouch = await page.evaluate(collectionTargets);
         if (!savedTouch.groups || savedTouch.tooSmall || savedTouch.split || savedTouch.outside || !(await page.locator("#view .note-preview").count())) {
           failures.push(`${lang}/${theme}/${width}/saved: controls or note missing ${JSON.stringify(savedTouch)}`);
+        }
+        await page.evaluate(() => { location.hash = "bundles"; });
+        const bundleToggle = page.locator("#view .bundle-item-trigger").first();
+        await bundleToggle.focus();
+        await page.keyboard.press("Enter");
+        const opened = await page.evaluate(bundleTargets);
+        if (opened.actions !== 3 || opened.tooSmall || opened.outside || !(await bundleToggle.getAttribute("aria-expanded") === "true")) {
+          failures.push(`${lang}/${theme}/${width}/bundles: expanded controls ${JSON.stringify(opened)}`);
+        }
+        await page.keyboard.press("Tab");
+        if (!(await page.evaluate(() => document.activeElement?.matches(".bundle-item.expanded [data-mark]")))) {
+          failures.push(`${lang}/${theme}/${width}/bundles: Tab did not enter the expanded controls`);
+        }
+        await page.keyboard.press("Space");
+        if (!(await page.evaluate(() => document.activeElement?.matches(".bundle-item.expanded [data-mark][aria-pressed='true']")))) {
+          failures.push(`${lang}/${theme}/${width}/bundles: marking lost expansion or focus`);
+        }
+        await page.keyboard.press("Tab");
+        await page.keyboard.press("Enter");
+        if (!(await page.evaluate(() => document.activeElement?.id === "noteText"))) {
+          failures.push(`${lang}/${theme}/${width}/bundles: keyboard note dialog did not open`);
+        }
+        await page.keyboard.press("Escape");
+        if (!(await page.evaluate(() => document.activeElement?.matches(".bundle-item.expanded [data-note]")))) {
+          failures.push(`${lang}/${theme}/${width}/bundles: note Escape did not restore focus`);
+        }
+        await page.keyboard.press("Enter");
+        await page.locator("#noteText").fill("Synthetic bundle note");
+        await page.locator("#noteSave").click();
+        const bundleInfo = page.locator("#view .bundle-item.expanded .acq-tip summary").first();
+        await bundleInfo.focus();
+        await page.keyboard.press("Enter");
+        if (!(await bundleInfo.evaluate((el) => el.parentElement.open && el.matches(":focus-visible")))) {
+          failures.push(`${lang}/${theme}/${width}/bundles: info disclosure or focus ring failed`);
+        }
+        await page.waitForFunction(() => {
+          const popup = document.querySelector("#view .bundle-item.expanded .acq-tip[open] .tip-pop"),
+            rect = popup?.getBoundingClientRect();
+          return rect && rect.left >= 7 && rect.right <= innerWidth - 7;
+        });
+        await page.keyboard.press("Escape");
+        if (!(await page.evaluate(() => document.activeElement?.matches(".bundle-item-trigger[aria-expanded='false']")))) {
+          failures.push(`${lang}/${theme}/${width}/bundles: Escape did not close expansion and restore focus`);
+        }
+        // Two Wood requirements share the same annotation key; their disclosure controls must not share state.
+        const duplicateTriggers = page.locator("#bundle-17 .bundle-item:has([data-mark='bundle:17:388']) .bundle-item-trigger");
+        if ((await duplicateTriggers.count()) !== 2) {
+          failures.push(`${lang}/${theme}/${width}/bundles: duplicate Wood test items missing`);
+        } else {
+          const labels = await duplicateTriggers.evaluateAll((controls) => controls.map((control) => control.getAttribute("aria-label")));
+          if (labels[0] === labels[1]) failures.push(`${lang}/${theme}/${width}/bundles: duplicate items have the same accessible name`);
+          const second = duplicateTriggers.nth(1), secondKey = await second.getAttribute("data-bundle-item");
+          await second.focus();
+          await page.keyboard.press("Enter");
+          const expandedDuplicates = await page.locator("#bundle-17 .bundle-item:has([data-mark='bundle:17:388']) .bundle-item-trigger[aria-expanded='true']").count();
+          const secondFocused = await page.evaluate((key) => document.activeElement?.getAttribute("data-bundle-item") === key, secondKey);
+          if (expandedDuplicates !== 1 || !secondFocused) failures.push(`${lang}/${theme}/${width}/bundles: duplicate items opened or focused together`);
+          await page.keyboard.press("Tab");
+          await page.keyboard.press("Space");
+          if (!(await page.evaluate((key) => document.activeElement?.closest(".bundle-item")?.querySelector(".bundle-item-trigger")?.getAttribute("data-bundle-item") === key && document.activeElement?.getAttribute("aria-pressed") === "true", secondKey))) {
+            failures.push(`${lang}/${theme}/${width}/bundles: marking second duplicate lost focus`);
+          }
+          await page.keyboard.press("Tab");
+          await page.keyboard.press("Enter");
+          await page.locator("#noteText").fill("Synthetic duplicate note");
+          await page.locator("#noteSave").click();
+          if (!(await page.evaluate((key) => document.activeElement?.closest(".bundle-item")?.querySelector(".bundle-item-trigger")?.getAttribute("data-bundle-item") === key && document.activeElement?.hasAttribute("data-note"), secondKey))) {
+            failures.push(`${lang}/${theme}/${width}/bundles: saving second duplicate note lost focus`);
+          }
+          await page.keyboard.press("Escape");
+          if (!(await page.evaluate((key) => document.activeElement?.getAttribute("data-bundle-item") === key && document.activeElement?.getAttribute("aria-expanded") === "false", secondKey))) {
+            failures.push(`${lang}/${theme}/${width}/bundles: duplicate item Escape lost focus`);
+          }
+        }
+        const secondTile = page.locator("#view .bundle-room .bundle-item-trigger").nth(1);
+        await secondTile.focus();
+        await page.keyboard.press("Enter");
+        await page.locator("#view .bundle-item.expanded .acq-tip summary").first().focus();
+        await page.keyboard.press("Enter");
+        await page.waitForFunction(() => {
+          const popup = document.querySelector("#view .bundle-item.expanded .acq-tip[open] .tip-pop"),
+            rect = popup?.getBoundingClientRect();
+          return rect && rect.left >= 7 && rect.right <= innerWidth - 7;
+        });
+        await page.keyboard.press("Escape");
+        await page.evaluate(() => { location.hash = "saved"; });
+        await page.locator("#view [data-mark^='bundle:']").first().waitFor();
+        if (!(await page.locator("#view .note-preview").allTextContents()).some((note) => note.includes("Synthetic bundle note"))) {
+          failures.push(`${lang}/${theme}/${width}: bundle note was lost from Saved items`);
+        }
+        // Home and Today must still deep-link to their bundle room / individual bundle.
+        for (const [route, selector] of [["overview", ".overview-bundle-link"], ["today", ".today-bundle-link"]]) {
+          await page.evaluate((route) => { location.hash = route; }, route);
+          const link = page.locator(`#view ${selector}`).first();
+          await link.waitFor();
+          const href = await link.getAttribute("href");
+          await link.click();
+          await page.waitForFunction((href) => {
+            const id = href.split("/").at(-1);
+            return location.hash === href && document.activeElement?.id === id;
+          }, href);
         }
         // Reproduce the reported values without opening a real save; test the visible text geometry.
         await page.evaluate(() => {
