@@ -44,9 +44,12 @@ class TestBuild(SiteTestCase):
 
     def test_every_screenshot_on_the_page_exists_and_has_a_language(self):
         sources = re.findall(r'<img lang="(en|ru)" src="(screenshots/[^"]+)"', self.html)
-        self.assertEqual([lang for lang, _src in sources], ["en", "en", "ru", "ru"])
-        for _lang, src in sources:
+        self.assertEqual([lang for lang, _src in sources], ["en", "ru", "en", "ru"])
+        mobile = re.findall(r'<source media="\(max-width: 600px\)" srcset="(screenshots/[^\"]+)"', self.html)
+        self.assertEqual(len(mobile), 4)
+        for src in [source for _lang, source in sources] + mobile:
             self.assertTrue(os.path.isfile(os.path.join(self.out, src)), src)
+        self.assertLess(self.html.index('id="look"'), self.html.index('id="why"'))
 
     def test_build_is_deterministic(self):
         other = os.path.join(self.tmp, "second")
@@ -133,6 +136,15 @@ class TestEnglishFirst(SiteTestCase):
         # without JavaScript the page still offers all three downloads
         for system in ("windows", "macos", "linux"):
             self.assertIn(f'data-os="{system}"', self.html)
+
+    def test_phone_preview_and_mac_architecture_warning(self):
+        self.assertIn('button.href = "#look"', self.html)
+        self.assertIn('class="mobile-note"', self.html)
+        self.assertIn("Intel Macs", self.html)
+        self.assertIn("README.ru.md#запуск-из-исходников", self.html)
+        self.assertIn("is-macos", self.html)
+        self.assertIn("SmartScreen: More info → Run anyway", self.html)
+        self.assertIn('<details class="note">', self.html)
 
     def test_page_explains_the_unsigned_app_and_how_to_give_feedback(self):
         for token in ("not code-signed", "SmartScreen", "SHA-256", "repro4chful@gmail.com", "public beta"):
