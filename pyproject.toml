@@ -1,6 +1,6 @@
 [project]
 name = "stardew-tracker"
-version = "0.4.0b2"
+version = "0.4.0b3"
 description = "Local English/Russian progress tracker for Stardew Valley 1.5/1.6 saves: no mods, no dependencies"
 readme = "README.md"
 requires-python = ">=3.9"
