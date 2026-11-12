@@ -54,17 +54,40 @@ class TestResponsiveStyles(unittest.TestCase):
         self.assertIn("grid-column: span 12", css_block(self.css, ".tile {"))
 
     def test_item_and_row_icons_are_centered_and_readable(self):
-        small_icon = css_block(self.css, ".item-icon.small")
-        self.assertIn("width: 28px", small_icon)
-        self.assertIn("height: 28px", small_icon)
+        self.assertIn("--cell: 28px", css_block(self.css, ".item-icon.small"))
         compact_portrait = css_block(self.css, ".portrait.compact")
         self.assertIn("width: 32px", compact_portrait)
         self.assertIn("justify-self: center", css_block(self.css, ".row > .item-icon,"))
         html = TEMPLATE.read_text(encoding="utf-8")
-        self.assertIn("scale = small ? 1.75 : 2", html)
+        self.assertIn("--ix:${idx % cols};--iy:${Math.floor(idx / cols)}", html)
         self.assertIn("portrait(person.p_idx, true)", html)
         self.assertIn('<span class="en"> · ${esc(a)}</span>', html)
         self.assertIn('<span class="en"> · ${esc(b)}</span>', html)
+
+    def test_item_sprite_offset_follows_icon_size(self):
+        """On phones icons shrank to 28 px while offsets stayed 32 px: neighbours' sprites showed."""
+
+        html = TEMPLATE.read_text(encoding="utf-8")
+        icon_fn = html[html.index("function itemIcon(") :]
+        icon_fn = icon_fn[: icon_fn.index("\n      }\n")]
+        item_style = icon_fn[icon_fn.index("let style = ") :]
+        self.assertNotIn("background-position", item_style)
+        base = css_block(self.css, "\n      .item-icon {")
+        self.assertIn("--cell: 32px", base)
+        for rule in (
+            "width: var(--cell)",
+            "background-size: calc(var(--cell) * 24) calc(var(--cell) * 39)",
+            "calc(var(--ix, 0) * var(--cell) * -1)",
+        ):
+            self.assertIn(rule, base)
+        self.assertIn("calc(var(--cell) * 8) calc(var(--cell) * 20)", css_block(self.css, ".item-icon.sheet1 {"))
+        tall = css_block(self.css, ".item-icon.sheet2 {")
+        self.assertIn("calc(var(--cell) * 8) calc(var(--cell) * 92)", tall)
+        self.assertIn("calc(var(--iy, 0) * var(--cell) * -2)", tall)
+        # Narrow screens only change the cell size; no pixel sheet sizes that can drift.
+        phone_icon = css_block(self.media(450), ".item-icon {")
+        self.assertEqual(phone_icon.strip(), "--cell: 28px;")
+        self.assertNotIn("background-size: 672px", self.css)
 
     def test_people_hearts_have_separate_space_and_larger_icons(self):
         self.assertIn("display: grid", css_block(self.css, ".person"))

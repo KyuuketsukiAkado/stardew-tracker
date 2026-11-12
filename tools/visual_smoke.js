@@ -65,11 +65,27 @@ const cases = [
               const rect = el.getBoundingClientRect();
               return rect.width > 0 && rect.height > 0 && (rect.width < 32 || rect.height < 32);
             }).length;
-            return { overflow, small };
+            // Each item icon must show its own sprite cell at its rendered size
+            // (on phones icons once shrank while sprite offsets did not).
+            let wrongIcons = 0;
+            for (const el of document.querySelectorAll("#view .item-icon")) {
+              const cs = getComputedStyle(el);
+              const w = parseFloat(cs.width);
+              const cell = /--ix:(\d+);--iy:(\d+)/.exec(el.getAttribute("style") || "");
+              if (!w || !cell) continue;
+              const tall = el.classList.contains("sheet2") ? 2 : 1;
+              const cols = el.classList.contains("sheet1") || tall === 2 ? 8 : 24;
+              const [sx] = cs.backgroundSize.split(" ").map(parseFloat);
+              const [px, py] = cs.backgroundPosition.split(" ").map(parseFloat);
+              const off = (a, b) => Math.abs(a - b) > 0.6;
+              if (off(sx, cols * w) || off(px, -cell[1] * w) || off(py, -cell[2] * w * tall) || off(parseFloat(cs.height), w * tall)) wrongIcons++;
+            }
+            return { overflow, small, wrongIcons };
           });
           routesChecked++;
           smallControls += result.small;
           if (result.overflow > 1) failures.push(`${lang}/${theme}/${width}/${route}: ${result.overflow}px horizontal overflow`);
+          if (result.wrongIcons) failures.push(`${lang}/${theme}/${width}/${route}: ${result.wrongIcons} icons show the wrong sprite cell`);
         }
         // Reproduce the reported values without opening a real save; test the visible text geometry.
         await page.evaluate(() => {
@@ -108,7 +124,7 @@ const cases = [
     for (const failure of failures) console.error("FAIL", failure);
     process.exitCode = 1;
   } else {
-    console.log("PASS no horizontal overflow, JS errors, or metric collisions in the tested scenarios");
+    console.log("PASS no horizontal overflow, JS errors, metric collisions, or misaligned item sprites in the tested scenarios");
   }
 })().catch((error) => {
   console.error(error);
