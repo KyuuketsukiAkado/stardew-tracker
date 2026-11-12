@@ -149,3 +149,10 @@ jobs:
             exit 1
           fi
           CHROME_PATH="$CHROME_PATH" node tools/visual_smoke.js
+          echo "CHROME_PATH=$CHROME_PATH" >> "$GITHUB_ENV"
+
+      - name: Site smoke (jsdom + Chrome)
+        run: |
+          python3 tools/build_site.py --out "$RUNNER_TEMP/stardew-site"
+          node tools/site_smoke.js "$RUNNER_TEMP/stardew-site/index.html"
+          node tools/site_visual_smoke.js "$RUNNER_TEMP/stardew-site/index.html"

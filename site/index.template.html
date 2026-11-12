@@ -116,6 +116,7 @@
         align-items: center;
         flex-wrap: wrap;
         gap: 6px 18px;
+        margin-left: auto;
         font-size: 14px;
       }
       .links a {
@@ -126,7 +127,7 @@
       .links a:hover {
         color: var(--text);
       }
-      .links button {
+      .lang-switch {
         padding: 6px 14px;
         border: 1px solid var(--line);
         border-radius: 999px;
@@ -320,8 +321,9 @@
       }
       .button:focus-visible,
       .links a:focus-visible,
-      .links button:focus-visible,
-      .others a:focus-visible {
+      .lang-switch:focus-visible,
+      .others a:focus-visible,
+      .note summary:focus-visible {
         outline: 3px solid var(--accent);
         outline-offset: 3px;
       }
@@ -351,21 +353,33 @@
       }
       .note {
         max-width: 66ch;
-        margin: 20px 0 0;
-        padding: 12px 16px;
+        margin: 18px 0 0;
+        padding: 8px 16px;
         border-radius: 14px;
         background: var(--warn-bg);
         box-shadow: inset 0 0 0 1px var(--warn-line);
         color: var(--warn-text);
         font-size: 14px;
       }
-      .mobile-note {
+      .note summary {
+        display: list-item;
+        min-height: 40px;
+        padding: 9px 0;
+        cursor: pointer;
+        font-weight: 700;
+      }
+      .note p {
+        margin: 6px 0 10px;
+      }
+      .mobile-note,
+      .mac-note {
         display: none;
-        margin-top: 18px;
+        margin: 18px 0 0;
         color: var(--muted);
         font-size: 15px;
       }
-      .is-mobile .mobile-note {
+      .is-mobile .mobile-note,
+      .is-macos .mac-note {
         display: block;
       }
       /* tiles */
@@ -421,17 +435,45 @@
         margin: 0;
         font-size: 15.5px;
       }
+      .proof {
+        padding-top: 14px;
+      }
+      .proof h2 {
+        margin-bottom: 12px;
+      }
+      .proof-intro {
+        max-width: 62ch;
+        margin: 0 0 20px;
+        color: var(--muted);
+        font-size: 15px;
+      }
       .shots {
         display: grid;
         grid-template-columns: repeat(2, minmax(0, 1fr));
         gap: 18px;
       }
+      .shots figure {
+        min-width: 0;
+        margin: 0;
+        padding: 8px;
+        border: 1px solid var(--line);
+        border-radius: 24px;
+        background: var(--surface);
+        box-shadow: var(--shadow);
+      }
+      .shots picture,
       .shots img {
         display: block;
         width: 100%;
+      }
+      .shots img {
         height: auto;
-        border-radius: 20px;
-        box-shadow: var(--shadow);
+        border-radius: 16px;
+      }
+      .shots figcaption {
+        padding: 8px 8px 3px;
+        color: var(--muted);
+        font-size: 14px;
       }
       .steps {
         display: grid;
@@ -514,11 +556,65 @@
           grid-template-columns: 1fr;
         }
         .bar {
-          flex-wrap: wrap;
+          display: grid;
+          grid-template-columns: minmax(0, 1fr) auto;
+          gap: 10px 8px;
+          padding: 10px 0;
+        }
+        .brand {
+          min-width: 0;
+          gap: 8px;
+          font-size: 18px;
+          letter-spacing: 0.035em;
+        }
+        .links {
+          grid-column: 1 / -1;
+          grid-row: 2;
+          gap: 6px 14px;
+          margin: 0;
+          font-size: 13px;
+        }
+        .lang-switch {
+          grid-column: 2;
+          grid-row: 1;
+          min-width: 44px;
+          min-height: 40px;
+        }
+        .hero {
+          padding: 18px 0 10px;
+          gap: 0;
+        }
+        .hero-art {
+          display: none;
+        }
+        .kicker {
+          margin-bottom: 12px;
+        }
+        h1 {
+          font-size: clamp(34px, 10vw, 44px);
+        }
+        .lead {
+          margin-top: 14px;
+          font-size: 16px;
+          line-height: 1.5;
+        }
+        .cta {
+          margin-top: 18px;
         }
         .button {
           width: 100%;
           justify-content: center;
+          padding: 17px 20px;
+        }
+        .proof {
+          padding-top: 22px;
+        }
+        .shots figure {
+          padding: 5px;
+        }
+        .shots img {
+          aspect-ratio: 390 / 900;
+          object-fit: cover;
         }
       }
       @media (prefers-reduced-motion: reduce) {
@@ -548,8 +644,8 @@
           <a href="{{REPO_URL}}"><span lang="en">GitHub</span><span lang="ru">GitHub</span></a>
           <a href="{{RELEASES_URL}}"><span lang="en">All downloads</span><span lang="ru">Все версии</span></a>
           <a href="#feedback"><span lang="en">Feedback</span><span lang="ru">Обратная связь</span></a>
-          <button type="button" id="langToggle" aria-label="Switch language / Сменить язык">RU</button>
         </nav>
+        <button type="button" class="lang-switch" id="langToggle" aria-label="Switch language / Сменить язык">RU</button>
       </header>
 
       <main>
@@ -562,13 +658,17 @@
           </h1>
           <p class="lead">
             <span lang="en">
-              A free tracker for Stardew Valley 1.5 / 1.6. It reads your save file and shows your museum, fish, perfection and
-              more — and tells you what you can't get yet, and why.
+              An offline tracker for Stardew Valley 1.5 / 1.6. See what's left in collections and bundles — and one useful
+              thing to do today. It asks before looking for saves.
             </span>
             <span lang="ru">
-              Бесплатный трекер для Stardew Valley 1.5 / 1.6. Читает файл сохранения и показывает музей, рыбу, перфекцию и
-              многое другое. А ещё подсказывает, что пока нельзя получить и почему.
+              Офлайн-трекер для Stardew Valley 1.5 / 1.6. Показывает, что осталось в коллекциях и бандлах, и одно доступное
+              дело на сегодня. Перед поиском сохранений спрашивает разрешение.
             </span>
+          </p>
+          <p class="mobile-note">
+            <span lang="en">The app runs on a computer, not a phone. See the interface below or open this page on your PC to download it.</span>
+            <span lang="ru">Приложение работает на компьютере, а не на телефоне. Посмотрите интерфейс ниже или откройте эту страницу на ПК для загрузки.</span>
           </p>
 
           <div class="cta">
@@ -582,25 +682,21 @@
               <a href="{{LINUX_URL}}" data-os="linux">Linux</a>
             </div>
           </div>
+          <p class="mac-note">
+            <span lang="en">The macOS download is for Apple Silicon only. If macOS blocks it, right-click → Open. Intel Macs can <a href="{{REPO_URL}}#run-from-source">run from source</a>.</span>
+            <span lang="ru">Версия для macOS — только для Apple Silicon. Если система блокирует запуск, нажмите правой кнопкой → «Открыть». На Intel Mac можно <a href="{{REPO_URL}}/blob/master/README.ru.md#запуск-из-исходников">запустить из исходников</a>.</span>
+          </p>
           <p class="meta">
             <span class="badge"><span lang="en">{{CHANNEL_EN}}</span><span lang="ru">{{CHANNEL_RU}}</span></span>
             <span lang="en">Version {{VERSION}} · free and open source</span><span lang="ru">Версия {{VERSION}} · бесплатно, открытый исходный код</span>
           </p>
-          <p class="mobile-note">
-            <span lang="en">Stardew Tracker runs on a computer (Windows, macOS or Linux). Open this page on your PC to download it.</span>
-            <span lang="ru">Stardew Tracker работает на компьютере (Windows, macOS или Linux). Откройте эту страницу на ПК, чтобы скачать.</span>
-          </p>
-          <p class="note">
-            <span lang="en">
-              <b>Heads-up:</b> the app is not code-signed, so Windows may show a SmartScreen warning — choose <i>More info → Run anyway</i>.
-              The source is open and every release has SHA-256 checksums.
-            </span>
-            <span lang="ru">
-              <b>Важно:</b> у приложения нет цифровой подписи, поэтому Windows может показать предупреждение SmartScreen.
-              Нажмите <i>Подробнее → Выполнить в любом случае</i>. Исходный код открыт, а у каждого релиза есть контрольные
-              суммы SHA-256.
-            </span>
-          </p>
+          <details class="note">
+            <summary><span lang="en">Unsigned app · SmartScreen: More info → Run anyway</span><span lang="ru">Без подписи · SmartScreen: Подробнее → Выполнить</span></summary>
+            <p>
+              <span lang="en">The app is not code-signed. Windows may show a SmartScreen warning — choose <i>More info → Run anyway</i>; macOS may require right-click → Open. Linux may require <code>chmod +x StardewTracker</code>. The source is open and every release has SHA-256 checksums.</span>
+              <span lang="ru">У приложения нет цифровой подписи. Windows может показать SmartScreen («Подробнее → Выполнить в любом случае»); на macOS может понадобиться правый клик → «Открыть». На Linux может понадобиться <code>chmod +x StardewTracker</code>. Исходный код открыт, у каждого релиза есть контрольные суммы SHA-256.</span>
+            </p>
+          </details>
           </div>
         <figure class="hero-art" aria-hidden="true">
           <svg viewBox="0 0 520 450" focusable="false">
@@ -752,6 +848,23 @@
         </figure>
         </div>
 
+        <section class="proof" aria-labelledby="look">
+          <h2 id="look"><span lang="en">See the tracker</span><span lang="ru">Посмотрите трекер</span></h2>
+          <p class="proof-intro"><span lang="en">A real app screen from a fictional farm. The first card tells you one thing you can do today; your progress stays yours.</span><span lang="ru">Настоящий экран приложения на вымышленной ферме. Первая карточка подсказывает одно доступное дело на сегодня, а ваши данные остаются у вас.</span></p>
+          <div class="shots">
+            <figure>
+              <picture lang="en"><source media="(max-width: 600px)" srcset="screenshots/overview-mobile-light-en.png" /><img lang="en" src="screenshots/overview-light.png" width="1440" height="900" loading="lazy" decoding="async" alt="Overview of a fictional farm in the light theme: one doable action, museum, fish and perfection progress" /></picture>
+              <picture lang="ru"><source media="(max-width: 600px)" srcset="screenshots/overview-mobile-light-ru.png" /><img lang="ru" src="screenshots/overview-light-ru.png" width="1440" height="900" loading="lazy" decoding="async" alt="Главная страница вымышленной фермы в светлой теме: доступное дело и прогресс музея, рыбы и перфекции" /></picture>
+              <figcaption><span lang="en">Light theme · one action you can take today</span><span lang="ru">Светлая тема · одно доступное дело на сегодня</span></figcaption>
+            </figure>
+            <figure>
+              <picture lang="en"><source media="(max-width: 600px)" srcset="screenshots/overview-mobile-dark-en.png" /><img lang="en" src="screenshots/overview-dark.png" width="1440" height="900" loading="lazy" decoding="async" alt="The same fictional farm overview in the dark theme" /></picture>
+              <picture lang="ru"><source media="(max-width: 600px)" srcset="screenshots/overview-mobile-dark-ru.png" /><img lang="ru" src="screenshots/overview-dark-ru.png" width="1440" height="900" loading="lazy" decoding="async" alt="Та же вымышленная ферма в тёмной теме" /></picture>
+              <figcaption><span lang="en">Dark theme · the same progress</span><span lang="ru">Тёмная тема · тот же прогресс</span></figcaption>
+            </figure>
+          </div>
+        </section>
+
         <section aria-labelledby="why">
           <h2 id="why"><span lang="en">Why you'll like it</span><span lang="ru">Чем он полезен</span></h2>
           <div class="tiles">
@@ -797,16 +910,6 @@
                 <span lang="ru">Есть светлая и тёмная темы. Язык выбирается один раз при первом запуске.</span>
               </p>
             </div>
-          </div>
-        </section>
-
-        <section aria-labelledby="look">
-          <h2 id="look"><span lang="en">A look inside</span><span lang="ru">Как это выглядит</span></h2>
-          <div class="shots">
-            <img lang="en" src="screenshots/overview-light.png" width="1440" height="900" loading="lazy" alt="Overview page of the tracker in the light theme: perfection, museum and fish tiles, today's plan and unlocked areas" />
-            <img lang="en" src="screenshots/overview-dark.png" width="1440" height="900" loading="lazy" alt="The same overview page in the dark theme" />
-            <img lang="ru" src="screenshots/overview-light-ru.png" width="1440" height="900" loading="lazy" alt="Главная страница трекера в светлой теме: плитки перфекции, музея и рыбы, план на сегодня и открытые зоны" />
-            <img lang="ru" src="screenshots/overview-dark-ru.png" width="1440" height="900" loading="lazy" alt="Та же главная страница в тёмной теме" />
           </div>
         </section>
 
@@ -923,7 +1026,13 @@
         var button = document.getElementById("download");
         if (os === "mobile") {
           root.classList.add("is-mobile");
+          button.href = "#look";
+          button.removeAttribute("data-os");
+          var mobileSpans = button.getElementsByTagName("span");
+          mobileSpans[0].textContent = "See the tracker";
+          mobileSpans[1].textContent = "Посмотреть трекер";
         } else if (names[os]) {
+          if (os === "macos") root.classList.add("is-macos");
           var target = document.querySelector('#others a[data-os="' + os + '"]');
           button.href = target.href;
           button.setAttribute("data-os", os);

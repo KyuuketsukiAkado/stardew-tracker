@@ -5,8 +5,8 @@
 //   python tools/build_site.py --out _site      # build the page
 //   node tools/site_smoke.js _site/index.html
 //
-// Not part of CI (the project has no npm dependencies). It checks that the download
-// button follows the visitor's system (Windows / macOS / Linux, phones get a hint),
+// Also runs in CI with optional tools installed outside the app. It checks that the download
+// button follows the visitor's system (Windows / macOS / Linux, phones preview the app),
 // that the language follows the browser and can be switched, and that every download
 // stays a plain link when JavaScript is off.
 
@@ -56,11 +56,17 @@ const UA = {
     const href = btn(w).href;
     check(`${name}: button points at the ${expect} zip`, href.includes(`StardewTracker-${expect}-v`) && btn(w).dataset.os === expect, href.split("/").pop());
     check(`${name}: label names the system`, new RegExp(expect === "macos" ? "macOS" : expect, "i").test(btn(w).textContent));
+    if (name === "mac") {
+      check("mac: Apple Silicon limitation and source fallback are visible", w.document.documentElement.classList.contains("is-macos") && w.getComputedStyle(w.document.querySelector(".mac-note")).display !== "none" && /Intel Macs/.test(w.document.querySelector(".mac-note").textContent));
+      check("mac: Russian fallback points to Russian instructions", w.document.querySelector('.mac-note [lang="ru"] a').href.includes("README.ru.md#"));
+    }
     w.close();
   }
   for (const name of ["iphone", "android"]) {
     const w = open({ ua: UA[name][0], platform: UA[name][1] });
     check(`${name}: shows the "open on your PC" hint`, w.document.documentElement.classList.contains("is-mobile") && w.getComputedStyle(w.document.querySelector(".mobile-note")).display !== "none");
+    check(`${name}: primary action previews the app instead of downloading Windows`, btn(w).getAttribute("href") === "#look" && /See the tracker/.test(btn(w).textContent) && !btn(w).hasAttribute("data-os") && !!w.document.getElementById("look"));
+    check(`${name}: desktop downloads remain available`, [...w.document.querySelectorAll("#others a")].map((a) => a.dataset.os).join(",") === "windows,macos,linux");
     w.close();
   }
   let w = open({ ua: UA.win[0], platform: "Win32" });

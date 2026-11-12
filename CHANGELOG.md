@@ -4,6 +4,8 @@
 
 ## Unreleased
 
+- **Landing page UX:** current beta.3 screenshots from a fictional farm appear before the feature list, with phone-sized images on narrow screens. Phone visitors preview the interface instead of getting a Windows download button; Mac visitors see the Apple Silicon limitation, and unsigned-app guidance remains available in a keyboard-friendly disclosure. CI now checks the rendered site at phone and desktop widths.
+
 ## v0.4.0-beta.3 — phone usability and safer save discovery (2026-11-12)
 
 - **Permission before scanning for saves.** On first launch the app lists the standard save folders and asks for consent before looking in them. You can choose another folder instead or withdraw permission later from Folders; nothing is uploaded.
